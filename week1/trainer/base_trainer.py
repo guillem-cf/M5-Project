@@ -1,5 +1,6 @@
-import torch
 from abc import abstractmethod
+
+import torch
 from numpy import inf
 
 from week1.logger import TensorboardWriter

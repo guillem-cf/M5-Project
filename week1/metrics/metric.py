@@ -1,6 +1,5 @@
-import torch
 import torch.nn.functional as F
-import numpy as np
+
 
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
@@ -16,6 +15,7 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].view(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
+
 
 def cross_entropy(output, target):
     return F.cross_entropy(output, target)

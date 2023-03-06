@@ -1,6 +1,3 @@
-import torch.nn as nn
-import torch.nn.functional as F
-
 from week1.models.base_model import BaseModel
 from week1.models.components.simple_dense_net import SimpleDenseNet
 
@@ -13,6 +10,7 @@ class Model(BaseModel):
     def forward(self, x):
         x = self.dense(x)
         return x
+
 
 if __name__ == '__main__':
     model = Model(784, 10)
