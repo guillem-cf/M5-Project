@@ -1,4 +1,15 @@
 # --------- pytorch --------- #
 torch>=1.13.1
 torchvision>=0.14.1
-pre-commit>=3.1.1
+
+# --------- loggers --------- #
+wandb
+# neptune-client
+# mlflow
+# comet-ml
+
+# --------- others --------- #
+pre-commit      # hooks for applying linters on commit
+rich            # beautiful text formatting in terminal
+pytest          # tests
+# sh            # for running bash commands in some tests (linux/macos only)
