@@ -19,4 +19,4 @@ jobs:
       - name: Lint
         run: |
           echo "Running ruff"
-          ruff . --fix --line-length 100
+          ruff . --fix --line-length 120
