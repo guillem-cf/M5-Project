@@ -2,6 +2,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data.sampler import RandomSampler, SequentialSampler
 
+
 class CustomDataLoader:
     def __init__(self, dataset, batch_size, num_workers, shuffle, drop_last, distributed):
         self.dataset = dataset
