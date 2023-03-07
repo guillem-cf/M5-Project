@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torchvision.utils import make_grid
 
-from week1.trainer.base_trainer import BaseTrainer
+from week1.train.trainer.base_trainer import BaseTrainer
 from week1.utils import inf_loop, MetricTracker
 
 

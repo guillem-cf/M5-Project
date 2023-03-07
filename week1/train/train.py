@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import week1.datamodules.dataloader as module_data
 import week1.model.loss as module_loss
-from week1.trainer.trainer import Trainer
+from week1.train.trainer.trainer import Trainer
 from week1.utils import prepare_device
 from week1.utils.parser.parse_config import ConfigParser
 

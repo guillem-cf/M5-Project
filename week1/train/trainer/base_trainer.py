@@ -4,6 +4,7 @@ import torch
 from numpy import inf
 
 from week1.logger import TensorboardWriter
+import wandb
 
 
 class BaseTrainer:
@@ -24,6 +25,7 @@ class BaseTrainer:
         self.epochs = cfg_trainer['epochs']
         self.save_period = cfg_trainer['save_period']
         self.monitor = cfg_trainer.get('monitor', 'off')
+        self.wandb = "wandb" in config.config and config.config["wandb"]["store"]
 
         # configuration to monitor model performance and save best
         if self.monitor == 'off':
@@ -61,6 +63,9 @@ class BaseTrainer:
         """
         Full training logic
         """
+        if self.wandb:
+            wandb.watch(self.model)
+
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self._train_epoch(epoch)
@@ -68,6 +73,8 @@ class BaseTrainer:
             # save logged informations into log dict
             log = {'epoch': epoch}
             log.update(result)
+            if self.wandb:
+                wandb.log(log.copy(), step=epoch)
 
             # print logged informations to the screen
             for key, value in log.items():
