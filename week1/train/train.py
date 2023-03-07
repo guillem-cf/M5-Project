@@ -54,8 +54,6 @@ ARGS_CONFIGPATH = dict(  # alias for CLI argument: route in config file
 )
 ARGS_TYPES = dict(
     name=str,
-    pred_length=int,
-    obs_length=int,
     wandb=str2bool,
     project=str,
 
