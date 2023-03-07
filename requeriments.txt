@@ -4,6 +4,7 @@ torchvision>=0.14.1
 
 # --------- python --------- #
 pandas
+tqdm
 
 # --------- loggers --------- #
 wandb
