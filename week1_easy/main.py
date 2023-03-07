@@ -16,7 +16,6 @@ def main():
     parser.add_argument("--config", type=str, help="Config file", required=True)
     args = parser.parse_args()
 
-
     with open(args.config, "r") as f:
         sweep_config = yaml.safe_load(f)
 
