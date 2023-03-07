@@ -1,5 +1,5 @@
-import torch.nn.functional as F
 import torch
+
 
 def accuracy(output, target):
     with torch.no_grad():

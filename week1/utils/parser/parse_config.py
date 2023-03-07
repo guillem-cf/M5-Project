@@ -1,9 +1,9 @@
-import os
 import logging
-from pathlib import Path
+import os
+from datetime import datetime
 from functools import reduce, partial
 from operator import getitem
-from datetime import datetime
+from pathlib import Path
 
 from week1.logger import setup_logging
 from week1.utils import write_json, read_json

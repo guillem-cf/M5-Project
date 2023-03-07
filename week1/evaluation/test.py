@@ -1,6 +1,8 @@
 import argparse
+
 import torch
 from tqdm import tqdm
+
 import week1.datamodules.dataloader as module_data
 import week1.metrics.loss as module_loss
 import week1.metrics.metric as module_metric

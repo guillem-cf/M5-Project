@@ -1,10 +1,10 @@
 from abc import abstractmethod
 
 import torch
+import wandb
 from numpy import inf
 
 from week1.logger import TensorboardWriter
-import wandb
 
 
 class BaseTrainer:
@@ -12,7 +12,7 @@ class BaseTrainer:
     Base class for all trainers
     """
 
-    def __init__(self, model, criterion, metric_ftns, optimizer, config):
+    def __init__(self, model, criterion, metric_ftns, optimizer, config, amp):
         self.config = config
         self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
 
@@ -26,6 +26,11 @@ class BaseTrainer:
         self.save_period = cfg_trainer['save_period']
         self.monitor = cfg_trainer.get('monitor', 'off')
         self.wandb = "wandb" in config.config and config.config["wandb"]["store"]
+        self.amp = amp
+
+        if self.amp:
+            self.logger.info("Using AUTOMATIC MIXED PRECISION")
+        self.scaler = torch.cuda.amp.GradScaler(enabled=self.amp)
 
         # configuration to monitor model performance and save best
         if self.monitor == 'off':
@@ -123,6 +128,7 @@ class BaseTrainer:
             'epoch': epoch,
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
+            'scaler': self.scaler.state_dict(),
             'monitor_best': self.mnt_best,
             'config': self.config
         }
@@ -160,6 +166,20 @@ class BaseTrainer:
                 "Optimizer parameters not being resumed.")
         else:
             self.optimizer.load_state_dict(checkpoint['optimizer'])
+
+        # for mixed precision
+        was_amp_used = checkpoint['config']['trainer']['use_amp'] if 'use_amp' in \
+                                                                     checkpoint['config'][
+                                                                         'trainer'] else False
+        if 'scaler' not in checkpoint:
+            self.scaler = torch.cuda.amp.GradScaler(enabled=self.use_amp)
+        elif was_amp_used == self.use_amp:
+            self.scaler.load_state_dict(checkpoint['scaler'])
+        else:
+            self.logger.warning(
+                f"Checkpoint was generated with use_amp={was_amp_used}"
+                f"and will be continued with use_amp={self.use_amp}.")
+            self.scaler = torch.cuda.amp.GradScaler(enabled=self.use_amp)
 
         self.logger.info(
             "Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
