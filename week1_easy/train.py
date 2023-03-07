@@ -186,7 +186,7 @@ def train(args):
                         'best_val_loss': best_val_loss,
                         'best_val_acc': best_val_acc,
                         'optimizer' : optimizer.state_dict(),
-                        }, is_best_loss, is_best_acc)
+                        }, is_best_loss, is_best_acc, filename = wandb.config.experiment_name + '.h5')
         
         if is_best_loss or is_best_acc:
             best_model_wts = copy.deepcopy(model.state_dict())
