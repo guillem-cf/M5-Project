@@ -14,7 +14,6 @@ class ResNet_Convblock(nn.Module):
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = self.batch_norm(x)
-
         return x
 
 
