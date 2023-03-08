@@ -104,9 +104,9 @@ def train(args):
             print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
                   .format(epoch + 1, wandb.config.EPOCHS, i + 1, len(train_loader), loss.item(), train_acc * 100))
 
-            wandb.log({"train_loss": loss.item()}, step=epoch)
-            wandb.log({"train_accuracy": train_acc}, step=epoch)
-            wandb.log({"learning_rate": wandb.config.LEARNING_RATE}, step=epoch)
+            wandb.log({"epoch": epoch, "train_loss": loss.item()})
+            wandb.log({"epoch": epoch, "train_accuracy": train_acc})
+            wandb.log({"epoch": epoch, "learning_rate": wandb.config.LEARNING_RATE})
 
         # Validation step
         model.eval()
@@ -122,8 +122,8 @@ def train(args):
 
             val_loss = val_loss / (j + 1)
             val_acc = val_acc / (j + 1)
-            wandb.log({"val_loss": val_loss})
-            wandb.log({"val_accuracy": val_acc})
+            wandb.log({"epoch": epoch, "val_loss": val_loss})
+            wandb.log({"epoch": epoch, "val_accuracy": val_acc})
             print('Epoch [{}/{}], Val_Loss: {:.4f}, Val_Accuracy: {:.2f}%'
                   .format(epoch + 1, wandb.config.EPOCHS, val_loss.item(), val_acc * 100))
 
