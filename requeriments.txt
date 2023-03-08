@@ -1,6 +1,9 @@
 # --------- pytorch --------- #
 torch>=1.13.1
 torchvision>=0.14.1
+torch-summary>=1.4.5
+torchviz
+
 
 # --------- python --------- #
 pandas
@@ -8,6 +11,7 @@ tqdm
 
 # --------- loggers --------- #
 wandb
+graphviz
 # neptune-client
 # mlflow
 # comet-ml
