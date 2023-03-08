@@ -7,7 +7,9 @@ class ResNet_Convblock(nn.Module):
     def __init__(self, input_channels, filters):
         super().__init__()
         self.conv1 = nn.Conv2d(input_channels, filters, kernel_size=3, padding='same')
+        torch.nn.init.xavier_uniform_(self.conv1.weight)
         self.conv2 = nn.Conv2d(filters, filters, kernel_size=3, padding='same')
+        torch.nn.init.xavier_uniform_(self.conv2.weight)
         self.batch_norm = nn.BatchNorm2d(filters)
 
     def forward(self, x):
@@ -25,8 +27,12 @@ class ResNet(nn.Module):
 
         self.flatten = nn.Flatten()
         self.fc1 = nn.Linear(32, 64)
+        torch.nn.init.xavier_uniform_(self.fc1.weight)
+
         self.fc2 = nn.Linear(64, 64)
+        torch.nn.init.xavier_uniform_(self.fc2.weight)
         self.fc3 = nn.Linear(64, 8)
+        torch.nn.init.xavier_uniform_(self.fc3.weight)
 
         self.dropout6 = nn.Dropout(0.6)
         self.dropout5 = nn.Dropout(0.5)
