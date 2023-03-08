@@ -65,6 +65,6 @@ class ResNet(nn.Module):
         x = F.relu(self.fc3(x))
         x = self.dropout3(x)
 
-        x = F.softmax(x)
+        x = F.softmax(x, dim=1)
 
         return x

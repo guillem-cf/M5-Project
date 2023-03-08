@@ -55,7 +55,7 @@ def train(args):
     # Load the data
     transform = transforms.Compose(
         [transforms.ToTensor(),
-         transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH))])
+         transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH), antialias=False)])
 
     # Data augmentation
     if wandb.config.data_augmentation == True:
@@ -63,13 +63,13 @@ def train(args):
             [transforms.RandomHorizontalFlip(),
              transforms.RandomAffine(degrees=0, shear=10, translate=(0.1, 0.1)),
              transforms.ToTensor(),
-             transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH))])
+             transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH), antialias=False)])
 
-    train_dataset = MITDataset(data_dir='/ghome/group03/mcv/m3/datasets/MIT_small_train_1', split_name='train',
+    train_dataset = MITDataset(data_dir='./MIT_small_train_1', split_name='train',
                                transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=True, num_workers=8)
 
-    val_dataset = MITDataset(data_dir='/ghome/group03/mcv/m3/datasets/MIT_small_train_1', split_name='test',
+    val_dataset = MITDataset(data_dir='./MIT_small_train_1', split_name='test',
                              transform=transform)
     val_loader = DataLoader(val_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=False, num_workers=8)
 
@@ -168,6 +168,7 @@ def train(args):
 
         if is_best_loss or is_best_acc:
             best_model_wts = copy.deepcopy(model.state_dict())
+            print("Best model saved at epoch: ", epoch, " with val_loss: ", best_val_loss, " and val_acc: ", best_val_acc)
 
         t1 = time.time()
         total_time += t1 - t0
