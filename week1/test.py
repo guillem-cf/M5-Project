@@ -8,8 +8,8 @@ def test(model, test_loader, loss_fn):
     with torch.no_grad():
         for images, labels in test_loader:
             # Transfering images and labels to GPU if available
-            labels = labels.cuda()
-            images = images.cuda()
+            labels = labels.to(device)
+            images = images.to(device)
 
             # Forward pass 
             outputs = model(images)

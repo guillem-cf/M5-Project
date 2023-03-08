@@ -24,7 +24,7 @@ class ResNet(nn.Module):
         self.conv_block2 = ResNet_Convblock(32, 32)
 
         self.flatten = nn.Flatten()
-        self.fc1 = nn.Linear(128, 64)
+        self.fc1 = nn.Linear(32, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 8)
 
@@ -48,7 +48,7 @@ class ResNet(nn.Module):
         x4 = x.clone()
         x = x1 + x2 + x3 + x4
 
-        x = nn.AdaptiveAvgPool2d((1, 1))(x)
+        x = nn.AdaptiveAvgPool2d((1, 1))(x).squeeze()
 
         x = F.relu(self.fc1(x))
         x = self.dropout6(x)

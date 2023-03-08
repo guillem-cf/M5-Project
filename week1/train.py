@@ -22,10 +22,16 @@ import copy
 
 
 def train(args):
-    if torch.cuda.is_available() == False:
-        print("CUDA is not available")
-        exit()
-
+    if torch.cuda.is_available():
+        print("CUDA is available")
+        device = torch.device("cuda")
+        scaler = torch.cuda.amp.GradScaler()
+    elif torch.backends.mps.is_available():
+        print("MPS is available")
+        device = torch.device("mps")
+    else:
+        print("CPU is available")
+        device = torch.device("cpu")
     # Initialize wandb
     wandb.init(mode=args.wandb)
 
@@ -38,12 +44,13 @@ def train(args):
     args.experiment_name = wandb.config.experiment_name
 
     # Load the model
-    model = ResNet().cuda()
+    model = ResNet().to(device)
+    # model = torch.compile(model) # Pytorch 2.0
 
     # Write model summary to console and WandB
     wandb.config.num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("Number of parameters:", wandb.config.num_params)
-    summary(model, (3, wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH,))
+    summary(model, (3, wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH))
 
     # Load the data
     transform = transforms.Compose(
@@ -58,11 +65,11 @@ def train(args):
              transforms.ToTensor(),
              transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH))])
 
-    train_dataset = MITDataset(data_dir='/ghome/group03/mcv/m3/datasets/MIT_small_train_1', split_name='train',
+    train_dataset = MITDataset(data_dir='./MIT_small_train_1', split_name='train',
                                transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=True, num_workers=8)
 
-    val_dataset = MITDataset(data_dir='/ghome/group03/mcv/m3/datasets/MIT_small_train_1', split_name='test',
+    val_dataset = MITDataset(data_dir='./MIT_small_train_1', split_name='test',
                              transform=transform)
     val_loader = DataLoader(val_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=False, num_workers=8)
 
@@ -87,12 +94,17 @@ def train(args):
 
         model.train()
         for i, (images, labels) in enumerate(train_loader):
-            images = images.cuda()
-            labels = labels.cuda()
+            images = images.to(device)
+            labels = labels.to(device)
 
             # Forward pass
-            outputs = model(images)
-            loss = loss_fn(outputs, labels)
+            if device.type == "cuda":
+                with torch.cuda.amp.autocast():
+                    outputs = model(images)
+                    loss = loss_fn(outputs, labels)
+            else:
+                outputs = model(images)
+                loss = loss_fn(outputs, labels)
 
             # Backward and optimize
             optimizer.zero_grad()
@@ -114,8 +126,8 @@ def train(args):
             val_loss = 0
             val_acc = 0
             for j, (images, labels) in enumerate(val_loader):
-                images = images.cuda()
-                labels = labels.cuda()
+                images = images.to(device)
+                labels = labels.to(device)
                 outputs = model(images)
                 val_loss += loss_fn(outputs, labels)
                 val_acc += accuracy(outputs, labels)
