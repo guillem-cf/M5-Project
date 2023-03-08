@@ -6,5 +6,5 @@
 #SBATCH -o %x_%u_%j.out # File to which STDOUT will be written
 #SBATCH -e %x_%u_%j.err # File to which STDERR will be written
 
-# commanda terminal --> sbatch -n 8 job.sh
+# commanda terminal --> sbatch --gres gpu:1 -n 10 job
 python main.py
