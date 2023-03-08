@@ -77,7 +77,8 @@ def train(args):
     loss_fn = torch.nn.CrossEntropyLoss()
 
     # Optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=wandb.config.LEARNING_RATE)
+    optimizer = torch.optim.Adam(model.parameters(), lr=wandb.config.LEARNING_RATE,
+                                 weight_decay=wandb.config.WEIGHT_DECAY)
 
     # Early stoppper
     early_stopper = EarlyStopper(patience=50, min_delta=10)
