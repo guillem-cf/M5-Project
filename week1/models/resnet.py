@@ -25,7 +25,6 @@ class ResNet(nn.Module):
         self.conv_block1 = ResNet_Convblock(3, 32)
         self.conv_block2 = ResNet_Convblock(32, 32)
 
-        self.flatten = nn.Flatten()
         self.fc1 = nn.Linear(32, 64)
         torch.nn.init.xavier_uniform_(self.fc1.weight)
 
