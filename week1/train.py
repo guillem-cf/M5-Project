@@ -13,7 +13,7 @@ from utils.metrics import accuracy, top_k_acc
 from utils.early_stopper import EarlyStopper
 from utils.checkpoint import save_checkpoint
 from dataset.mit import MITDataset
-from models.resnet import ResNet, ResNet2
+from models.resnet import ResNet
 
 from torchsummary import summary
 from torchviz import make_dot
@@ -44,7 +44,7 @@ def train(args):
     args.experiment_name = wandb.config.experiment_name
 
     # Load the model
-    model = ResNet2().to(device)
+    model = ResNet().to(device)
     # model = torch.compile(model) # Pytorch 2.0
 
     # Write model summary to console and WandB
