@@ -50,6 +50,7 @@ class ResNet(nn.Module):
                 nn.init.xavier_uniform_(m.weight.data)
                 if m.bias is not None:
                     m.bias.data.zero_()
+
     def forward(self, x):
         x = self.conv_block1(x)
         x1 = x.clone()
@@ -66,7 +67,7 @@ class ResNet(nn.Module):
         x4 = x.clone()
         x = x1 + x2 + x3 + x4
 
-        x = F.adaptive_avg_pool2d(x, 1).view(-1, 64)
+        x = F.adaptive_avg_pool2d(x, 1).view(-1, 32)
 
         x = F.relu(self.fc1(x))
         x = self.dropout6(x)
@@ -80,3 +81,11 @@ class ResNet(nn.Module):
         x = self.softmax(x)
 
         return x
+
+
+if __name__ == '__main__':
+    model = ResNet()
+    print(model)
+
+    x = torch.randn(1, 3, 32, 32)
+    print(model(x).shape)
