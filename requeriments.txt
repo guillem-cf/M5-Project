@@ -1,6 +1,6 @@
 # --------- pytorch --------- #
-torch>=1.13.1
-torchvision>=0.14.1
+torch>=2.0.0
+torchvision>=0.15.0
 torch-summary>=1.4.5
 torchviz
 
