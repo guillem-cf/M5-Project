@@ -23,9 +23,7 @@ class ResNetBlock(nn.Module):
 class ResNet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(32)
-        self.block1 = ResNetBlock(32, 32)
+        self.block1 = ResNetBlock(3, 32)
         self.block2 = ResNetBlock(32, 32)
         self.block3 = ResNetBlock(32, 32)
         self.block4 = ResNetBlock(32, 32)
@@ -50,14 +48,15 @@ class ResNet(nn.Module):
                     m.bias.data.zero_()
 
     def forward(self, x):
-        x = self.conv1(x)
         x1 = self.block1(x)
         x1_out = x1
         x2 = self.block2(x1_out)
         x2_out = x1_out + x2
         x3 = self.block3(x2_out)
         x3_out = x1_out + x2_out + x3
-        x = self.pool(x3_out)
+        x4 = self.block4(x3_out)
+        x4_out = x1_out + x2_out + x3_out + x4
+        x = self.pool(x4_out)
         # out = torch.flatten(out, start_dim=1)
         # change with average pooling
         x = nn.AdaptiveAvgPool2d((1, 1))(x).squeeze()
