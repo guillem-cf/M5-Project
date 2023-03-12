@@ -86,7 +86,7 @@ def train(args):
     best_val_loss = float('inf')
     best_val_acc = 0
     total_time = 0
-    for epoch in range(wandb.config.EPOCHS):
+    for epoch in range(wandb.config.EPOCH + 1):
         t0 = time.time()
         model.train()
         loop = tqdm(train_loader)
@@ -112,7 +112,7 @@ def train(args):
 
             #  if (i + 1) % 10 == 0:
             train_acc = accuracy(outputs, labels)
-            loop.set_description(f"Train: Epoch [{epoch + 1}/{wandb.config.EPOCHS}]")
+            loop.set_description(f"Train: Epoch [{epoch}/{wandb.config.EPOCHS}]")
             loop.set_postfix(loss=loss.item(), train_acc=train_acc)
 
         wandb.log({"epoch": epoch, "train_loss": loss.item()})
@@ -131,7 +131,7 @@ def train(args):
                 outputs = model(images)
                 val_loss += loss_fn(outputs, labels)
                 val_acc += accuracy(outputs, labels)
-                loop.set_description(f"Validation: Epoch [{epoch + 1}/{wandb.config.EPOCHS}]")
+                loop.set_description(f"Validation: Epoch [{epoch}/{wandb.config.EPOCHS}]")
                 loop.set_postfix(val_loss=val_loss.item(), val_acc=val_acc)
 
             val_loss = val_loss / (j + 1)
@@ -165,7 +165,7 @@ def train(args):
         if is_best_loss or is_best_acc:
             print("Best model saved at epoch: ", epoch, " with val_loss: ", best_val_loss.item(), " and val_acc: ",
                   best_val_acc)
-            save_checkpoint({'epoch': epoch + 1,
+            save_checkpoint({'epoch': epoch,
                              'state_dict': model.state_dict(),
                              'best_val_loss': best_val_loss,
                              'best_val_acc': best_val_acc,
