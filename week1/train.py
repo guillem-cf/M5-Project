@@ -86,7 +86,7 @@ def train(args):
     best_val_loss = float('inf')
     best_val_acc = 0
     total_time = 0
-    for epoch in range(wandb.config.EPOCHS + 1):
+    for epoch in range(1, wandb.config.EPOCHS + 1):
         t0 = time.time()
         model.train()
         loop = tqdm(train_loader)
