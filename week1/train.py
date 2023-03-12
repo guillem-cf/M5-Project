@@ -22,7 +22,7 @@ def train(args):
         scaler = torch.cuda.amp.GradScaler()
     elif torch.backends.mps.is_available():
         print("MPS is available")
-        device = torch.device("mps")
+        device = torch.device("cpu")
     else:
         print("CPU is available")
         device = torch.device("cpu")
@@ -110,7 +110,6 @@ def train(args):
             # update de los pesos
             optimizer.step()
 
-            #  if (i + 1) % 10 == 0:
             train_acc = accuracy(outputs, labels)
             loop.set_description(f"Train: Epoch [{epoch}/{wandb.config.EPOCHS}]")
             loop.set_postfix(loss=loss.item(), train_acc=train_acc)
@@ -125,7 +124,7 @@ def train(args):
             val_loss = 0
             val_acc = 0
             loop = tqdm(val_loader)
-            for j, (images, labels) in enumerate(loop):
+            for idx, (images, labels) in enumerate(loop):
                 images = images.to(device)
                 labels = labels.to(device)
                 outputs = model(images)
@@ -134,16 +133,16 @@ def train(args):
                 loop.set_description(f"Validation: Epoch [{epoch}/{wandb.config.EPOCHS}]")
                 loop.set_postfix(val_loss=val_loss.item(), val_acc=val_acc)
 
-            val_loss = val_loss / (j + 1)
-            val_acc = val_acc / (j + 1)
+            val_loss = val_loss / (idx + 1)
+            val_acc = val_acc / (idx + 1)
             wandb.log({"epoch": epoch, "val_loss": val_loss})
             wandb.log({"epoch": epoch, "val_accuracy": val_acc})
 
 
-        #  # Learning rate scheduler
-        lr_scheduler.step(val_loss)
-        # log learning rate from scheduler
-        wandb.log({"epoch": epoch, "learning_rate": optimizer.param_groups[0]['lr']})
+            #  # Learning rate scheduler
+            lr_scheduler.step(val_loss)
+            # log learning rate from scheduler
+            wandb.log({"epoch": epoch, "learning_rate": lr_scheduler.optimizer.param_groups[0]['lr']})
 
         # Early stopping
         if early_stopper.early_stop(val_loss):
