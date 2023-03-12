@@ -22,16 +22,12 @@ def train(args):
         scaler = torch.cuda.amp.GradScaler()
     elif torch.backends.mps.is_available():
         print("MPS is available")
-        device = torch.device("cpu")  # torch.device("mps")
+        device = torch.device("mps")
     else:
         print("CPU is available")
         device = torch.device("cpu")
     # Initialize wandb
     wandb.init(mode=args.wandb)
-
-    # tf.random.set_seed(42)
-    # np.random.seed(42)
-
     # Print wandb.config
     print(wandb.config)
 
