@@ -4,7 +4,7 @@ import torch
 import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
-from torchsummary import summary
+from torchinfo import summary
 from tqdm import tqdm
 
 import wandb
@@ -39,7 +39,7 @@ def train(args):
     # Write model summary to console and WandB
     wandb.config.num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("Number of parameters:", wandb.config.num_params)
-    summary(model, (3, wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH))
+    summary(model, input_size=(32, 3, wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH))
 
     # AFTER SUMMARY ALWAYS
     model = model.to(device)
