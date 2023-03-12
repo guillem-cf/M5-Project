@@ -43,12 +43,12 @@ parameters:
   third_layer:
     value: False
   num_denses:
-    value: 1     
+    value: 1
   dim_dense:
-    value: 256    
+    value: 256
   filters:
     value: 32
-  batch_norm: 
+  batch_norm:
     value: True
   dropout:
     value: True
@@ -58,7 +58,7 @@ parameters:
     value: 3
   kernel_regularizer:
     value: True
-  strides:  
+  strides:
     value: 1
   initializer:
     value: 'glorot_normal'
@@ -85,5 +85,5 @@ parameters:
   zoom_range:
     value: 0
   brightness_range:
-    value: [0.5, 1.5]
+    value: [ 0.5, 1.5 ]
 

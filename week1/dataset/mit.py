@@ -1,9 +1,8 @@
 import os
-import numpy as np
-import torch
-import torchvision
+
 from PIL import Image
 from torch.utils.data import Dataset
+
 
 # from torchvision.transforms import transforms
 
@@ -24,7 +23,7 @@ from torch.utils.data import Dataset
 # test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32)
 
 class MITDataset(Dataset):
-    def __init__(self, data_dir = '/ghome/group03/mcv/m3/datasets/MIT_small_train_1', split_name='train', transform=None):
+    def __init__(self, data_dir='/ghome/group03/mcv/m3/datasets/MIT_small_train_1', split_name='train', transform=None):
         self.data_dir = os.path.join(data_dir, split_name)
         self.transform = transform
         self.classes = sorted(os.listdir(self.data_dir))
@@ -39,11 +38,11 @@ class MITDataset(Dataset):
                     path = os.path.join(root, fname)
                     item = (path, self.class_to_idx[target])
                     self.samples.append(item)
-    
+
     def __len__(self):
         return len(self.samples)
 
-    def __getitem__(self, index): 
+    def __getitem__(self, index):
         path, target = self.samples[index]
         sample = Image.open(path).convert('RGB')
         if self.transform is not None:

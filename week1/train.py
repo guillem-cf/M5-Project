@@ -1,24 +1,18 @@
-import torch
-import numpy as np
-import os
 import time
-import torchvision
+
+import torch
 import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
-import wandb
-
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.utils.data import DataLoader
+from torchsummary import summary
+from tqdm import tqdm
 
-from utils.metrics import accuracy, top_k_acc
-from utils.early_stopper import EarlyStopper
-from utils.checkpoint import save_checkpoint
+import wandb
 from dataset.mit import MITDataset
 from models.resnet import ResNet
-
-from torchsummary import summary
-from torchviz import make_dot
-import graphviz
-import copy
+from utils.checkpoint import save_checkpoint
+from utils.early_stopper import EarlyStopper
+from utils.metrics import accuracy
 
 
 def train(args):
@@ -28,7 +22,7 @@ def train(args):
         scaler = torch.cuda.amp.GradScaler()
     elif torch.backends.mps.is_available():
         print("MPS is available")
-        device = torch.device("mps")
+        device = torch.device("cpu")  # torch.device("mps")
     else:
         print("CPU is available")
         device = torch.device("cpu")
@@ -44,15 +38,18 @@ def train(args):
     args.experiment_name = wandb.config.experiment_name
 
     # Load the model
-    model = ResNet().to(device)
-    # if pytorch versions is >=1.13.1 use this line
-    if torch.__version__ >= '1.13.1':
-        model = torch.compile(model)  # Pytorch 2.0
+    model = ResNet()
 
     # Write model summary to console and WandB
     wandb.config.num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("Number of parameters:", wandb.config.num_params)
     summary(model, (3, wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH))
+
+    # AFTER SUMMARY ALWAYS
+    # if pytorch versions is >=1.13.1 use this line
+    if torch.__version__ >= '1.13.1':
+        model = torch.compile(model)  # Pytorch 2.0
+    model = model.to(device)
 
     # Load the data
     transform = transforms.Compose(
@@ -67,13 +64,13 @@ def train(args):
              transforms.ToTensor(),
              transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH), antialias=False)])
 
-    train_dataset = MITDataset(data_dir= args.dataset_path, split_name='train',
+    train_dataset = MITDataset(data_dir=args.dataset_path, split_name='train',
                                transform=transform)
-    train_loader = DataLoader(train_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=True, num_workers=8)
+    train_loader = DataLoader(train_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=True, num_workers=2)
 
-    val_dataset = MITDataset(data_dir= args.dataset_path, split_name='test',
+    val_dataset = MITDataset(data_dir=args.dataset_path, split_name='test',
                              transform=transform)
-    val_loader = DataLoader(val_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=False, num_workers=8)
+    val_loader = DataLoader(val_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=False, num_workers=2)
 
     # Define the loss function
     loss_fn = torch.nn.CrossEntropyLoss()
@@ -88,20 +85,21 @@ def train(args):
     # Learning rate scheduler
     lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
 
-    best_model_wts = copy.deepcopy(model.state_dict())
+    # best_model_wts = copy.deepcopy(model.state_dict())
     best_val_loss = float('inf')
     best_val_acc = 0
     total_time = 0
+    log_each = 10
     for epoch in range(wandb.config.EPOCHS):
         t0 = time.time()
-
         model.train()
-        for i, (images, labels) in enumerate(train_loader):
+        loop = tqdm(train_loader)
+        for idx, (images, labels) in enumerate(loop):
             images = images.to(device)
             labels = labels.to(device)
 
             # Forward pass
-            if device.type == "cuda":
+            if device.type == 'cuda':
                 with torch.cuda.amp.autocast():
                     outputs = model(images)
                     loss = loss_fn(outputs, labels)
@@ -109,15 +107,17 @@ def train(args):
                 outputs = model(images)
                 loss = loss_fn(outputs, labels)
 
-            # Backward and optimize
+            # ponemos a cero los gradientes
             optimizer.zero_grad()
+            # Backprop (calculamos todos los gradientes automáticamente)
             loss.backward()
+            # update de los pesos
             optimizer.step()
 
             #  if (i + 1) % 10 == 0:
             train_acc = accuracy(outputs, labels)
-            print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
-                  .format(epoch + 1, wandb.config.EPOCHS, i + 1, len(train_loader), loss.item(), train_acc * 100))
+            loop.set_description(f"Train: Epoch [{epoch + 1}/{wandb.config.EPOCHS}]")
+            loop.set_postfix(loss=loss.item(), train_acc=train_acc)
 
             wandb.log({"epoch": epoch, "train_loss": loss.item()})
             wandb.log({"epoch": epoch, "train_accuracy": train_acc})
@@ -128,7 +128,8 @@ def train(args):
         with torch.no_grad():
             val_loss = 0
             val_acc = 0
-            for j, (images, labels) in enumerate(val_loader):
+            loop = tqdm(val_loader)
+            for j, (images, labels) in enumerate(loop):
                 images = images.to(device)
                 labels = labels.to(device)
                 outputs = model(images)
@@ -139,8 +140,8 @@ def train(args):
             val_acc = val_acc / (j + 1)
             wandb.log({"epoch": epoch, "val_loss": val_loss})
             wandb.log({"epoch": epoch, "val_accuracy": val_acc})
-            print('Epoch [{}/{}], Val_Loss: {:.4f}, Val_Accuracy: {:.2f}%'
-                  .format(epoch + 1, wandb.config.EPOCHS, val_loss.item(), val_acc * 100))
+            loop.set_description(f"Validation: Epoch [{epoch + 1}/{wandb.config.EPOCHS}]")
+            loop.set_postfix(val_loss=val_loss.item(), val_acc=val_acc)
 
         #  # Learning rate scheduler
         lr_scheduler.step(val_loss)
@@ -161,20 +162,20 @@ def train(args):
             is_best_acc = True
         else:
             is_best_acc = False
-        save_checkpoint({'epoch': epoch + 1,
-                         'state_dict': model.state_dict(),
-                         'best_val_loss': best_val_loss,
-                         'best_val_acc': best_val_acc,
-                         'optimizer': optimizer.state_dict(),
-                         }, is_best_loss, is_best_acc, filename=wandb.config.experiment_name + '.h5')
 
         if is_best_loss or is_best_acc:
-            best_model_wts = copy.deepcopy(model.state_dict())
-            print("Best model saved at epoch: ", epoch, " with val_loss: ", best_val_loss, " and val_acc: ", best_val_acc)
+            print("Best model saved at epoch: ", epoch, " with val_loss: ", best_val_loss, " and val_acc: ",
+                  best_val_acc)
+            save_checkpoint({'epoch': epoch + 1,
+                             'state_dict': model.state_dict(),
+                             'best_val_loss': best_val_loss,
+                             'best_val_acc': best_val_acc,
+                             'optimizer': optimizer.state_dict(),
+                             }, is_best_loss, is_best_acc, filename=wandb.config.experiment_name + '.h5')
 
         t1 = time.time()
         total_time += t1 - t0
         print("Epoch time: ", t1 - t0)
         print("Total time: ", total_time)
 
-    model.load_state_dict(best_model_wts)
+    # model.load_state_dict(best_model_wts)

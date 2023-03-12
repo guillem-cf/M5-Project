@@ -1,11 +1,12 @@
-# python main.py --config config/ResNet.yaml --wandb 'disabled'
-# python main.py --config config/ResNet.yaml --wandb 'online'
-import os
+#  python main.py --config config/ResNet.yaml --wandb 'disabled'
+#  python main.py --config config/ResNet.yaml --wandb 'online'
 import argparse
 import functools
-import wandb
+import os
+
 import yaml
 
+import wandb
 from train import train
 
 
@@ -16,7 +17,8 @@ def main():
     parser.add_argument("--experiment_name", type=str, help="Experiment name", default='baseline')
     parser.add_argument("--config", type=str, help="Config file", default='config/ResNet.yaml')
     parser.add_argument("--wandb", type=str, help="WandB mode", default='online')
-    parser.add_argument("--dataset_path", type=str, help="Dataset path", default='/ghome/group03/mcv/m3/datasets/MIT_small_train_1')
+    parser.add_argument("--dataset_path", type=str, help="Dataset path",
+                        default='/ghome/group03/mcv/m3/datasets/MIT_small_train_1')
     args = parser.parse_args()
 
     # get the path of this file
@@ -28,6 +30,7 @@ def main():
 
     sweep_id = wandb.sweep(sweep=sweep_config, project="M5_W1")
     wandb.agent(sweep_id, function=functools.partial(train, args))
+
 
 if __name__ == "__main__":
     main()

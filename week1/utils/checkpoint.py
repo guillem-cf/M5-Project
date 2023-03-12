@@ -1,5 +1,6 @@
 import torch
 
+
 def save_checkpoint(state, is_best_loss, is_best_acc, filename):
     if is_best_loss:
         print("Saving best loss model...")

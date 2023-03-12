@@ -43,22 +43,22 @@ parameters:
   third_layer:
     value: False
   num_denses:
-    value: 3      
+    value: 3
   dim_dense:
-    value: 256    
+    value: 256
   filters:
-    value: [32,32,64,64,128,128, 256, 256]
-  batch_norm: 
+    value: [ 32,32,64,64,128,128, 256, 256 ]
+  batch_norm:
     value: True
   dropout:
     value: True
   dropout_range:
-    value: [0.6, 0.5, 0.3]  
+    value: [ 0.6, 0.5, 0.3 ]
   kernel_size:
     value: 3
   kernel_regularizer:
     value: True
-  strides:  
+  strides:
     value: 1
   initializer:
     value: 'he_uniform'
@@ -85,5 +85,5 @@ parameters:
   zoom_range:
     value: 0
   brightness_range:
-    value: [0.5, 1.5]
+    value: [ 0.5, 1.5 ]
 

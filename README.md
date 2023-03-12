@@ -1,19 +1,20 @@
-
 # Cross-modal Retrieva
 
-Scene understanding for autonomous driving is a crucial task that involves interpreting and analyzing the environment around an autonomous vehicle. It requires the identification and classification of various objects, such as vehicles, pedestrians, and road signs, as well as the estimation of their spatial and temporal relationships. The ability to understand the scene is critical for an autonomous vehicle to make informed decisions and navigate safely and efficiently. The development of advanced scene understanding algorithms is essential for the continued progress of autonomous driving technology.
+Scene understanding for autonomous driving is a crucial task that involves interpreting and analyzing the environment
+around an autonomous vehicle. It requires the identification and classification of various objects, such as vehicles,
+pedestrians, and road signs, as well as the estimation of their spatial and temporal relationships. The ability to
+understand the scene is critical for an autonomous vehicle to make informed decisions and navigate safely and
+efficiently. The development of advanced scene understanding algorithms is essential for the continued progress of
+autonomous driving technology.
 
+# Team 3
 
-# Team 3 
-
-| Members | GitHub | Contact |
-| :---         |   :---    |   :---    | 
-| Guillem Capellera  | guillem-cf | guillemcafo@gmail.com | 
-| Anna Oliveras | aolivtous | aoliverastous@gmail.com  |
-| Abel García  | abel-gr | abelgr013@gmail.com |
-| Johnny Núñez | johnnynunez | johnnynuca14@gmail.com |
-
-
+| Members           | GitHub      | Contact                 |
+|:------------------|:------------|:------------------------| 
+| Guillem Capellera | guillem-cf  | guillemcafo@gmail.com   | 
+| Anna Oliveras     | aolivtous   | aoliverastous@gmail.com |
+| Abel García       | abel-gr     | abelgr013@gmail.com     |
+| Johnny Núñez      | johnnynunez | johnnynuca14@gmail.com  |
 
 # Project
 
