@@ -89,7 +89,6 @@ def train(args):
     best_val_loss = float('inf')
     best_val_acc = 0
     total_time = 0
-    log_each = 10
     for epoch in range(wandb.config.EPOCHS):
         t0 = time.time()
         model.train()
@@ -119,9 +118,9 @@ def train(args):
             loop.set_description(f"Train: Epoch [{epoch + 1}/{wandb.config.EPOCHS}]")
             loop.set_postfix(loss=loss.item(), train_acc=train_acc)
 
-            wandb.log({"epoch": epoch, "train_loss": loss.item()})
-            wandb.log({"epoch": epoch, "train_accuracy": train_acc})
-            wandb.log({"epoch": epoch, "learning_rate": wandb.config.LEARNING_RATE})
+        wandb.log({"epoch": epoch, "train_loss": loss.item()})
+        wandb.log({"epoch": epoch, "train_accuracy": train_acc})
+        wandb.log({"epoch": epoch, "learning_rate": wandb.config.LEARNING_RATE})
 
         # Validation step
         model.eval()
@@ -135,13 +134,14 @@ def train(args):
                 outputs = model(images)
                 val_loss += loss_fn(outputs, labels)
                 val_acc += accuracy(outputs, labels)
+                loop.set_description(f"Validation: Epoch [{epoch + 1}/{wandb.config.EPOCHS}]")
+                loop.set_postfix(val_loss=val_loss.item(), val_acc=val_acc)
 
             val_loss = val_loss / (j + 1)
             val_acc = val_acc / (j + 1)
             wandb.log({"epoch": epoch, "val_loss": val_loss})
             wandb.log({"epoch": epoch, "val_accuracy": val_acc})
-            loop.set_description(f"Validation: Epoch [{epoch + 1}/{wandb.config.EPOCHS}]")
-            loop.set_postfix(val_loss=val_loss.item(), val_acc=val_acc)
+
 
         #  # Learning rate scheduler
         lr_scheduler.step(val_loss)
