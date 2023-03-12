@@ -42,10 +42,11 @@ def train(args):
     summary(model, (3, wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH))
 
     # AFTER SUMMARY ALWAYS
+    model = model.to(device)
     # if pytorch versions is >=1.13.1 use this line
     if torch.__version__ >= '1.13.1':
         model = torch.compile(model)  # Pytorch 2.0
-    model = model.to(device)
+
 
     # Load the data
     transform = transforms.Compose(
