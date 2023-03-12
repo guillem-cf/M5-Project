@@ -1,4 +1,4 @@
-# Cross-modal Retrieva
+# Cross-modal Retrieval
 
 Scene understanding for autonomous driving is a crucial task that involves interpreting and analyzing the environment
 around an autonomous vehicle. It requires the identification and classification of various objects, such as vehicles,
