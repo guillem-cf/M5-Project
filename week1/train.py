@@ -44,7 +44,7 @@ def train(args):
     # AFTER SUMMARY ALWAYS
     model = model.to(device)
     # if pytorch versions is >=1.13.1 use this line
-    if torch.__version__ >= '1.13.1':
+    if torch.__version__ >= '1.13.1' and device.type == 'cuda':
         model = torch.compile(model)  # Pytorch 2.0
 
 
