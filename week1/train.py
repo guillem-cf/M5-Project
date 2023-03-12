@@ -22,7 +22,7 @@ def train(args):
         scaler = torch.cuda.amp.GradScaler()
     elif torch.backends.mps.is_available():
         print("MPS is available")
-        device = torch.device("cpu")
+        device = torch.device("mps")
     else:
         print("CPU is available")
         device = torch.device("cpu")
