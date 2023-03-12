@@ -163,7 +163,7 @@ def train(args):
             is_best_acc = False
 
         if is_best_loss or is_best_acc:
-            print("Best model saved at epoch: ", epoch, " with val_loss: ", best_val_loss, " and val_acc: ",
+            print("Best model saved at epoch: ", epoch, " with val_loss: ", best_val_loss.item(), " and val_acc: ",
                   best_val_acc)
             save_checkpoint({'epoch': epoch + 1,
                              'state_dict': model.state_dict(),
