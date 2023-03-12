@@ -142,6 +142,8 @@ def train(args):
 
         #  # Learning rate scheduler
         lr_scheduler.step(val_loss)
+        # log learning rate from scheduler
+        wandb.log({"epoch": epoch, "learning_rate": optimizer.param_groups[0]['lr']})
 
         # Early stopping
         if early_stopper.early_stop(val_loss):
