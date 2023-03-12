@@ -4,24 +4,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class ResNetBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.bn = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
-        residual = x
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = nn.functional.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out += residual
-        out = nn.functional.relu(out)
-        return out
+        x = self.conv1(x)
+        x = nn.functional.relu(x)
+        x = self.conv2(x)
+        x = nn.functional.relu(x)
+        x = self.bn(x)
+        return x
 
 
 class ResNet(nn.Module):
@@ -32,6 +29,7 @@ class ResNet(nn.Module):
         self.block1 = ResNetBlock(32, 32)
         self.block2 = ResNetBlock(32, 32)
         self.block3 = ResNetBlock(32, 32)
+        self.block4 = ResNetBlock(32, 32)
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc1 = nn.Linear(32, 64)
         self.dropout = nn.Dropout(0.5)
@@ -53,21 +51,22 @@ class ResNet(nn.Module):
                     m.bias.data.zero_()
 
     def forward(self, x):
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = nn.functional.relu(out)
-        out = self.block1(out)
-        out = self.block2(out)
-        out = self.block3(out)
-        out = self.pool(out)
+        x = self.conv1(x)
+        x1 = self.block1(x)
+        x1_out = x1
+        x2 = self.block2(x1_out)
+        x2_out = x1_out + x2
+        x3 = self.block3(x2_out)
+        x3_out = x1_out + x2_out + x3
+        x = self.pool(x3_out)
         # out = torch.flatten(out, start_dim=1)
         # change with average pooling
-        out = nn.AdaptiveAvgPool2d((1, 1))(out).squeeze()
-        out = self.fc1(out)
-        out = nn.functional.relu(out)
-        out = self.dropout(out)
-        out = self.fc2(out)
-        return out
+        x = nn.AdaptiveAvgPool2d((1, 1))(x).squeeze()
+        x = self.fc1(x)
+        x = nn.functional.relu(x)
+        x = self.dropout(x)
+        x = self.fc2(x)
+        return x
 
 
 if __name__ == '__main__':

@@ -45,7 +45,9 @@ def train(args):
 
     # Load the model
     model = ResNet().to(device)
-    # model = torch.compile(model) # Pytorch 2.0
+    # if pytorch versions is >=1.13.1 use this line
+    if torch.__version__ >= '1.13.1':
+        model = torch.compile(model)  # Pytorch 2.0
 
     # Write model summary to console and WandB
     wandb.config.num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -65,11 +67,11 @@ def train(args):
              transforms.ToTensor(),
              transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH), antialias=False)])
 
-    train_dataset = MITDataset(data_dir='./MIT_small_train_1', split_name='train',
+    train_dataset = MITDataset(data_dir= args.dataset_path, split_name='train',
                                transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=True, num_workers=8)
 
-    val_dataset = MITDataset(data_dir='./MIT_small_train_1', split_name='test',
+    val_dataset = MITDataset(data_dir= args.dataset_path, split_name='test',
                              transform=transform)
     val_loader = DataLoader(val_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=False, num_workers=8)
 

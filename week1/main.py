@@ -16,6 +16,7 @@ def main():
     parser.add_argument("--experiment_name", type=str, help="Experiment name", default='baseline')
     parser.add_argument("--config", type=str, help="Config file", default='config/ResNet.yaml')
     parser.add_argument("--wandb", type=str, help="WandB mode", default='online')
+    parser.add_argument("--dataset_path", type=str, help="Dataset path", default='/ghome/group03/mcv/m3/datasets/MIT_small_train_1')
     args = parser.parse_args()
 
     # get the path of this file
