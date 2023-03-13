@@ -56,7 +56,7 @@ def train(args):
     if wandb.config.data_augmentation == True:
         transform = transforms.Compose(
             [transforms.RandomHorizontalFlip(),
-             transforms.RandomAffine(degrees=0, shear=10, translate=(0.1, 0.1)),
+             transforms.RandomAffine(degrees=0, shear=0, translate=(0, 0.1)),
              transforms.ToTensor(),
              transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH), antialias=False)])
 
