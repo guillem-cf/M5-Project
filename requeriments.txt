@@ -7,6 +7,12 @@ torchinfo
 # --------- python --------- #
 pandas
 tqdm
+pyyaml
+ipywidgets
+notebook
+jupyterlab
+matplotlib
+opencv-contrib-python>=4.7.0.72
 
 # --------- loggers --------- #
 wandb
