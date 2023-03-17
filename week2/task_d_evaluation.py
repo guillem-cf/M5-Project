@@ -19,7 +19,7 @@ from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 from detectron2.data import build_detection_test_loader
 
-from formatDataset import get_kitti_mots_dicts
+from formatDataset import get_kitti_dicts
 
 
 if __name__ == '__main__':
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 
-    dataset_dicts = get_kitti_mots_dicts("val")
+    dataset_dicts = get_kitti_dicts("val")
 
     cfg = get_cfg()
 

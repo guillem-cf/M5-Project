@@ -20,29 +20,58 @@ from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultTrainer
 
-from formatDataset import get_kitti_mots_dicts
+from formatDataset import get_kitti_dicts, register_kitti_dataset
 
-
+# Obtain the path of the current file
+current_path = os.path.dirname(os.path.abspath(__file__))
 
 if __name__ == '__main__':
     # argparser
     parser = argparse.ArgumentParser(description='Task E: Finetuning')
+    parser.add_argument('--name', type=str, default='baseline', help='Name of the experiment')
     parser.add_argument('--network', type=str, default='faster_RCNN', help='Network to use: faster_RCNN or mask_RCNN')
     parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train')
     args = parser.parse_args()
 
-    train_dicts = get_kitti_mots_dicts("train")
-    val_dicts = get_kitti_mots_dicts("val")
+    kitty_metadata = register_kitti_dataset()
 
-    cfg = get_cfg()
+    train_dicts = get_kitti_dicts("train")
+    val_dicts = get_kitti_dicts("val")
+
 
     if args.network == 'faster_RCNN':
-        output_path = './Results/Task_e/faster_RCNN'
-        cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
-        cfg.DATASETS.TRAIN = ("kitti_mots_train",)
-        cfg.DATASETS.TEST = ("kitti_mots_val",)
+        output_path = os.path.join(current_path,f'Results/Task_e/faster_RCNN_{args.name}')
+        model = 'COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'
+    elif args.network == 'mask_RCNN':
+        output_path = os.path.join(current_path,f'Results/Task_e/mask_RCNN_{args.name}')
+        model = 'COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml'
     
- 
+    # Make sure the output directory exists, if not create it
+    os.makedirs(output_path, exist_ok=True)
+    print(output_path)
+
+    cfg = get_cfg()
+    cfg.merge_from_file(model_zoo.get_config_file(model))
+    cfg.DATASETS.TRAIN = ("kitti_train",)
+    cfg.DATASETS.TEST = ()
+    # cfg.DATASETS.VAL = ("kitti_mots_val",)
+    cfg.DATALOADER.NUM_WORKERS = 4
+    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model)  # Let training initialize from model zoo
+    cfg.SOLVER.IMS_PER_BATCH = 2
+    cfg.SOLVER.BASE_LR = 0.001  # pick a good LR
+    cfg.OUTPUT_DIR = output_path
+    cfg.SOLVER.MAX_ITER = 2   # 300 iterations seems good enough, but you can certainly train longer
+
+    cfg.SOLVER.AMP.ENABLED = True
+
+    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128   # faster, and good enough for this toy dataset (default: 512)
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 2000  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    cfg.TEST.EVAL_PERIOD = 20
+
+    trainer = DefaultTrainer(cfg)
+    trainer.resume_or_load(resume=False)
+    trainer.train()
 
 
 

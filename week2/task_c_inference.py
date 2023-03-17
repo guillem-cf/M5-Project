@@ -18,7 +18,8 @@ from detectron2.data import MetadataCatalog, DatasetCatalog
 
 from detectron2.utils.visualizer import ColorMode
 
-from formatDataset import get_kitti_mots_dicts
+from formatDataset import get_kitti_dicts, register_kitti_dataset
+
 
 
 
@@ -29,8 +30,8 @@ if __name__ == '__main__':
     parser.add_argument('--network', type=str, default='faster_RCNN', help='Network to use: faster_RCNN or mask_RCNN')
     args = parser.parse_args()
 
-
-    dataset_dicts = get_kitti_mots_dicts("val")
+    kitty_metadata = register_kitti_dataset()
+    dataset_dicts = get_kitti_dicts("val")
 
     cfg = get_cfg()
 
@@ -48,7 +49,7 @@ if __name__ == '__main__':
     os.makedirs(output_path, exist_ok=True)
 
 
-    for d in random.sample(dataset_dicts):
+    for d in random.sample(dataset_dicts, 3):
         im = cv2.imread(d["file_name"])
         outputs = predictor(im)
         v = Visualizer(im[:, :, ::-1], 

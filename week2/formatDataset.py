@@ -9,85 +9,7 @@ from detectron2.utils.visualizer import Visualizer
 
 from tqdm import tqdm
 
-import torch
-import ctypes
 
-# import base64
-# import zlib
-# from pycocotools import _mask as coco_mask
-
-classes = ['car', 'pedestrian']
-
-
-# # https://www.kaggle.com/code/robertkag/rle-to-mask-converter
-# def rleToMask(rleString,height,width):
-#   rows,cols = height,width
-#   rleNumbers = [int(numstring) for numstring in rleString.split(' ')]
-#   rlePairs = np.array(rleNumbers).reshape(-1,2)
-#   img = np.zeros(rows*cols,dtype=np.uint8)
-#   for index,length in rlePairs:
-#     index -= 1
-#     img[index:index+length] = 255
-#   img = img.reshape(cols,rows)
-#   img = img.T
-#   return img
-
-# def rle2mask(rle, img_shape):
-#     mask = np.zeros(img_shape)
-#     if rle is None:
-#         return mask
-
-#     rle = np.array([int(x) for x in rle.split()])
-#     rle = rle.reshape(-1, 2)
-#     for start, length in rle:
-#         start -= 1
-#         mask[start // img_shape[1]: (start + length) // img_shape[1], start % img_shape[1]: (start + length) % img_shape[1]] = 1
-#         start += length
-#     return mask
-
-
-
-# def decodeToBinaryMask(rleCodedStr, imWidth, imHeight):
-#     uncodedStr = base64.b64decode(rleCodedStr)
-#     uncompressedStr = zlib.decompress(uncodedStr,wbits = zlib.MAX_WBITS)
-#     detection ={
-#         'size': [imWidth, imHeight],
-#         'counts': uncompressedStr
-#     }
-#     detlist = []
-#     detlist.append(detection)
-#     mask = coco_mask.decode(detlist)
-#     binaryMask = mask.astype('bool') 
-#     return binaryMask
-
-# # Chatgpt rules
-# def rle2mask(rle, img_shape):
-#     """
-#     Convert RLE(run length encoding) string to numpy array.
-
-#     Args:
-#         rle (str): RLE string
-#         img_shape (tuple): Target image shape (height, width)
-
-#     Returns:
-#         np.array: Image as numpy array.
-#     """
-#     # Extract values and lengths of each segment
-#     rle = ''.join(filter(str.isdigit, rle))
-#     values = list(map(int, rle[::2]))
-#     lengths = list(map(int, rle[1::2]))
-
-#     # Decode RLE data and create a binary mask
-#     mask = np.zeros(img_shape[0] * img_shape[1], dtype=np.uint8)
-#     for value, length in zip(values, lengths):
-#         mask[value : value + length] = 1
-#     mask = mask.reshape(img_shape).T
-
-#     # Decompress mask if necessary
-#     if mask.max() > 1:
-#         mask = zlib.decompress(mask)
-
-#     return mask
 
 
 def line_to_object(line):
@@ -112,9 +34,10 @@ def line_to_object(line):
 
 
     return {
-        "category_id": class_id,
         "bbox": bbox,
         "bbox_mode": BoxMode.XYWH_ABS,
+        "segmentation": rle,
+        "category_id": class_id,
     }
 
 def get_kitti_dicts(subset):
@@ -144,7 +67,6 @@ def get_kitti_dicts(subset):
         # construct a list of list named frames that contains the number of line that corresponds at each frame, for example: 
         #  frame = [[0,1],[2,3,4]]
         #  frame[0] = [0,1] -> lines 0 and 1 correspond to frame 0
-
         frames = []
         for i in range(len(lines)):
             if i == 0:
@@ -187,10 +109,11 @@ def get_kitti_dicts(subset):
 
 
 def register_kitti_dataset():
+    classes = [None, 'car', 'pedestrian']
     for subset in ["train", "val"]:
         DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset))
         print(f"Successfully registered 'kitti_{subset}'!")
-        MetadataCatalog.get(f"kitti_{subset}").thing_classes = classes
+        MetadataCatalog.get(f"kitti_{subset}").set(thing_classes = classes)
     
     kitty_metadata = MetadataCatalog.get("kitti_train")
     return kitty_metadata
@@ -202,12 +125,19 @@ if __name__ == "__main__":
     kitty_metadata = register_kitti_dataset()
     dataset_dicts = get_kitti_dicts("train")
 
-    count = 0 
-    # for d in random.sample(dataset_dicts, 3):
-    for d in dataset_dicts:
+    for i, d in enumerate(dataset_dicts):
         img = cv2.imread(d["file_name"])
         visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
         out = visualizer.draw_dataset_dict(d)
-        # cv2.imshow(out.get_image()[:, :, ::-1])
-        cv2.imwrite(f"test_{count}.png", out.get_image()[:, :, ::-1])
-        break
+        name = d["file_name"].split("/")[-1].split(".")[0]
+        cv2.imwrite(f"/ghome/group03/M5-Project/week2/Results/preprocessing/train_{name}.png", out.get_image()[:, :, ::-1])
+        if i == 4:
+            break
+
+
+    for d in random.sample(dataset_dicts, 3):
+        img = cv2.imread(d["file_name"])
+        visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
+        out = visualizer.draw_dataset_dict(d)
+        name = d["file_name"].split("/")[-1].split(".")[0]
+        cv2.imwrite(f"/ghome/group03/M5-Project/week2/Results/preprocessing/train_{name}.png", out.get_image()[:, :, ::-1])
