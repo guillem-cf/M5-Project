@@ -27,6 +27,7 @@ def line_to_object(line):
     mask = mask_utils.decode(rle)
     # mask = rle2mask(rle, (img_height, img_width))
     # if all pixels are 0, then the mask is invalid
+    
     if mask.sum() == 0:
         return None
     y, x = np.where(mask == 1)
@@ -46,12 +47,11 @@ def get_kitti_dicts(subset):
     images = "/home/group03/mcv/datasets/KITTI-MOTS/training/image_02/"
 
     if subset == "train":
-        # sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
-        sequences_id = ["0000"]
+        sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
 
     elif subset == "val":
-        # sequences_id = ["0002", "0006", "0007", "0008","0010","0013","0014","0016","0018"]
-        sequences_id = ["0002"]
+        sequences_id = ["0002", "0006", "0007", "0008","0010","0013","0014","0016","0018"]
+    
         
 
     dataset_dicts = []
