@@ -5,7 +5,10 @@
 #SBATCH --gres gpu:1 # Para pedir Pascales MAX 8
 #SBATCH -o %x_%u_%j.out # File to which STDOUT will be written
 #SBATCH -e %x_%u_%j.err # File to which STDERR will be written
+
+
 eval "$(conda shell.bash hook)"
 conda activate m5
 # commanda terminal --> sbatch --gres gpu:1 -n 10 job
-python inference.py
+python train.py --name faster_RCNN
+python train.py --name mask_RCNN
