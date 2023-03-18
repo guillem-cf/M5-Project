@@ -18,9 +18,11 @@ def line_to_object(line):
     #Each line of an annotation txt file is structured like this (where rle means run-length encoding from COCO): time_frame id class_id img_height img_width rle
 
     time_frame, obj_id, class_id, img_height, img_width, rle_aux = int(line[0]), int(line[1]), int(line[2]), int(line[3]), int(line[4]), line[5]
-
-    if class_id > 2:
+    
+    kitti_to_coco = {1:2, 2:0}
+    if class_id not in kitti_to_coco:
         return None
+    class_id = kitti_to_coco[class_id]
 
     #obj_instance_id = obj_id % 1000
 
@@ -39,7 +41,7 @@ def line_to_object(line):
     # segmentation is a polygon with n points, (x_i, y_i)
     # 'segmentation': [[x_0, y_0, x_1, y_1, ..., x_n, y_n]], 
     # bbox is a list of 4 numbers: [x, y, width, height]
-    poly = [(x, y) for x, y in zip(x, y)]
+    poly = [(x.tolist(), y.tolist()) for x, y in zip(x, y)]
     poly = [p for x in poly for p in x]
 
     return {
@@ -55,12 +57,12 @@ def get_kitti_dicts(subset):
     images = "/home/group03/mcv/datasets/KITTI-MOTS/training/image_02/"
 
     if subset == "train":
-        # sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
-        sequences_id = ["0000"]
+        sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
+        #sequences_id = ["0000"]
 
     elif subset == "val":
-        # sequences_id = ["0002", "0006", "0007", "0008","0010","0013","0014","0016","0018"]
-        sequences_id = ["0002"]
+        sequences_id = ["0002", "0006", "0007", "0008","0010","0013","0014","0016","0018"]
+        #sequences_id = ["0002"]
 
     elif subset == "test":
         sequences_id = ["0002", "0006", "0007", "0008","0010","0013","0014","0016","0018"]
@@ -121,7 +123,7 @@ def get_kitti_dicts(subset):
 
 
 def register_kitti_dataset(type="train"):  # type = "train" or "val"
-    classes = ['car', 'pedestrian']
+    classes = ['Car', 'Pedestrian']
     for subset in ["train", "val", "test"]:
         DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset))
         print(f"Successfully registered 'kitti_{subset}'!")
