@@ -58,14 +58,15 @@ def get_kitti_dicts(subset):
 
     if subset == "train":
         sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
-        #sequences_id = ["0000"]
+        # sequences_id = ["0000"]
 
     elif subset == "val":
         sequences_id = ["0002", "0006", "0007", "0008","0010","0013","0014","0016","0018"]
-        #sequences_id = ["0002"]
+        # sequences_id = ["0002"]
 
-    elif subset == "test":
-        sequences_id = ["0002", "0006", "0007", "0008","0010","0013","0014","0016","0018"]
+    elif subset == "val_subset":
+        sequences_id = ["0002", "0007","0010","0014","0018"]
+        # sequences_id = ["0002"]
         
 
     dataset_dicts = []
@@ -124,7 +125,7 @@ def get_kitti_dicts(subset):
 
 def register_kitti_dataset(type="train"):  # type = "train" or "val"
     classes = ['Car', 'Pedestrian']
-    for subset in ["train", "val", "test"]:
+    for subset in ["train", "val", "val_subset"]:
         DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset))
         print(f"Successfully registered 'kitti_{subset}'!")
         MetadataCatalog.get(f"kitti_{subset}").set(thing_classes = classes)
@@ -133,8 +134,8 @@ def register_kitti_dataset(type="train"):  # type = "train" or "val"
         kitty_metadata = MetadataCatalog.get("kitti_train")
     elif type == "val":
         kitty_metadata = MetadataCatalog.get("kitti_val")
-    elif type == "test":
-        kitty_metadata = MetadataCatalog.get("kitti_test")
+    elif type == "val_subset":
+        kitty_metadata = MetadataCatalog.get("kitti_val_subset")
 
     return kitty_metadata
 

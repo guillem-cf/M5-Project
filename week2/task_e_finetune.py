@@ -1,4 +1,12 @@
 
+import torch
+
+if torch.cuda.is_available():
+    print('CUDA is available!')
+else:
+    print('CUDA is NOT available')
+
+
 from detectron2.utils.logger import setup_logger
 setup_logger()
 
@@ -22,7 +30,7 @@ from formatDataset import register_kitti_dataset
 
 from datetime import datetime as dt
 
-import tensorboard
+import tensorboard 
 
 # include the utils folder in the path
 import sys
@@ -58,7 +66,7 @@ if __name__ == '__main__':
     # --------------------------------- DATASET --------------------------------- #
     # Register the dataset
     kitty_metadata = register_kitti_dataset()
-    
+
 
     # --------------------------------- MODEL ----------------------------------- #
     if args.network == 'faster_RCNN':
@@ -77,7 +85,7 @@ if __name__ == '__main__':
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model)  # Let training initialize from model zoo
 
     # Model
-    cfg.MODEL_MASK_ON = True  # If we want to use the mask
+    # cfg.MODEL_MASK_ON = True  # If we want to use the mask. Aquí no sé si per faster hauriem de posar false.
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 2
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128   # faster, and good enough for this toy dataset (default: 512)
     # cfg.MODEL.BACKBONE.NAME = 'build_resnet_fpn_backbone'
@@ -90,7 +98,7 @@ if __name__ == '__main__':
     cfg.SOLVER.STEPS = (1000, 2000, 2500)
     cfg.SOLVER.GAMMA = 0.5
     cfg.SOLVER.IMS_PER_BATCH = 2
-    cfg.SOLVER.AMP.ENABLED = True
+    # cfg.SOLVER.AMP.ENABLED = True
 
     # Test
     cfg.TEST.EVAL_PERIOD = 100
@@ -98,7 +106,7 @@ if __name__ == '__main__':
     # Dataset
     cfg.DATASETS.TRAIN = ("kitti_train",)
     # cfg.DATASETS.VAL = ("kitti_val",)
-    cfg.DATASETS.TEST = ("kitti_val",)   # Si es comenta això peta. 
+    cfg.DATASETS.TEST = ("kitti_val_subset",)   # Si es comenta això peta. 
     cfg.OUTPUT_DIR = output_path
 
     # Dataloader
@@ -108,7 +116,7 @@ if __name__ == '__main__':
 
 
     # --------------------------------- TRAINING --------------------------------- #
-    trainer = DefaultTrainer(cfg)
+    trainer = MyTrainer(cfg)
     trainer.resume_or_load(resume=False)
 
     # Compute the time
