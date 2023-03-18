@@ -7,7 +7,7 @@ wandb/
 *.err
 *.out
 *.pth
-
+*.json
 
 *.err
 *.out
