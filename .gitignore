@@ -6,6 +6,7 @@ wandb/
 *.h5
 *.err
 *.out
+*.pth
 
 
 *.err
