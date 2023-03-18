@@ -1,14 +1,14 @@
 import os
-from detectron2.data import MetadataCatalog, DatasetCatalog
-from detectron2.structures.boxes import BoxMode
 import cv2
-import pycocotools.mask as mask_utils
 import numpy as np
 import random
-from detectron2.utils.visualizer import Visualizer
-
 from tqdm import tqdm
 
+from detectron2.data import MetadataCatalog, DatasetCatalog
+from detectron2.structures.boxes import BoxMode
+from detectron2.utils.visualizer import Visualizer
+
+import pycocotools.mask as mask_utils
 
 
 
@@ -23,21 +23,29 @@ def line_to_object(line):
         return None
 
     #obj_instance_id = obj_id % 1000
+
     rle = {'size': [img_height, img_width], 'counts': rle_aux}
     mask = mask_utils.decode(rle)
-    # mask = rle2mask(rle, (img_height, img_width))
-    # if all pixels are 0, then the mask is invalid
-    
+
     if mask.sum() == 0:
         return None
     y, x = np.where(mask == 1)
     bbox = [int(np.min(x)), int(np.min(y)), int(np.max(x) - np.min(x)), int(np.max(y) - np.min(y))]
 
+    # rle_new = mask_utils.encode(np.asfortranarray(mask))
+    # rle_new['counts'] = rle_new['counts'].decode('UTF-8')
+
+    # https://towardsdatascience.com/train-maskrcnn-on-custom-dataset-with-detectron2-in-4-steps-5887a6aa135d
+    # segmentation is a polygon with n points, (x_i, y_i)
+    # 'segmentation': [[x_0, y_0, x_1, y_1, ..., x_n, y_n]], 
+    # bbox is a list of 4 numbers: [x, y, width, height]
+    poly = [(x, y) for x, y in zip(x, y)]
+    poly = [p for x in poly for p in x]
 
     return {
         "bbox": bbox,
         "bbox_mode": BoxMode.XYWH_ABS,
-        "segmentation": rle,
+        "segmentation": [poly],
         "category_id": class_id,
     }
 
@@ -47,11 +55,15 @@ def get_kitti_dicts(subset):
     images = "/home/group03/mcv/datasets/KITTI-MOTS/training/image_02/"
 
     if subset == "train":
-        sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
+        # sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
+        sequences_id = ["0000"]
 
     elif subset == "val":
+        # sequences_id = ["0002", "0006", "0007", "0008","0010","0013","0014","0016","0018"]
+        sequences_id = ["0002"]
+
+    elif subset == "test":
         sequences_id = ["0002", "0006", "0007", "0008","0010","0013","0014","0016","0018"]
-    
         
 
     dataset_dicts = []
@@ -92,36 +104,41 @@ def get_kitti_dicts(subset):
             record["height"] = height
             record["width"] = width
 
-            objs = []
-            for line in frame:
-                obj = line_to_object(lines[line])
-                if obj is not None:
-                    objs.append(obj)
+            if subset != "test":
+                objs = []
+                for line in frame:
+                    obj = line_to_object(lines[line])
+                    if obj is not None:
+                        objs.append(obj)
 
-            record["annotations"] = objs
+                record["annotations"] = objs
 
             dataset_dicts.append(record)
 
             idx += 1
         
-
     return dataset_dicts
 
 
-def register_kitti_dataset():
-    classes = [None, 'car', 'pedestrian']
-    for subset in ["train", "val"]:
+def register_kitti_dataset(type="train"):  # type = "train" or "val"
+    classes = ['car', 'pedestrian']
+    for subset in ["train", "val", "test"]:
         DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset))
         print(f"Successfully registered 'kitti_{subset}'!")
         MetadataCatalog.get(f"kitti_{subset}").set(thing_classes = classes)
-    
-    kitty_metadata = MetadataCatalog.get("kitti_train")
+
+    if type == "train":
+        kitty_metadata = MetadataCatalog.get("kitti_train")
+    elif type == "val":
+        kitty_metadata = MetadataCatalog.get("kitti_val")
+    elif type == "test":
+        kitty_metadata = MetadataCatalog.get("kitti_test")
+
     return kitty_metadata
 
 
 
 if __name__ == "__main__":
-
     kitty_metadata = register_kitti_dataset()
     dataset_dicts = get_kitti_dicts("train")
 
