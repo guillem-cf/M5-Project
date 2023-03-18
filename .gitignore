@@ -8,6 +8,8 @@ wandb/
 *.out
 *.pth
 *.json
+*.json.tmp
+*.pkl
 
 *.err
 *.out
