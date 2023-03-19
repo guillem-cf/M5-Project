@@ -35,8 +35,6 @@ def line_to_object(line, pretrained):
             return None
         class_id = class_id - 1
         
-    
-    
 
     # obj_instance_id = obj_id % 1000
 

@@ -57,10 +57,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # --------------------------------- W&B --------------------------------- #
-    run = wandb.init(sync_tensorboard=True,
-               settings=wandb.Settings(start_method="thread", console="off"), 
-               project = "M5_W2")
-    wandb.run.name = "FineTune"
+    # run = wandb.init(sync_tensorboard=True,
+    #            settings=wandb.Settings(start_method="thread", console="off"), 
+    #            project = "M5_W2")
+    # wandb.run.name = "FineTune"
 
     # --------------------------------- OUTPUT --------------------------------- #
     now = dt.now()
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     cfg.SOLVER.MAX_ITER = 100
     cfg.SOLVER.STEPS = (1000, 2000, 2500)
     cfg.SOLVER.GAMMA = 0.5
-    cfg.SOLVER.IMS_PER_BATCH = 16
+    cfg.SOLVER.IMS_PER_BATCH = 2
     cfg.SOLVER.CHECKPOINT_PERIOD = 100
     # cfg.SOLVER.AMP.ENABLED = True
 
@@ -154,4 +154,4 @@ if __name__ == '__main__':
     print("--------------------------------------------")
 
 
-    wandb.finish()
+    # wandb.finish()

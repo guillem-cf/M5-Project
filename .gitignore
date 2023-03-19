@@ -12,6 +12,7 @@ wandb/
 *.pkl
 
 ./week2/Results/*
+events*
 
 *.err
 *.out
