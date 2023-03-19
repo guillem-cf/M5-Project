@@ -4,19 +4,18 @@ from detectron2.utils.logger import setup_logger
 
 setup_logger()
 
+import argparse
+
 # import some common libraries
 import os
-import argparse
+from datetime import datetime
+
+from detectron2.config import get_cfg
+from detectron2.engine import DefaultTrainer
+from formatDataset import get_kitti_dicts, register_kitti_dataset
 
 # import some common detectron2 utilities
 from detectron2 import model_zoo
-from detectron2.config import get_cfg
-
-from detectron2.engine import DefaultTrainer
-
-from formatDataset import get_kitti_dicts, register_kitti_dataset
-
-from datetime import datetime
 
 # Obtain the path of the current file
 current_path = os.path.dirname(os.path.abspath(__file__))

@@ -3,13 +3,12 @@ import time
 import torch
 import torchvision.transforms as transforms
 import wandb
+from dataset.mit import MITDataset
+from models.resnet import ResNet
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchinfo import summary
 from tqdm import tqdm
-
-from dataset.mit import MITDataset
-from models.resnet import ResNet
 from utils.checkpoint import save_checkpoint
 from utils.early_stopper import EarlyStopper
 from utils.metrics import accuracy
@@ -49,33 +48,37 @@ def train(args):
 
     # Load the data
     transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH), antialias=False)])
+        [transforms.ToTensor(), transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH), antialias=False)]
+    )
 
     # Data augmentation
     if wandb.config.data_augmentation is True:
         transform = transforms.Compose(
-            [transforms.RandomHorizontalFlip(),
-             transforms.RandomAffine(degrees=0, shear=0, translate=(0, 0.1)),
-             transforms.ToTensor(),
-             transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH), antialias=False)])
+            [
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomAffine(degrees=0, shear=0, translate=(0, 0.1)),
+                transforms.ToTensor(),
+                transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH), antialias=False),
+            ]
+        )
 
-    train_dataset = MITDataset(data_dir=args.dataset_path, split_name='train',
-                               transform=transform)
-    train_loader = DataLoader(train_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=True, num_workers=4,
-                              pin_memory=True)
+    train_dataset = MITDataset(data_dir=args.dataset_path, split_name='train', transform=transform)
+    train_loader = DataLoader(
+        train_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True
+    )
 
-    val_dataset = MITDataset(data_dir=args.dataset_path, split_name='test',
-                             transform=transform)
-    val_loader = DataLoader(val_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=False, num_workers=4,
-                            pin_memory=True)
+    val_dataset = MITDataset(data_dir=args.dataset_path, split_name='test', transform=transform)
+    val_loader = DataLoader(
+        val_dataset, batch_size=wandb.config.BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True
+    )
 
     # Define the loss function
     loss_fn = torch.nn.CrossEntropyLoss()
 
     # Optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=wandb.config.LEARNING_RATE,
-                                 weight_decay=wandb.config.WEIGHT_DECAY)
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=wandb.config.LEARNING_RATE, weight_decay=wandb.config.WEIGHT_DECAY
+    )
 
     # Early stoppper
     early_stopper = EarlyStopper(patience=50, min_delta=10)
@@ -162,14 +165,26 @@ def train(args):
             is_best_acc = False
 
         if is_best_loss or is_best_acc:
-            print("Best model saved at epoch: ", epoch, " with val_loss: ", best_val_loss.item(), " and val_acc: ",
-                  best_val_acc)
-            save_checkpoint({'epoch': epoch,
-                             'state_dict': model.state_dict(),
-                             'best_val_loss': best_val_loss,
-                             'best_val_acc': best_val_acc,
-                             'optimizer': optimizer.state_dict(),
-                             }, is_best_loss, is_best_acc, filename=wandb.config.experiment_name + '.h5')
+            print(
+                "Best model saved at epoch: ",
+                epoch,
+                " with val_loss: ",
+                best_val_loss.item(),
+                " and val_acc: ",
+                best_val_acc,
+            )
+            save_checkpoint(
+                {
+                    'epoch': epoch,
+                    'state_dict': model.state_dict(),
+                    'best_val_loss': best_val_loss,
+                    'best_val_acc': best_val_acc,
+                    'optimizer': optimizer.state_dict(),
+                },
+                is_best_loss,
+                is_best_acc,
+                filename=wandb.config.experiment_name + '.h5',
+            )
 
         t1 = time.time()
         total_time += t1 - t0

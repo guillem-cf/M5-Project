@@ -4,7 +4,7 @@ import os
 
 def load_json_arr(json_path):
     lines = []
-    with open(json_path, 'r') as f:
+    with open(json_path) as f:
         for line in f:
             lines.append(json.loads(line))
     return lines
@@ -20,7 +20,7 @@ def get_class_name(class_id):
         5: 'Cyclist',
         6: 'Tram',
         7: 'Misc',
-        8: 'DontCare'
+        8: 'DontCare',
     }
 
     return classes.get(class_id)
@@ -68,9 +68,9 @@ def results_kitti(split_path, coco_results_path, kitti_results_path):
         bbox_height = detection['bbox'][3]
         confidence = detection['score']
 
-        result = "{} -1 -1 -10 {} {} {} {} -1 -1 -1 -1 -1 -1 -1 {}\n".format(detection_type, bbox_left, bbox_top,
-                                                                             bbox_left + bbox_width,
-                                                                             bbox_top + bbox_height, confidence)
+        result = "{} -1 -1 -10 {} {} {} {} -1 -1 -1 -1 -1 -1 -1 {}\n".format(
+            detection_type, bbox_left, bbox_top, bbox_left + bbox_width, bbox_top + bbox_height, confidence
+        )
         f = open(kitti_results_path + image_filename, "a+")
         f.write(result)
         f.close()
@@ -79,6 +79,8 @@ def results_kitti(split_path, coco_results_path, kitti_results_path):
 if __name__ == "__main__":
     split_path = '/home/mcv/datasets/KITTI/test_kitti.txt'
     coco_results_path = '/home/group02/week2/results/task_d/to_plot/faster_rcnn_R_50_FPN_3x/batch_size_512/inference/'
-    kitti_results_path = '/home/group02/week2/results/task_d/to_plot/faster_rcnn_R_50_FPN_3x/batch_size_512/inference/data_new/'
+    kitti_results_path = (
+        '/home/group02/week2/results/task_d/to_plot/faster_rcnn_R_50_FPN_3x/batch_size_512/inference/data_new/'
+    )
 
     results_kitti(split_path, coco_results_path, kitti_results_path)

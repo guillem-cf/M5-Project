@@ -9,22 +9,20 @@ from detectron2.utils.logger import setup_logger
 
 setup_logger()
 
-import os
 import argparse
-
-from detectron2 import model_zoo
-from detectron2.engine import DefaultPredictor
-from detectron2.config import get_cfg
-
-from detectron2.evaluation import inference_on_dataset
-from detectron2.data import build_detection_test_loader
-
-from formatDataset import register_kitti_dataset
-
-from datetime import datetime as dt
+import os
 
 # include the utils folder in the path
 import sys
+from datetime import datetime as dt
+
+from detectron2.config import get_cfg
+from detectron2.data import build_detection_test_loader
+from detectron2.engine import DefaultPredictor
+from detectron2.evaluation import inference_on_dataset
+from formatDataset import register_kitti_dataset
+
+from detectron2 import model_zoo
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 
@@ -36,7 +34,6 @@ from utils.MyTrainer import *
 current_path = os.path.dirname(os.path.abspath(__file__))
 
 if __name__ == '__main__':
-
     # --------------------------------- ARGS --------------------------------- #
     parser = argparse.ArgumentParser(description='Task E: Finetuning')
     parser.add_argument('--name', type=str, default='baseline', help='Name of the experiment')

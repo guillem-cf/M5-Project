@@ -5,17 +5,18 @@ from detectron2.utils.logger import setup_logger
 setup_logger()
 
 # import some common libraries
-import os, cv2
+import os
+
+import cv2
+from detectron2.config import get_cfg
+from detectron2.data import MetadataCatalog
+from detectron2.engine import DefaultPredictor
+from detectron2.utils.visualizer import Visualizer
 
 # import some common detectron2 utilities
 from detectron2 import model_zoo
-from detectron2.engine import DefaultPredictor
-from detectron2.config import get_cfg
-from detectron2.utils.visualizer import Visualizer
-from detectron2.data import MetadataCatalog
 
 if __name__ == '__main__':
-
     output_path = './Results/Task_c/mask_RCNN/'
     data_path = '/export/home/group03/mcv/datasets/KITTI-MOTS/testing/image_02/'
 
@@ -35,7 +36,6 @@ if __name__ == '__main__':
 
     # Loop over all subdirectories in the input path
     for seq_folder, dirs, files in os.walk(data_path):
-
         # Create the corresponding subdirectory in the output path
         sequenceOut_path = os.path.join(output_path, os.path.relpath(seq_folder, data_path))
         os.makedirs(sequenceOut_path, exist_ok=True)
@@ -44,7 +44,6 @@ if __name__ == '__main__':
 
         # Loop over all image files in the current subdirectory
         for file in files:
-
             if file.endswith(".png"):
                 image_path = os.path.join(seq_folder, file)
                 im = cv2.imread(image_path)

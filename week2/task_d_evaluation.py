@@ -7,18 +7,16 @@ setup_logger()
 # import some common libraries
 import argparse
 
-# import some common detectron2 utilities
-from detectron2 import model_zoo
-from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
-
-from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 from detectron2.data import build_detection_test_loader
-
+from detectron2.engine import DefaultPredictor
+from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 from formatDataset import get_kitti_dicts, register_kitti_dataset
 
-if __name__ == '__main__':
+# import some common detectron2 utilities
+from detectron2 import model_zoo
 
+if __name__ == '__main__':
     # args parser
     parser = argparse.ArgumentParser(description='Task C: Inference')
     parser.add_argument('--network', type=str, default='faster_RCNN', help='Network to use: faster_RCNN or mask_RCNN')

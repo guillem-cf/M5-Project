@@ -4,7 +4,7 @@ import random
 import cv2
 import numpy as np
 import pycocotools.mask as mask_utils
-from detectron2.data import MetadataCatalog, DatasetCatalog
+from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures.boxes import BoxMode
 from detectron2.utils.visualizer import Visualizer
 from tqdm import tqdm
@@ -15,8 +15,14 @@ def line_to_object(line):
 
     # Each line of an annotation txt file is structured like this (where rle means run-length encoding from COCO): time_frame id class_id img_height img_width rle
 
-    time_frame, obj_id, class_id, img_height, img_width, rle_aux = int(line[0]), int(line[1]), int(line[2]), int(
-        line[3]), int(line[4]), line[5]
+    time_frame, obj_id, class_id, img_height, img_width, rle_aux = (
+        int(line[0]),
+        int(line[1]),
+        int(line[2]),
+        int(line[3]),
+        int(line[4]),
+        line[5],
+    )
 
     kitti_to_coco = {1: 2, 2: 0}
     if class_id not in kitti_to_coco:
@@ -73,7 +79,7 @@ def get_kitti_dicts(subset):
     for seq_id in tqdm(sequences_id):
         sequence_txt = os.path.join(anotations_dir, seq_id + ".txt")
 
-        with open(sequence_txt, "r") as f:
+        with open(sequence_txt) as f:
             lines = f.readlines()
 
         # for each line in the txt file we have an integer on first position that represents the frame
@@ -146,8 +152,9 @@ if __name__ == "__main__":
         visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
         out = visualizer.draw_dataset_dict(d)
         name = d["file_name"].split("/")[-1].split(".")[0]
-        cv2.imwrite(f"/ghome/group03/M5-Project/week2/Results/preprocessing/train_{name}.png",
-                    out.get_image()[:, :, ::-1])
+        cv2.imwrite(
+            f"/ghome/group03/M5-Project/week2/Results/preprocessing/train_{name}.png", out.get_image()[:, :, ::-1]
+        )
         if i == 4:
             break
 
@@ -156,5 +163,6 @@ if __name__ == "__main__":
         visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
         out = visualizer.draw_dataset_dict(d)
         name = d["file_name"].split("/")[-1].split(".")[0]
-        cv2.imwrite(f"/ghome/group03/M5-Project/week2/Results/preprocessing/train_{name}.png",
-                    out.get_image()[:, :, ::-1])
+        cv2.imwrite(
+            f"/ghome/group03/M5-Project/week2/Results/preprocessing/train_{name}.png", out.get_image()[:, :, ::-1]
+        )

@@ -4,24 +4,26 @@ from detectron2.utils.logger import setup_logger
 
 setup_logger()
 
-# import some common libraries
-import os, cv2, random
 import argparse
+
+# import some common libraries
+import os
+import random
+
+import cv2
+from detectron2.config import get_cfg
+from detectron2.data import build_detection_test_loader
 
 # import some common detectron2 utilities
 from detectron2.engine import DefaultPredictor
-from detectron2.config import get_cfg
-from detectron2.utils.visualizer import Visualizer
-from detectron2.data import build_detection_test_loader
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset
-
+from detectron2.utils.visualizer import Visualizer
 from formatDataset import get_kitti_dicts, register_kitti_dataset
 
 # Obtain the path of the current file
 current_path = os.path.dirname(os.path.abspath(__file__))
 
 if __name__ == '__main__':
-
     # --------------------------------- ARGS --------------------------------- #
     parser = argparse.ArgumentParser(description='Task E: Inference&Evaluation')
     parser.add_argument('--network', type=str, required=True, help='Network to use: faster_RCNN or mask_RCNN')
@@ -55,9 +57,7 @@ if __name__ == '__main__':
     for d in random.sample(dataset_dicts, 10):
         im = cv2.imread(d["file_name"])
         outputs = predictor(im)
-        v = Visualizer(im[:, :, ::-1],
-                       metadata=kitti_metadata,  #  !!!!!!!!!!!!!!!
-                       scale=1.2)
+        v = Visualizer(im[:, :, ::-1], metadata=kitti_metadata, scale=1.2)  #  !!!!!!!!!!!!!!!
         out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
 
         cv2.imwrite(output_inference + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])

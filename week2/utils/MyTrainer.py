@@ -6,13 +6,15 @@ setup_logger()
 
 # import some common libraries
 import os
-# import some common detectron2 utilities
 
 from detectron2.engine import DefaultTrainer
-
 from detectron2.evaluation import COCOEvaluator
-
 from LossEvalHook import *
+
+# import some common detectron2 utilities
+
+
+
 
 
 class MyTrainer(DefaultTrainer):
@@ -24,13 +26,12 @@ class MyTrainer(DefaultTrainer):
 
     def build_hooks(self):
         hooks = super().build_hooks()
-        hooks.insert(-1, LossEvalHook(
-            self.cfg.TEST.EVAL_PERIOD,
-            self.model,
-            build_detection_test_loader(
-                self.cfg,
-                self.cfg.DATASETS.TEST[0],
-                DatasetMapper(self.cfg, True)
-            )
-        ))
+        hooks.insert(
+            -1,
+            LossEvalHook(
+                self.cfg.TEST.EVAL_PERIOD,
+                self.model,
+                build_detection_test_loader(self.cfg, self.cfg.DATASETS.TEST[0], DatasetMapper(self.cfg, True)),
+            ),
+        )
         return hooks

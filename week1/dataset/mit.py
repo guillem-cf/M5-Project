@@ -3,7 +3,6 @@ import os
 from PIL import Image
 from torch.utils.data import Dataset
 
-
 # from torchvision.transforms import transforms
 
 # # define the data directory and transform
@@ -21,6 +20,7 @@ from torch.utils.data import Dataset
 # # create the training and testing data loaders
 # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
 # test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32)
+
 
 class MITDataset(Dataset):
     def __init__(self, data_dir='/ghome/group03/mcv/m3/datasets/MIT_small_train_1', split_name='train', transform=None):
