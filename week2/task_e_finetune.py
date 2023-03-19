@@ -1,4 +1,9 @@
+import copy
+
 import torch
+from detectron2.data import build_detection_train_loader
+from detectron2.engine import HookBase
+from detectron2.utils import comm
 
 if torch.cuda.is_available():
     print('CUDA is available!')
@@ -22,7 +27,7 @@ from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import inference_on_dataset
-from formatDataset import register_kitti_dataset, get_kitti_dicts
+from formatDataset import get_kitti_dicts
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.evaluation import COCOEvaluator, DatasetEvaluators
 
@@ -31,7 +36,48 @@ from detectron2 import model_zoo
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 
 # from utils.MyTrainer import *
+class ValidationLoss(HookBase):
+    def __init__(self, cfg):
+        super().__init__()  # takes init from HookBase
+        self.cfg = cfg.clone()
+        self.cfg.DATASETS.TRAIN = cfg.DATASETS.TEST
+        self._loader = iter(
+            build_detection_train_loader(self.cfg)
+        )  # builds the dataloader from the provided cfg
+        self.best_loss = float("inf")  # Current best loss, initially infinite
+        self.weights = None  # Current best weights, initially none
+        self.i = 0  # Something to use for counting the steps
 
+    def after_step(self):  # after each step
+
+        if self.trainer.iter >= 0:
+            print(
+                f"----- Iteration num. {self.trainer.iter} -----"
+            )  # print the current iteration if it's divisible by 100
+
+        data = next(self._loader)  # load the next piece of data from the dataloader
+
+        with torch.no_grad():  # disables gradient calculation; we don't need it here because we're not training, just calculating the val loss
+            loss_dict = self.trainer.model(data)  # more about it in the next section
+
+            losses = sum(loss_dict.values())  #
+            assert torch.isfinite(losses).all(), loss_dict
+            loss_dict_reduced = {
+                "val_" + k: v.item() for k, v in comm.reduce_dict(loss_dict).items()
+            }
+            losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+
+            if comm.is_main_process():
+                self.trainer.storage.put_scalars(
+                    total_val_loss=losses_reduced, **loss_dict_reduced
+                )  # puts these metrics into the storage (where detectron2 logs metrics)
+
+                # save best weights
+                if losses_reduced < self.best_loss:  # if current loss is lower
+                    self.best_loss = losses_reduced  # saving the best loss
+                    self.weights = copy.deepcopy(
+                        self.trainer.model.state_dict()
+                    )  # saving the best weights
 class MyTrainer(DefaultTrainer):
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
@@ -133,6 +179,8 @@ if __name__ == '__main__':
     trainer = MyTrainer(cfg)
     # trainer = DefaultTrainer(cfg)
     trainer.resume_or_load(resume=False)
+    val_loss = ValidationLoss(cfg)
+    trainer.register_hooks([val_loss])
 
     # Compute the time
     start = dt.now()

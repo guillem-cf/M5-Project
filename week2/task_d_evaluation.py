@@ -1,6 +1,10 @@
 # Some basic setup:
 # Setup detectron2 logger
+import random
+
+import cv2
 from detectron2.utils.logger import setup_logger
+from detectron2.utils.visualizer import Visualizer
 
 setup_logger()
 
@@ -65,3 +69,15 @@ if __name__ == '__main__':
     # Evaluate the model
     val_loader = build_detection_test_loader(cfg, "kitti_val")
     print(inference_on_dataset(predictor.model, val_loader, evaluator))
+
+    # --------------------------------- INFERENCE --------------------------------- #
+    dataset_dicts = get_kitti_dicts('val', pretrained=True)
+    for d in random.sample(dataset_dicts, 10):
+        im = cv2.imread(d["file_name"])
+        outputs = predictor(im)
+        v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+        out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+
+        cv2.imwrite(output_path + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+
+        print("Processed image: " + d["file_name"].split('/')[-1])
