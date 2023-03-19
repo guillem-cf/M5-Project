@@ -11,6 +11,8 @@ wandb/
 *.json.tmp
 *.pkl
 
+./week2/Results/*
+
 *.err
 *.out
 *.jpg

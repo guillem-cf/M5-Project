@@ -19,6 +19,7 @@ from datetime import datetime as dt
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
+from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import inference_on_dataset
 from formatDataset import register_kitti_dataset
 
@@ -27,6 +28,7 @@ from detectron2 import model_zoo
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 
 from utils.MyTrainer import *
+from utils.LossEvalHook import *
 
 #  https://towardsdatascience.com/train-maskrcnn-on-custom-dataset-with-detectron2-in-4-steps-5887a6aa135d
 
@@ -85,6 +87,7 @@ if __name__ == '__main__':
     cfg.SOLVER.STEPS = (1000, 2000, 2500)
     cfg.SOLVER.GAMMA = 0.5
     cfg.SOLVER.IMS_PER_BATCH = 2
+    cfg.SOLVER.CHECKPOINT_PERIOD = 100
     # cfg.SOLVER.AMP.ENABLED = True
 
     # Test
@@ -103,10 +106,13 @@ if __name__ == '__main__':
 
     # --------------------------------- TRAINING --------------------------------- #
     trainer = MyTrainer(cfg)
+    # trainer = DefaultTrainer(cfg)
     trainer.resume_or_load(resume=False)
 
     # Compute the time
     start = dt.now()
+    trainer.build_hooks()
+    trainer.build_writers()
     trainer.train()
     end = dt.now()
     print('Time to train: ', end - start)

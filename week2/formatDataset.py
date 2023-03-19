@@ -53,25 +53,27 @@ def line_to_object(line):
         "bbox": bbox,
         "bbox_mode": BoxMode.XYWH_ABS,
         "segmentation": [poly],
+        # "segmentation": mask_utils.encode(np.asarray(mask.astype(np.uint8), order="F")),
         "category_id": class_id,
     }
 
 
 def get_kitti_dicts(subset):
-    anotations_dir = "../../datasets/KITTI-MOTS/instances_txt/"
-    images = "../../datasets/KITTI-MOTS/training/image_02/"
+    anotations_dir = "/ghome/group03/mcv/datasets/KITTI-MOTS/instances_txt/"
+    images = "/ghome/group03/mcv/datasets/KITTI-MOTS/training/image_02/"
 
     if subset == "train":
-        sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
-        # sequences_id = ["0000"]
+        # sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
+        sequences_id = ["0000", "0001", "0003"]
 
     elif subset == "val":
-        sequences_id = ["0002", "0006", "0007", "0008", "0010", "0013", "0014", "0016", "0018"]
-        # sequences_id = ["0002"]
+        # sequences_id = ["0002", "0006", "0007", "0008", "0010", "0013", "0014", "0016", "0018"]
+        sequences_id = ["0002"]
 
     elif subset == "val_subset":
-        sequences_id = ["0002", "0007", "0010", "0014", "0018"]
-        # sequences_id = ["0002"]
+        # sequences_id = ["0002", "0007", "0010", "0014", "0018"]
+        sequences_id = ["0002"]
+        sequences_id = ["0000", "0001", "0003"]
 
     dataset_dicts = []
     idx = 1
@@ -127,7 +129,7 @@ def get_kitti_dicts(subset):
 
 
 def register_kitti_dataset(type="train"):  # type = "train" or "val"
-    classes = ['Car', 'Pedestrian']
+    classes = ['person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck']
     for subset in ["train", "val", "val_subset"]:
         DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset))
         print(f"Successfully registered 'kitti_{subset}'!")
@@ -147,18 +149,18 @@ if __name__ == "__main__":
     kitty_metadata = register_kitti_dataset()
     dataset_dicts = get_kitti_dicts("train")
 
-    for i, d in enumerate(dataset_dicts):
-        img = cv2.imread(d["file_name"])
-        visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
-        out = visualizer.draw_dataset_dict(d)
-        name = d["file_name"].split("/")[-1].split(".")[0]
-        cv2.imwrite(
-            f"/ghome/group03/M5-Project/week2/Results/preprocessing/train_{name}.png", out.get_image()[:, :, ::-1]
-        )
-        if i == 4:
-            break
+    # for i, d in enumerate(dataset_dicts):
+    #     img = cv2.imread(d["file_name"])
+    #     visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
+    #     out = visualizer.draw_dataset_dict(d)
+    #     name = d["file_name"].split("/")[-1].split(".")[0]
+    #     cv2.imwrite(
+    #         f"/ghome/group03/M5-Project/week2/Results/preprocessing/train_{name}.png", out.get_image()[:, :, ::-1]
+    #     )
+    #     if i == 4:
+    #         break
 
-    for d in random.sample(dataset_dicts, 3):
+    for d in dataset_dicts:
         img = cv2.imread(d["file_name"])
         visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
         out = visualizer.draw_dataset_dict(d)
