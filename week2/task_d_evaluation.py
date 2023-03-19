@@ -20,10 +20,12 @@ if __name__ == '__main__':
     # args parser
     parser = argparse.ArgumentParser(description='Task C: Inference')
     parser.add_argument('--network', type=str, default='faster_RCNN', help='Network to use: faster_RCNN or mask_RCNN')
+    parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained model')
     args = parser.parse_args()
 
     dataset_dicts = get_kitti_dicts("val")
     # kitti_metadata = register_kitti_dataset("val")
+
     classes = ['person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck', 'traffic light', 'stop sign', 'parking meter',
                 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack',
                 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite',
@@ -37,7 +39,7 @@ if __name__ == '__main__':
         print(f"Successfully registered 'kitti_{subset}'!")
         MetadataCatalog.get(f"kitti_{subset}").set(thing_classes=classes)
 
-    kitty_metadata = MetadataCatalog.get("kitti_train")
+    # kitty_metadata = MetadataCatalog.get("kitti_train")
 
     cfg = get_cfg()
 
