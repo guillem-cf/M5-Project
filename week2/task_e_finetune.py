@@ -74,7 +74,7 @@ if __name__ == '__main__':
     #  Register the dataset
     classes = ['car', 'pedestrian']
     for subset in ["train", "val", "val_subset"]:
-        DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset))
+        DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset, pretrained=False))
         print(f"Successfully registered 'kitti_{subset}'!")
         MetadataCatalog.get(f"kitti_{subset}").set(thing_classes=classes)
 
@@ -136,8 +136,6 @@ if __name__ == '__main__':
 
     # Compute the time
     start = dt.now()
-    trainer.build_hooks()
-    trainer.build_writers()
     trainer.train()
     end = dt.now()
     print('Time to train: ', end - start)
