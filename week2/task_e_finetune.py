@@ -113,12 +113,11 @@ if __name__ == '__main__':
 
     # # --------------------------------- EVALUATION --------------------------------- #
     # cfg.DATASETS.TEST = ("kitti_val",)
-    predictor = DefaultPredictor(cfg)
 
     evaluator = COCOEvaluator("kitti_val", cfg, False, output_dir=output_path)
     val_loader = build_detection_test_loader(cfg, "kitti_val")
 
     print("-----------------Evaluation-----------------")
     print(model)
-    print(inference_on_dataset(predictor.model, val_loader, evaluator))
+    print(inference_on_dataset(trainer.model, val_loader, evaluator))
     print("--------------------------------------------")

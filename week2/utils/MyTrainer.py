@@ -14,9 +14,6 @@ from LossEvalHook import *
 # import some common detectron2 utilities
 
 
-
-
-
 class MyTrainer(DefaultTrainer):
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
