@@ -38,8 +38,11 @@ def line_to_object(line, pretrained):
 
     # obj_instance_id = obj_id % 1000
 
-    rle = {'size': [img_height, img_width], 'counts': rle_aux}
+    rle = {'size': [img_height, img_width], 'counts': rle_aux.encode('UTF-8')}
     mask = mask_utils.decode(rle)
+    # convert mask to binary mask
+    mask = np.where(mask > 0, 1, 0).astype(np.uint8)
+
 
     if mask.sum() == 0:
         return None
@@ -53,13 +56,15 @@ def line_to_object(line, pretrained):
     #  segmentation is a polygon with n points, (x_i, y_i)
     #  'segmentation': [[x_0, y_0, x_1, y_1, ..., x_n, y_n]],
     #  bbox is a list of 4 numbers: [x, y, width, height]
-    poly = [(x.tolist(), y.tolist()) for x, y in zip(x, y)]
-    poly = [p for x in poly for p in x]
+    # poly = [(x.tolist(), y.tolist()) for x, y in zip(x, y)]
+    # poly = [p for x in poly for p in x]
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    contours = [list(np.squeeze(contour).flatten().astype(float)) for contour in contours if len(contour) > 3]
 
     return {
         "bbox": bbox,
         "bbox_mode": BoxMode.XYWH_ABS,
-        "segmentation": [poly],
+        "segmentation": contours,
         # "segmentation": mask_utils.encode(np.asarray(mask.astype(np.uint8), order="F")),
         "category_id": class_id,
     }
@@ -167,6 +172,8 @@ if __name__ == "__main__":
     #     )
     #     if i == 4:
     #         break
+    if not os.path.exists("./Results/preprocessing"):
+        os.makedirs("./Results/preprocessing")
 
     for d in dataset_dicts:
         img = cv2.imread(d["file_name"])
@@ -174,5 +181,5 @@ if __name__ == "__main__":
         out = visualizer.draw_dataset_dict(d)
         name = d["file_name"].split("/")[-1].split(".")[0]
         cv2.imwrite(
-            f"/ghome/group03/M5-Project/week2/Results/preprocessing/train_{name}.png", out.get_image()[:, :, ::-1]
+            f"./Results/preprocessing/train_{name}.png", out.get_image()[:, :, ::-1]
         )
