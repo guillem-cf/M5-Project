@@ -35,7 +35,7 @@ if __name__ == '__main__':
     os.makedirs(output_path, exist_ok=True)
 
     # --------------------------------- DATASET --------------------------------- #
-    dataset_dicts = get_kitti_dicts("test")
+    dataset_dicts = get_kitti_dicts("val")
 
     # --------------------------------- MODEL --------------------------------- #
     if args.network == 'faster_RCNN':

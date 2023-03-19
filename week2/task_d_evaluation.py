@@ -23,8 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained model')
     args = parser.parse_args()
 
-    dataset_dicts = get_kitti_dicts("val")
-    # kitti_metadata = register_kitti_dataset("val")
+    # Register dataset
     classes = ['person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck', 'traffic light', 'stop sign', 'parking meter',
                 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack',
                 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite',
@@ -35,11 +34,11 @@ if __name__ == '__main__':
                 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']
     for subset in ["train", "val", "val_subset"]:
         DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset, pretrained=True))
-        print(f"Successfully registered 'kitti_{subset}'!")
         MetadataCatalog.get(f"kitti_{subset}").set(thing_classes=classes)
 
-    # kitty_metadata = MetadataCatalog.get("kitti_train")
 
+
+    # Config
     cfg = get_cfg()
 
     if args.network == 'faster_RCNN':
@@ -52,11 +51,17 @@ if __name__ == '__main__':
         cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml"))
         cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml")
 
+
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
     cfg.DATASETS.TEST = ("kitti_val",)
+
+
+    # Predictor
     predictor = DefaultPredictor(cfg)
 
+    # Evaluator
     evaluator = COCOEvaluator("kitti_val", cfg, False, output_dir=output_path)
-    val_loader = build_detection_test_loader(cfg, "kitti_val")
 
+    # Evaluate the model
+    val_loader = build_detection_test_loader(cfg, "kitti_val")
     print(inference_on_dataset(predictor.model, val_loader, evaluator))
