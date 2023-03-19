@@ -71,21 +71,17 @@ def line_to_object(line, pretrained):
 
 
 def get_kitti_dicts(subset, pretrained = False):
-    anotations_dir = "../../datasets/KITTI-MOTS/instances_txt/"
-    images = "../../datasets/KITTI-MOTS/training/image_02/"
+    anotations_dir = "/ghome/group03/mcv/datasets/KITTI-MOTS/instances_txt/"
+    images = "/ghome/group03/mcv/datasets/KITTI-MOTS/training/image_02/"
 
     if subset == "train":
         sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
-        # sequences_id = ["0000", "0001", "0003"]
-
+        
     elif subset == "val":
         sequences_id = ["0002", "0006", "0007", "0008", "0010", "0013", "0014", "0016", "0018"]
-        # sequences_id = ["0002"]
 
     elif subset == "val_subset":
-        sequences_id = ["0002", "0007", "0010", "0014", "0018"]
-        # sequences_id = ["0002"]
-        # sequences_id = ["0000", "0001", "0003"]
+        sequences_id = ["0002", "0007"]
 
     dataset_dicts = []
     idx = 1
@@ -98,21 +94,25 @@ def get_kitti_dicts(subset, pretrained = False):
 
         # for each line in the txt file we have an integer on first position that represents the frame
         # construct a list of list named frames that contains the number of line that corresponds at each frame, for example:
-        #  frame = [[0,1],[2,3,4]]
-        #  frame[0] = [0,1] -> lines 0 and 1 correspond to frame 0
-        frames = []
-        for i in range(len(lines)):
-            if i == 0:
-                frames.append([i])
-            else:
-                if int(lines[i].split(" ")[0]) == int(lines[i - 1].split(" ")[0]):
-                    frames[-1].append(i)
-                else:
-                    frames.append([i])
+        # if the frame doesn't appear in the txt file, the list is empty
+        # 0 0 0 1 1 3 in the txt file corresponds to {0:[0,1,2], 1:[3,4], 2:[],  3:[5]}
+        frames = {}
+        for i, line in enumerate(lines):
+            frame = int(line.split(" ")[0])
+            if frame not in frames:
+                frames[frame] = []
+            frames[frame].append(i)
+
 
         for i, frame in enumerate(frames):
             record = {}
-            time_frame = str(i).zfill(6)
+            # if frame == []:
+            #     record["file_name"] = filename
+            #     record["image_id"] = idx
+            #     record["height"] = height
+            #     record["width"] = width
+                
+            time_frame = str(frame).zfill(6)
             #  time_frame = str(line.split(" ")[0]).zfill(6)
 
             filename = os.path.join(images, seq_id, time_frame + ".png")
@@ -126,7 +126,7 @@ def get_kitti_dicts(subset, pretrained = False):
 
             if subset != "test":
                 objs = []
-                for line in frame:
+                for line in frames[frame]:
                     obj = line_to_object(lines[line], pretrained)
                     if obj is not None:
                         objs.append(obj)
@@ -172,14 +172,17 @@ if __name__ == "__main__":
     #     )
     #     if i == 4:
     #         break
-    if not os.path.exists("./Results/preprocessing"):
-        os.makedirs("./Results/preprocessing")
+    if not os.path.exists("./Results/preprocessing_1"):
+        os.makedirs("./Results/preprocessing_1")
 
-    for d in dataset_dicts:
-        img = cv2.imread(d["file_name"])
-        visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
-        out = visualizer.draw_dataset_dict(d)
-        name = d["file_name"].split("/")[-1].split(".")[0]
-        cv2.imwrite(
-            f"./Results/preprocessing/train_{name}.png", out.get_image()[:, :, ::-1]
-        )
+    # for d in random(dataset_dicts, 30):
+    # draw 30 random elements from dataset_dicts
+    for i, d in enumerate(dataset_dicts):
+            img = cv2.imread(d["file_name"])
+            visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
+            out = visualizer.draw_dataset_dict(d)
+            sequence = d["file_name"].split("/")[-2]
+            name = d["file_name"].split("/")[-1].split(".")[0]
+            cv2.imwrite(
+                f"./Results/preprocessing_1/train_{sequence}_{name}.png", out.get_image()[:, :, ::-1]
+            )
