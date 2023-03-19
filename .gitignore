@@ -13,6 +13,7 @@ wandb/
 
 ./week2/Results/*
 events*
+kitti*
 
 *.err
 *.out

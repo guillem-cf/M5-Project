@@ -10,5 +10,5 @@
 eval "$(conda shell.bash hook)"
 conda activate m5
 # commanda terminal --> sbatch --gres gpu:1 -n 10 Task_e_job
-python task_e_finetune.py --name finetune_faster_RCNN --network faster_RCNN
+python task_e_finetune.py --name finetune_faster_RCNN_new_new --network faster_RCNN
 # python task_e_finetune.py --name finetune --network mask_RCNN

@@ -142,7 +142,7 @@ def get_kitti_dicts(subset, pretrained = False):
 
 def register_kitti_dataset(type="train"):  # type = "train" or "val"
     # classes = ['person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck']
-    classes = ['car', 'bicycle', 'person', 'motorcycle', 'bus', 'truck']
+    classes = ['car', 'pedestrian']
     for subset in ["train", "val", "val_subset"]:
         DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset))
         print(f"Successfully registered 'kitti_{subset}'!")
