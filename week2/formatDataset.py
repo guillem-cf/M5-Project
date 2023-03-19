@@ -66,8 +66,8 @@ def line_to_object(line, pretrained):
 
 
 def get_kitti_dicts(subset, pretrained = False):
-    anotations_dir = "/ghome/group03/mcv/datasets/KITTI-MOTS/instances_txt/"
-    images = "/ghome/group03/mcv/datasets/KITTI-MOTS/training/image_02/"
+    anotations_dir = "../../datasets/KITTI-MOTS/instances_txt/"
+    images = "../../datasets/KITTI-MOTS/training/image_02/"
 
     if subset == "train":
         sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
