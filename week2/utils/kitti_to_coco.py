@@ -1,5 +1,5 @@
-import numpy as np
-import os, json, random
+import json
+import os
 
 
 def load_json_arr(json_path):
@@ -9,23 +9,24 @@ def load_json_arr(json_path):
             lines.append(json.loads(line))
     return lines
 
+
 def get_class_name(class_id):
     classes = {
-      0:'Car',
-      1:'Van',
-      2:'Truck',
-      3:'Pedestrian',
-      4:'Person_sitting',
-      5:'Cyclist',
-      6:'Tram',
-      7:'Misc',
-      8:'DontCare'  
+        0: 'Car',
+        1: 'Van',
+        2: 'Truck',
+        3: 'Pedestrian',
+        4: 'Person_sitting',
+        5: 'Cyclist',
+        6: 'Tram',
+        7: 'Misc',
+        8: 'DontCare'
     }
 
     return classes.get(class_id)
 
 
-def results_kitti(split_path,coco_results_path,kitti_results_path):
+def results_kitti(split_path, coco_results_path, kitti_results_path):
     '''
     Car 0.00 0 -1.69 652.16 179.52 699.38 216.18 1.38 1.49 3.32 2.56 1.66 29.10 -1.60
     #Values    Name      Description
@@ -54,7 +55,7 @@ def results_kitti(split_path,coco_results_path,kitti_results_path):
         for line in split_f:
             dataset_list.append(line.strip())
 
-    coco_results_json = load_json_arr(coco_results_path+'coco_instances_results.json')
+    coco_results_json = load_json_arr(coco_results_path + 'coco_instances_results.json')
 
     for detection in coco_results_json[0]:
         image_id = detection['image_id']
@@ -66,9 +67,11 @@ def results_kitti(split_path,coco_results_path,kitti_results_path):
         bbox_width = detection['bbox'][2]
         bbox_height = detection['bbox'][3]
         confidence = detection['score']
-    
-        result = "{} -1 -1 -10 {} {} {} {} -1 -1 -1 -1 -1 -1 -1 {}\n".format(detection_type,bbox_left,bbox_top,bbox_left+bbox_width,bbox_top+bbox_height,confidence)
-        f = open(kitti_results_path+image_filename, "a+")
+
+        result = "{} -1 -1 -10 {} {} {} {} -1 -1 -1 -1 -1 -1 -1 {}\n".format(detection_type, bbox_left, bbox_top,
+                                                                             bbox_left + bbox_width,
+                                                                             bbox_top + bbox_height, confidence)
+        f = open(kitti_results_path + image_filename, "a+")
         f.write(result)
         f.close()
 
@@ -77,5 +80,5 @@ if __name__ == "__main__":
     split_path = '/home/mcv/datasets/KITTI/test_kitti.txt'
     coco_results_path = '/home/group02/week2/results/task_d/to_plot/faster_rcnn_R_50_FPN_3x/batch_size_512/inference/'
     kitti_results_path = '/home/group02/week2/results/task_d/to_plot/faster_rcnn_R_50_FPN_3x/batch_size_512/inference/data_new/'
-    
-    results_kitti(split_path,coco_results_path,kitti_results_path)
+
+    results_kitti(split_path, coco_results_path, kitti_results_path)

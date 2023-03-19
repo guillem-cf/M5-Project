@@ -1,4 +1,3 @@
-
 import torch
 
 if torch.cuda.is_available():
@@ -6,47 +5,38 @@ if torch.cuda.is_available():
 else:
     print('CUDA is NOT available')
 
-
 from detectron2.utils.logger import setup_logger
+
 setup_logger()
 
-
-import numpy as np
-import os, json, cv2, random
+import os
 import argparse
-
 
 from detectron2 import model_zoo
 from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
-from detectron2.utils.visualizer import Visualizer
-from detectron2.data import MetadataCatalog, DatasetCatalog
 
-from detectron2.evaluation import COCOEvaluator, inference_on_dataset
+from detectron2.evaluation import inference_on_dataset
 from detectron2.data import build_detection_test_loader
-from detectron2.engine import DefaultTrainer
 
 from formatDataset import register_kitti_dataset
 
 from datetime import datetime as dt
 
-import tensorboard 
-
 # include the utils folder in the path
 import sys
+
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 
-from utils.LossEvalHook import *
 from utils.MyTrainer import *
 
-
-# https://towardsdatascience.com/train-maskrcnn-on-custom-dataset-with-detectron2-in-4-steps-5887a6aa135d
+#  https://towardsdatascience.com/train-maskrcnn-on-custom-dataset-with-detectron2-in-4-steps-5887a6aa135d
 
 # Obtain the path of the current file
 current_path = os.path.dirname(os.path.abspath(__file__))
 
 if __name__ == '__main__':
-  
+
     # --------------------------------- ARGS --------------------------------- #
     parser = argparse.ArgumentParser(description='Task E: Finetuning')
     parser.add_argument('--name', type=str, default='baseline', help='Name of the experiment')
@@ -58,15 +48,13 @@ if __name__ == '__main__':
     now = dt.now()
     dt_string = now.strftime("%d_%m_%Y_%H_%M_%S")
 
-    output_path = os.path.join(current_path,f'Results/Task_e/{dt_string}_{args.name}/{args.network}')
-    
+    output_path = os.path.join(current_path, f'Results/Task_e/{dt_string}_{args.name}/{args.network}')
+
     os.makedirs(output_path, exist_ok=True)
 
-
     # --------------------------------- DATASET --------------------------------- #
-    # Register the dataset
+    #  Register the dataset
     kitty_metadata = register_kitti_dataset()
-
 
     # --------------------------------- MODEL ----------------------------------- #
     if args.network == 'faster_RCNN':
@@ -77,8 +65,10 @@ if __name__ == '__main__':
         print('Network not found')
         exit()
 
-    # Create the config
+    #  Create the config
     cfg = get_cfg()
+
+    print(cfg)
 
     # get the config from the model zoo
     cfg.merge_from_file(model_zoo.get_config_file(model))
@@ -87,10 +77,10 @@ if __name__ == '__main__':
     # Model
     # cfg.MODEL_MASK_ON = True  # If we want to use the mask. Aquí no sé si per faster hauriem de posar false.
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 2
-    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128   # faster, and good enough for this toy dataset (default: 512)
-    # cfg.MODEL.BACKBONE.NAME = 'build_resnet_fpn_backbone'
-    # cfg.MODEL.BACKBONE.FREEZE_AT = 2
-    # cfg.MODEL.RESNETS.DEPTH = 50
+    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
+    #  cfg.MODEL.BACKBONE.NAME = 'build_resnet_fpn_backbone'
+    #  cfg.MODEL.BACKBONE.FREEZE_AT = 2
+    #  cfg.MODEL.RESNETS.DEPTH = 50
 
     # Solver
     cfg.SOLVER.BASE_LR = 0.001  # pick a good LR
@@ -105,15 +95,14 @@ if __name__ == '__main__':
 
     # Dataset
     cfg.DATASETS.TRAIN = ("kitti_train",)
-    # cfg.DATASETS.VAL = ("kitti_val",)
-    cfg.DATASETS.TEST = ("kitti_val_subset",)   # Si es comenta això peta. 
+    #  cfg.DATASETS.VAL = ("kitti_val",)
+    cfg.DATASETS.TEST = ("kitti_val_subset",)  # Si es comenta això peta.
     cfg.OUTPUT_DIR = output_path
 
     # Dataloader
     cfg.DATALOADER.NUM_WORKERS = 4
 
     print(cfg)
-
 
     # --------------------------------- TRAINING --------------------------------- #
     trainer = MyTrainer(cfg)
@@ -127,18 +116,12 @@ if __name__ == '__main__':
 
     # # --------------------------------- EVALUATION --------------------------------- #
     # cfg.DATASETS.TEST = ("kitti_val",)
-    
+    predictor = DefaultPredictor(cfg)
+
     evaluator = COCOEvaluator("kitti_val", cfg, False, output_dir=output_path)
     val_loader = build_detection_test_loader(cfg, "kitti_val")
 
     print("-----------------Evaluation-----------------")
     print(model)
-    print(inference_on_dataset(trainer.model, val_loader, evaluator))
+    print(inference_on_dataset(predictor.model, val_loader, evaluator))
     print("--------------------------------------------")
-
-
-
-
-
-
-

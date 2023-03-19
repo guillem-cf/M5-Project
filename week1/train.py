@@ -2,12 +2,12 @@ import time
 
 import torch
 import torchvision.transforms as transforms
+import wandb
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchinfo import summary
 from tqdm import tqdm
 
-import wandb
 from dataset.mit import MITDataset
 from models.resnet import ResNet
 from utils.checkpoint import save_checkpoint
@@ -19,7 +19,7 @@ def train(args):
     if torch.cuda.is_available():
         print("CUDA is available")
         device = torch.device("cuda")
-        scaler = torch.cuda.amp.GradScaler()
+        torch.cuda.amp.GradScaler()
     elif torch.backends.mps.is_available():
         print("MPS is available")
         device = torch.device("mps")
@@ -53,7 +53,7 @@ def train(args):
          transforms.Resize((wandb.config.IMG_HEIGHT, wandb.config.IMG_WIDTH), antialias=False)])
 
     # Data augmentation
-    if wandb.config.data_augmentation == True:
+    if wandb.config.data_augmentation is True:
         transform = transforms.Compose(
             [transforms.RandomHorizontalFlip(),
              transforms.RandomAffine(degrees=0, shear=0, translate=(0, 0.1)),

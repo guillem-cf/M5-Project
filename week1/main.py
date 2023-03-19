@@ -4,9 +4,9 @@ import argparse
 import functools
 import os
 
+import wandb
 import yaml
 
-import wandb
 from train import train
 
 

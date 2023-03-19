@@ -86,4 +86,3 @@ parameters:
     value: 0
   brightness_range:
     value: [ 0.5, 1.5 ]
-

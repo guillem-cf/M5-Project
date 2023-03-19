@@ -12,7 +12,7 @@ def test(model, test_loader, loss_fn):
             labels = labels.to(device)
             images = images.to(device)
 
-            # Forward pass 
+            # Forward pass
             outputs = model(images)
             loss = loss_fn(outputs, labels)
 

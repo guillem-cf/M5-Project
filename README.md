@@ -10,8 +10,8 @@ autonomous driving technology.
 # Team 3
 
 | Members           | GitHub      | Contact                 |
-|:------------------|:------------|:------------------------| 
-| Guillem Capellera | guillem-cf  | guillemcafo@gmail.com   | 
+|:------------------|:------------|:------------------------|
+| Guillem Capellera | guillem-cf  | guillemcafo@gmail.com   |
 | Anna Oliveras     | aolivtous   | aoliverastous@gmail.com |
 | Abel García       | abel-gr     | abelgr013@gmail.com     |
 | Johnny Núñez      | johnnynunez | johnnynuca14@gmail.com  |
@@ -19,7 +19,8 @@ autonomous driving technology.
 # Project
 
 ### [Week 1: Introduction to Pytorch](https://github.com/guillem-cf/M5-Project/tree/main/week1)
- [Slides](https://docs.google.com/presentation/d/1qPf1RUKpmfSq_BdrmfMl7UuYYeT9Pomr/edit?usp=sharing&ouid=102961831843164052332&rtpof=true&sd=true)
+
+[Slides](https://docs.google.com/presentation/d/1qPf1RUKpmfSq_BdrmfMl7UuYYeT9Pomr/edit?usp=sharing&ouid=102961831843164052332&rtpof=true&sd=true)
 
 ### [Week 2:](https://github.com/guillem-cf/M5-Project/tree/main/week2)
 
