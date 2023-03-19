@@ -15,20 +15,33 @@ import os
 # include the utils folder in the path
 import sys
 from datetime import datetime as dt
+import wandb
 
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
 from detectron2.engine import DefaultPredictor
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import inference_on_dataset
-from formatDataset import register_kitti_dataset
+from formatDataset import register_kitti_dataset, get_kitti_dicts
+from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.evaluation import COCOEvaluator, DatasetEvaluators
 
 from detectron2 import model_zoo
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
 
-from utils.MyTrainer import *
-from utils.LossEvalHook import *
+# from utils.MyTrainer import *
+
+class MyTrainer(DefaultTrainer):
+    @classmethod
+    def build_evaluator(cls, cfg, dataset_name, output_folder=None):
+        if output_folder is None:
+            output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
+        coco_evaluator = COCOEvaluator(dataset_name, output_dir=output_folder)
+        
+        evaluator_list = [coco_evaluator]
+        
+        return DatasetEvaluators(evaluator_list)
 
 #  https://towardsdatascience.com/train-maskrcnn-on-custom-dataset-with-detectron2-in-4-steps-5887a6aa135d
 
@@ -43,6 +56,12 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train')
     args = parser.parse_args()
 
+    # --------------------------------- W&B --------------------------------- #
+    run = wandb.init(sync_tensorboard=True,
+               settings=wandb.Settings(start_method="thread", console="off"), 
+               project = "M5_W2")
+    wandb.run.name = "FineTune"
+
     # --------------------------------- OUTPUT --------------------------------- #
     now = dt.now()
     dt_string = now.strftime("%d_%m_%Y_%H_%M_%S")
@@ -53,7 +72,13 @@ if __name__ == '__main__':
 
     # --------------------------------- DATASET --------------------------------- #
     #  Register the dataset
-    kitty_metadata = register_kitti_dataset()
+    classes = ['car', 'pedestrian']
+    for subset in ["train", "val", "val_subset"]:
+        DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset))
+        print(f"Successfully registered 'kitti_{subset}'!")
+        MetadataCatalog.get(f"kitti_{subset}").set(thing_classes=classes)
+
+    kitty_metadata = MetadataCatalog.get("kitti_train")
 
     # --------------------------------- MODEL ----------------------------------- #
     if args.network == 'faster_RCNN':
@@ -83,10 +108,10 @@ if __name__ == '__main__':
 
     # Solver
     cfg.SOLVER.BASE_LR = 0.001  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 3000
+    cfg.SOLVER.MAX_ITER = 100
     cfg.SOLVER.STEPS = (1000, 2000, 2500)
     cfg.SOLVER.GAMMA = 0.5
-    cfg.SOLVER.IMS_PER_BATCH = 2
+    cfg.SOLVER.IMS_PER_BATCH = 16
     cfg.SOLVER.CHECKPOINT_PERIOD = 100
     # cfg.SOLVER.AMP.ENABLED = True
 
@@ -127,3 +152,6 @@ if __name__ == '__main__':
     print(model)
     print(inference_on_dataset(trainer.model, val_loader, evaluator))
     print("--------------------------------------------")
+
+
+    wandb.finish()

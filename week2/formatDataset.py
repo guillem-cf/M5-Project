@@ -10,7 +10,7 @@ from detectron2.utils.visualizer import Visualizer
 from tqdm import tqdm
 
 
-def line_to_object(line):
+def line_to_object(line, pretrained):
     line = line.replace("\n", "").split(" ")
 
     # Each line of an annotation txt file is structured like this (where rle means run-length encoding from COCO): time_frame id class_id img_height img_width rle
@@ -24,10 +24,19 @@ def line_to_object(line):
         line[5],
     )
 
-    kitti_to_coco = {1: 2, 2: 0}
-    if class_id not in kitti_to_coco:
-        return None
-    class_id = kitti_to_coco[class_id]
+    if pretrained:
+        kitti_to_coco = {1: 2, 2: 0}
+        if class_id not in kitti_to_coco:
+            return None
+        class_id = kitti_to_coco[class_id]
+
+    else:
+        if class_id > 2:
+            return None
+        class_id = class_id - 1
+        
+    
+    
 
     # obj_instance_id = obj_id % 1000
 
@@ -58,7 +67,7 @@ def line_to_object(line):
     }
 
 
-def get_kitti_dicts(subset):
+def get_kitti_dicts(subset, pretrained = False):
     anotations_dir = "/ghome/group03/mcv/datasets/KITTI-MOTS/instances_txt/"
     images = "/ghome/group03/mcv/datasets/KITTI-MOTS/training/image_02/"
 
@@ -115,7 +124,7 @@ def get_kitti_dicts(subset):
             if subset != "test":
                 objs = []
                 for line in frame:
-                    obj = line_to_object(lines[line])
+                    obj = line_to_object(lines[line], pretrained)
                     if obj is not None:
                         objs.append(obj)
 
@@ -129,7 +138,8 @@ def get_kitti_dicts(subset):
 
 
 def register_kitti_dataset(type="train"):  # type = "train" or "val"
-    classes = ['person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck']
+    # classes = ['person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck']
+    classes = ['car', 'bicycle', 'person', 'motorcycle', 'bus', 'truck']
     for subset in ["train", "val", "val_subset"]:
         DatasetCatalog.register(f"kitti_{subset}", lambda subset=subset: get_kitti_dicts(subset))
         print(f"Successfully registered 'kitti_{subset}'!")
