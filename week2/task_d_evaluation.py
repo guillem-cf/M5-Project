@@ -25,7 +25,6 @@ if __name__ == '__main__':
 
     dataset_dicts = get_kitti_dicts("val")
     # kitti_metadata = register_kitti_dataset("val")
-
     classes = ['person', 'bicycle', 'car', 'motorcycle', 'bus', 'truck', 'traffic light', 'stop sign', 'parking meter',
                 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack',
                 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite',

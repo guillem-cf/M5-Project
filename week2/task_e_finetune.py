@@ -57,10 +57,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # --------------------------------- W&B --------------------------------- #
-    # run = wandb.init(sync_tensorboard=True,
-    #            settings=wandb.Settings(start_method="thread", console="off"), 
-    #            project = "M5_W2")
-    # wandb.run.name = "FineTune"
+    run = wandb.init(sync_tensorboard=True,
+               settings=wandb.Settings(start_method="thread", console="off"), 
+               project = "M5_W2")
+    wandb.run.name = args.name
 
     # --------------------------------- OUTPUT --------------------------------- #
     now = dt.now()
@@ -108,7 +108,7 @@ if __name__ == '__main__':
 
     # Solver
     cfg.SOLVER.BASE_LR = 0.001  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 100
+    cfg.SOLVER.MAX_ITER = 3000
     cfg.SOLVER.STEPS = (1000, 2000, 2500)
     cfg.SOLVER.GAMMA = 0.5
     cfg.SOLVER.IMS_PER_BATCH = 2
@@ -142,14 +142,17 @@ if __name__ == '__main__':
 
     # # --------------------------------- EVALUATION --------------------------------- #
     # cfg.DATASETS.TEST = ("kitti_val",)
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+
+    predictor = DefaultPredictor(cfg)
 
     evaluator = COCOEvaluator("kitti_val", cfg, False, output_dir=output_path)
     val_loader = build_detection_test_loader(cfg, "kitti_val")
 
     print("-----------------Evaluation-----------------")
     print(model)
-    print(inference_on_dataset(trainer.model, val_loader, evaluator))
+    print(inference_on_dataset(predictor.model, val_loader, evaluator))
     print("--------------------------------------------")
 
 
-    # wandb.finish()
+    wandb.finish()
