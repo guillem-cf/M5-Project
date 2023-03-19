@@ -78,9 +78,9 @@ def results_kitti(split_path, coco_results_path, kitti_results_path):
 
 if __name__ == "__main__":
     split_path = '/home/mcv/datasets/KITTI/test_kitti.txt'
-    coco_results_path = '/home/group02/week2/results/task_d/to_plot/faster_rcnn_R_50_FPN_3x/batch_size_512/inference/'
+    coco_results_path = '/home/group03/week2/results/task_d/to_plot/faster_rcnn_R_50_FPN_3x/batch_size_512/inference/'
     kitti_results_path = (
-        '/home/group02/week2/results/task_d/to_plot/faster_rcnn_R_50_FPN_3x/batch_size_512/inference/data_new/'
+        '/home/group03/week2/results/task_d/to_plot/faster_rcnn_R_50_FPN_3x/batch_size_512/inference/data_new/'
     )
 
     results_kitti(split_path, coco_results_path, kitti_results_path)
