@@ -70,17 +70,17 @@ def get_kitti_dicts(subset, pretrained = False):
     images = "/ghome/group03/mcv/datasets/KITTI-MOTS/training/image_02/"
 
     if subset == "train":
-        # sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
-        sequences_id = ["0000", "0001", "0003"]
+        sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
+        # sequences_id = ["0000", "0001", "0003"]
 
     elif subset == "val":
-        # sequences_id = ["0002", "0006", "0007", "0008", "0010", "0013", "0014", "0016", "0018"]
-        sequences_id = ["0002"]
+        sequences_id = ["0002", "0006", "0007", "0008", "0010", "0013", "0014", "0016", "0018"]
+        # sequences_id = ["0002"]
 
     elif subset == "val_subset":
-        # sequences_id = ["0002", "0007", "0010", "0014", "0018"]
-        sequences_id = ["0002"]
-        sequences_id = ["0000", "0001", "0003"]
+        sequences_id = ["0002", "0007", "0010", "0014", "0018"]
+        # sequences_id = ["0002"]
+        # sequences_id = ["0000", "0001", "0003"]
 
     dataset_dicts = []
     idx = 1
