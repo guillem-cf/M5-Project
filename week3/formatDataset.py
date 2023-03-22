@@ -13,13 +13,13 @@ def get_ooc_dicts(subset, pretrained = False):
     images = "/ghome/group03/mcv/datasets/out_of_context/"
 
     if subset == "train":
-        sequences_id = ["001", "002", "003", "004", "005", "006", "007", "008", "009", "010", "011", "012", "013", "014", "015"]
+        sequences_id = os.listdir(images)
         
     elif subset == "val":
-        sequences_id = ["001", "002", "003", "004", "005", "006", "007", "008", "009", "010", "011", "012", "013", "014", "015"]
+        sequences_id = os.listdir(images)
 
     elif subset == "val_subset":
-        sequences_id = ["001", "002", "003", "004", "005", "006", "007", "008", "009", "010", "011", "012", "013", "014", "015"]
+        sequences_id = os.listdir(images)
 
     dataset_dicts = []
     idx = 1
@@ -28,7 +28,7 @@ def get_ooc_dicts(subset, pretrained = False):
             
         record = {}
 
-        filename = os.path.join(images, "im" + str(seq_id) + ".jpg")
+        filename = os.path.join(images, str(seq_id))
 
         height, width = cv2.imread(filename).shape[:2]
 
