@@ -162,6 +162,3 @@ if __name__ == '__main__':
                 print("Processed image: " + d["file_name"].split('/')[-1])
 
                 break
-
-
-        
