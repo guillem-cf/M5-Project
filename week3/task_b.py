@@ -142,7 +142,7 @@ if __name__ == '__main__':
                 im2b = im2[np.min(a[0]):np.max(a[0])+1, np.min(a[1]):np.max(a[1])+1]
                 maskb = mask[np.min(a[0]):np.max(a[0])+1, np.min(a[1]):np.max(a[1])+1]
 
-                im2c = np.where(np.repeat(np.expand_dims(maskb, axis=2), 3, axis=-1), im2b, -1)
+                im2c = np.where(np.repeat(np.expand_dims(maskb, axis=2), 3, axis=-1), im2b, 0)
 
                 if im2c.shape[0] >= im.shape[0] or im2c.shape[1] >= im.shape[1]:
                     continue
@@ -151,7 +151,7 @@ if __name__ == '__main__':
                 p0, p1 = np.random.uniform(low=0, high=im.shape[0]-im2c.shape[0], size=(1)).astype(int)[0], np.random.uniform(low=0, high=im.shape[1]-im2c.shape[1], size=(1)).astype(int)[0]
                 im3[p0:p0+im2c.shape[0], p1:p1+im2c.shape[1]] = im2c
 
-                im3 = np.where(im3==-1, im, im3)
+                im3 = np.where(im3==0, im, im3)
 
                 outputs3 = predictor(im3)
                 v = Visualizer(im3[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
