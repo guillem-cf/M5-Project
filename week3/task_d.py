@@ -165,8 +165,12 @@ if __name__ == '__main__':
     dataset_dicts = DatasetCatalog.get("MSCOCO_test")
 
     
-    for d in random.sample(dataset_dicts, 20):
+    for d in random.sample(dataset_dicts, 250):
         im = cv2.imread(d["file_name"])
+
+        #read GT mask for the biggest bounding box
+        mask = d["annotations"][0]["segmentation"]
+
         # write the image at the output path
         cv2.imwrite(output_path + d["file_name"].split('/')[-1], im)
         outputs = predictor(im)
@@ -176,12 +180,14 @@ if __name__ == '__main__':
         print(classes_im)
 
         # outputs are ordered by score. We take the detection with highest score
-        mask = outputs["instances"].to("cpu").pred_masks[0]
         a = np.where(mask != False)
         
         # Duplicate the image and put the pixels outside the bounding box to black
         im2b = np.copy(im) 
-        im2b[np.min(a[0]):np.max(a[0])+1, np.min(a[1]):np.max(a[1])+1] = 0
+        im2b[:np.min(a[0]), :] = 0 # set top rows to black
+        im2b[np.max(a[0])+1:, :] = 0 # set bottom rows to black
+        im2b[:, :np.min(a[1])] = 0 # set left columns to black
+        im2b[:, np.max(a[1])+1:] = 0 # set right columns to black
 
         # Duplicate the image and put the pixels outside the mask to black
         im2c = np.copy(im)
@@ -190,7 +196,10 @@ if __name__ == '__main__':
         # Duplicate the image and put the pixels outside the mask to black and add random noise to the pixels outside the bounding box
         im2d = np.copy(im)
         im2d[np.where(mask == False)] = 0
-        im2d[np.min(a[0]):np.max(a[0])+1, np.min(a[1]):np.max(a[1])+1] = np.random.uniform(low=0, high=255, size=(np.max(a[0])-np.min(a[0])+1, np.max(a[1])-np.min(a[1])+1, 3))
+        im2d[:np.min(a[0]), :, :] = np.random.randint(low=0, high=256, size=(np.min(a[0]), im.shape[1], 3), dtype=np.uint8)
+        im2d[np.max(a[0])+1:, :, :] = np.random.randint(low=0, high=256, size=(im.shape[0]-np.max(a[0])-1, im.shape[1], 3), dtype=np.uint8)
+        im2d[:, :np.min(a[1]), :] = np.random.randint(low=0, high=256, size=(im.shape[0], np.min(a[1]), 3), dtype=np.uint8)
+        im2d[:, np.max(a[1])+1:, :] = np.random.randint(low=0, high=256, size=(im.shape[0], im.shape[1]-np.max(a[1])-1, 3), dtype=np.uint8)
 
         #compute the outputs for each of the 4 images and save them
         outputs = predictor(im)
