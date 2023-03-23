@@ -15,7 +15,7 @@ from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader, DatasetCatalog, MetadataCatalog
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset
-from formatDataset import get_ooc_dicts
+from ooc_Dataset import get_ooc_dicts
 
 # import some common detectron2 utilities
 from detectron2 import model_zoo

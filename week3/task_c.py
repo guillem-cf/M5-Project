@@ -13,7 +13,7 @@ from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader, DatasetCatalog, MetadataCatalog
 from detectron2.engine import DefaultPredictor
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset
-from formatDataset import *
+from ooc_Dataset import *
 
 # import some common detectron2 utilities
 from detectron2 import model_zoo
@@ -38,9 +38,14 @@ if __name__ == '__main__':
                 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet',
                 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
                 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']
-    for subset in ["train", "val", "val_subset"]:
-        DatasetCatalog.register(f"ooc_{subset}", lambda subset=subset: get_ooc_dicts(subset, pretrained=True))
-        MetadataCatalog.get(f"ooc_{subset}").set(thing_classes=classes)
+    # for subset in ["train", "val", "val_subset"]:
+    #     DatasetCatalog.register(f"ooc_{subset}", lambda subset=subset: get_ooc_dicts(subset, pretrained=True))
+    #     MetadataCatalog.get(f"ooc_{subset}").set(thing_classes=classes)
+
+    # Register ms coco dataset
+    for d in ["train", "val"]:
+        DatasetCatalog.register("coco_" + d, lambda d=d: get_coco_dicts(d))
+        MetadataCatalog.get("coco_" + d).set(thing_classes=classes)
 
 
     # Config
