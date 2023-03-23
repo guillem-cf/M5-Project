@@ -3,6 +3,7 @@ import random
 import cv2
 from detectron2.utils.logger import setup_logger
 from detectron2.utils.visualizer import Visualizer
+from pycocotools.coco import COCO
 
 setup_logger()
 
@@ -163,16 +164,17 @@ if __name__ == '__main__':
 
     #dataset_dicts = get_ooc_dicts('val', pretrained=True)
     dataset_dicts = DatasetCatalog.get("MSCOCO_val")
+    coco = COCO("/ghome/group03/annotations/instances_val2017.json")
 
-    
     for d in random.sample(dataset_dicts, 250):
 
         if len(d["annotations"]) > 0:
-            
+
             im = cv2.imread(d["file_name"])
 
             #read GT mask for the biggest bounding box
-            mask = d["annotations"][0]["segmentation"]
+            d["annotations"][0]["image_id"] = d["image_id"]
+            mask = coco.annToMask(d["annotations"][0])
 
             # write the image at the output path
             cv2.imwrite(output_path + d["file_name"].split('/')[-1], im)
