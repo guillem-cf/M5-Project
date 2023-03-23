@@ -208,27 +208,37 @@ if __name__ == '__main__':
 
             #compute the outputs for each of the 4 images and save them
             outputs = predictor(im)
-            v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-            out = v.draw_instance_predictions(outputs["instances"].to("cpu")[0]) #take the highest score detection
-            cv2.imwrite(output_path + "pred_"+d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+            try:  
+                v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+                out = v.draw_instance_predictions(outputs["instances"].to("cpu")[0]) #take the highest score detection
+                cv2.imwrite(output_path + "pred_"+d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
 
-            outputs2b = predictor(im2b)
-            v = Visualizer(im2b[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-            out = v.draw_instance_predictions(outputs2b["instances"].to("cpu"))
-            cv2.imwrite(output_path + "bBB_"+d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+                
+                outputs2b = predictor(im2b)
+                v = Visualizer(im2b[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+                out = v.draw_instance_predictions(outputs2b["instances"].to("cpu"))
+                cv2.imwrite(output_path + "bBB_"+d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
 
-            outputs2c = predictor(im2c)
-            v = Visualizer(im2c[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-            out = v.draw_instance_predictions(outputs2c["instances"].to("cpu"))
-            cv2.imwrite(output_path + "bM_" + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+                outputs2c = predictor(im2c)
+                v = Visualizer(im2c[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+                out = v.draw_instance_predictions(outputs2c["instances"].to("cpu"))
+                cv2.imwrite(output_path + "bM_" + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
 
             
-            outputs2d = predictor(im2d)
-            v = Visualizer(im2d[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-            out = v.draw_instance_predictions(outputs2c["instances"].to("cpu"))
-            cv2.imwrite(output_path +"_noise_" + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+                outputs2d = predictor(im2d)
+                v = Visualizer(im2d[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+                out = v.draw_instance_predictions(outputs2c["instances"].to("cpu"))
+                cv2.imwrite(output_path +"_noise_" + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+
+                
+                print("Processed image: " + d["file_name"].split('/')[-1])
+
+            except:
+                print("No detection on image: " + d["file_name"].split('/')[-1])
+            
+
+                
 
 
-            print("Processed image: " + d["file_name"].split('/')[-1])
 
 
