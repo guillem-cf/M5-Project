@@ -162,68 +162,71 @@ if __name__ == '__main__':
 
 
     #dataset_dicts = get_ooc_dicts('val', pretrained=True)
-    dataset_dicts = DatasetCatalog.get("MSCOCO_test")
+    dataset_dicts = DatasetCatalog.get("MSCOCO_val")
 
     
     for d in random.sample(dataset_dicts, 250):
-        im = cv2.imread(d["file_name"])
 
-        #read GT mask for the biggest bounding box
-        mask = d["annotations"][0]["segmentation"]
+        if len(d["annotations"]) > 0:
+            
+            im = cv2.imread(d["file_name"])
 
-        # write the image at the output path
-        cv2.imwrite(output_path + d["file_name"].split('/')[-1], im)
-        outputs = predictor(im)
+            #read GT mask for the biggest bounding box
+            mask = d["annotations"][0]["segmentation"]
 
-        
-        classes_im = outputs["instances"].to("cpu").pred_classes.tolist()
-        print(classes_im)
+            # write the image at the output path
+            cv2.imwrite(output_path + d["file_name"].split('/')[-1], im)
+            outputs = predictor(im)
 
-        # outputs are ordered by score. We take the detection with highest score
-        a = np.where(mask != False)
-        
-        # Duplicate the image and put the pixels outside the bounding box to black
-        im2b = np.copy(im) 
-        im2b[:np.min(a[0]), :] = 0 # set top rows to black
-        im2b[np.max(a[0])+1:, :] = 0 # set bottom rows to black
-        im2b[:, :np.min(a[1])] = 0 # set left columns to black
-        im2b[:, np.max(a[1])+1:] = 0 # set right columns to black
+            
+            classes_im = outputs["instances"].to("cpu").pred_classes.tolist()
+            print(classes_im)
 
-        # Duplicate the image and put the pixels outside the mask to black
-        im2c = np.copy(im)
-        im2c[np.where(mask == False)] = 0
+            # outputs are ordered by score. We take the detection with highest score
+            a = np.where(mask != False)
+            
+            # Duplicate the image and put the pixels outside the bounding box to black
+            im2b = np.copy(im) 
+            im2b[:np.min(a[0]), :] = 0 # set top rows to black
+            im2b[np.max(a[0])+1:, :] = 0 # set bottom rows to black
+            im2b[:, :np.min(a[1])] = 0 # set left columns to black
+            im2b[:, np.max(a[1])+1:] = 0 # set right columns to black
 
-        # Duplicate the image and put the pixels outside the mask to black and add random noise to the pixels outside the bounding box
-        im2d = np.copy(im)
-        im2d[np.where(mask == False)] = 0
-        im2d[:np.min(a[0]), :, :] = np.random.randint(low=0, high=256, size=(np.min(a[0]), im.shape[1], 3), dtype=np.uint8)
-        im2d[np.max(a[0])+1:, :, :] = np.random.randint(low=0, high=256, size=(im.shape[0]-np.max(a[0])-1, im.shape[1], 3), dtype=np.uint8)
-        im2d[:, :np.min(a[1]), :] = np.random.randint(low=0, high=256, size=(im.shape[0], np.min(a[1]), 3), dtype=np.uint8)
-        im2d[:, np.max(a[1])+1:, :] = np.random.randint(low=0, high=256, size=(im.shape[0], im.shape[1]-np.max(a[1])-1, 3), dtype=np.uint8)
+            # Duplicate the image and put the pixels outside the mask to black
+            im2c = np.copy(im)
+            im2c[np.where(mask == False)] = 0
 
-        #compute the outputs for each of the 4 images and save them
-        outputs = predictor(im)
-        v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-        out = v.draw_instance_predictions(outputs["instances"].to("cpu")[0]) #take the highest score detection
-        cv2.imwrite(output_path + "pred_"+d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+            # Duplicate the image and put the pixels outside the mask to black and add random noise to the pixels outside the bounding box
+            im2d = np.copy(im)
+            im2d[np.where(mask == False)] = 0
+            im2d[:np.min(a[0]), :, :] = np.random.randint(low=0, high=256, size=(np.min(a[0]), im.shape[1], 3), dtype=np.uint8)
+            im2d[np.max(a[0])+1:, :, :] = np.random.randint(low=0, high=256, size=(im.shape[0]-np.max(a[0])-1, im.shape[1], 3), dtype=np.uint8)
+            im2d[:, :np.min(a[1]), :] = np.random.randint(low=0, high=256, size=(im.shape[0], np.min(a[1]), 3), dtype=np.uint8)
+            im2d[:, np.max(a[1])+1:, :] = np.random.randint(low=0, high=256, size=(im.shape[0], im.shape[1]-np.max(a[1])-1, 3), dtype=np.uint8)
 
-        outputs2b = predictor(im2b)
-        v = Visualizer(im2b[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-        out = v.draw_instance_predictions(outputs2b["instances"].to("cpu"))
-        cv2.imwrite(output_path + "bBB_"+d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+            #compute the outputs for each of the 4 images and save them
+            outputs = predictor(im)
+            v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+            out = v.draw_instance_predictions(outputs["instances"].to("cpu")[0]) #take the highest score detection
+            cv2.imwrite(output_path + "pred_"+d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
 
-        outputs2c = predictor(im2c)
-        v = Visualizer(im2c[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-        out = v.draw_instance_predictions(outputs2c["instances"].to("cpu"))
-        cv2.imwrite(output_path + "bM_" + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+            outputs2b = predictor(im2b)
+            v = Visualizer(im2b[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+            out = v.draw_instance_predictions(outputs2b["instances"].to("cpu"))
+            cv2.imwrite(output_path + "bBB_"+d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
 
-        
-        outputs2d = predictor(im2d)
-        v = Visualizer(im2d[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-        out = v.draw_instance_predictions(outputs2c["instances"].to("cpu"))
-        cv2.imwrite(output_path +"_noise_" + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+            outputs2c = predictor(im2c)
+            v = Visualizer(im2c[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+            out = v.draw_instance_predictions(outputs2c["instances"].to("cpu"))
+            cv2.imwrite(output_path + "bM_" + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
+
+            
+            outputs2d = predictor(im2d)
+            v = Visualizer(im2d[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+            out = v.draw_instance_predictions(outputs2c["instances"].to("cpu"))
+            cv2.imwrite(output_path +"_noise_" + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
 
 
-        print("Processed image: " + d["file_name"].split('/')[-1])
+            print("Processed image: " + d["file_name"].split('/')[-1])
 
 
