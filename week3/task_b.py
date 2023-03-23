@@ -289,6 +289,11 @@ if __name__ == '__main__':
 
             cv2.imwrite(output_path + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
 
-                print("Processed image: " + d["file_name"].split('/')[-1])
+            print("Processed image: " + d["file_name"].split('/')[-1])
 
-                break
+            image_count = image_count + 1
+
+            break
+    
+        if image_count == 5000:
+            break   
