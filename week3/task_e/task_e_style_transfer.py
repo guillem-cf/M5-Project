@@ -7,7 +7,7 @@ import torchvision.models as models
 from PIL import Image
 from torchvision.utils import save_image
 
-from week3.task_e.utils import image_loader, run_style_transfer, get_num
+from utils import image_loader, run_style_transfer, get_num
 
 # Generate a folder to save results
 if torch.cuda.is_available():
