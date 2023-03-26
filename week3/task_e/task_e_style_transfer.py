@@ -5,6 +5,7 @@ from os.path import isfile, join
 import torch
 import torchvision.models as models
 from PIL import Image
+from torchvision.models import VGG19_Weights
 from torchvision.utils import save_image
 
 from utils import image_loader, run_style_transfer, get_num
@@ -44,7 +45,7 @@ RESULT_PATH = os.path.join(CURRENT_PATH, "Results/Task_e/style_transfer")
 if not os.path.exists(RESULT_PATH):
     os.makedirs(RESULT_PATH)
 
-cnn = models.vgg19(weights=True).features.to(device).eval()
+cnn = models.vgg19(weights=VGG19_Weights.DEFAULT).features.to(device).eval()
 
 for ii, (style, content) in enumerate(zip(style_images, content_images)):
     # relevant path
