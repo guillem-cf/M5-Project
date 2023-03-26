@@ -200,4 +200,6 @@ if __name__ == '__main__':
 
         cv2.imwrite(output_path + "style_" + img_2_d["file_name"].split('/')[-1], img_2)
 
+        cv2.imwrite(output_path + "original_pred_" + d["file_name"].split('/')[-1], output_img1.get_image()[:, :, ::-1])
+
 
