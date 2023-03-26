@@ -1,4 +1,5 @@
 import os
+import re
 from os import listdir
 from os.path import isfile, join
 
@@ -86,8 +87,8 @@ for ii, (style, content) in enumerate(zip(style_images, content_images)):
                                 content_weight=CONTENT_WEIGHT, style_weight=STYLE_WEIGHT)
     # output = output.reshape(content_size)
     # split .jpg from name
-    style = style.split(".")[0]
-    content = content.split(".")[0]
+    style = re.sub('[^0-9]', '', style)
+    content = re.sub('[^0-9]', '', content)
     print("SAVING IMAGE, STYLE: ", style, " CONTENT: ", content)
     save_image(output, os.path.join(RESULT_PATH, f'{style + "_+_" + content}.png'))
     torch.cuda.empty_cache()
