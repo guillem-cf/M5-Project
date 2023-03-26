@@ -166,7 +166,7 @@ if __name__ == '__main__':
     dataset_dicts = DatasetCatalog.get("MSCOCO_val")
     coco = COCO("/ghome/group03/annotations/instances_val2017.json")
 
-    for d in random.sample(dataset_dicts, 250):
+    for d in random.sample(dataset_dicts, 300):
 
         if len(d["annotations"]) > 0:
 
@@ -184,7 +184,7 @@ if __name__ == '__main__':
             classes_im = outputs["instances"].to("cpu").pred_classes.tolist()
             print(classes_im)
 
-            # outputs are ordered by score. We take the detection with highest score
+           
             a = np.where(mask != False)
             
             # Duplicate the image and put the pixels outside the bounding box to black
@@ -207,10 +207,10 @@ if __name__ == '__main__':
             im2d[:, np.max(a[1])+1:, :] = np.random.randint(low=0, high=256, size=(im.shape[0], im.shape[1]-np.max(a[1])-1, 3), dtype=np.uint8)
 
             #compute the outputs for each of the 4 images and save them
-            outputs = predictor(im)
+
             try:  
                 v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-                out = v.draw_instance_predictions(outputs["instances"].to("cpu")[0]) #take the highest score detection
+                out = v.draw_instance_predictions(outputs["instances"].to("cpu")) 
                 cv2.imwrite(output_path + "pred_"+d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
 
                 
@@ -227,7 +227,7 @@ if __name__ == '__main__':
             
                 outputs2d = predictor(im2d)
                 v = Visualizer(im2d[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-                out = v.draw_instance_predictions(outputs2c["instances"].to("cpu"))
+                out = v.draw_instance_predictions(outputs2d["instances"].to("cpu"))
                 cv2.imwrite(output_path +"_noise_" + d["file_name"].split('/')[-1], out.get_image()[:, :, ::-1])
 
                 
