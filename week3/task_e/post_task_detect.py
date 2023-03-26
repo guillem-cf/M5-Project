@@ -186,13 +186,13 @@ if __name__ == '__main__':
     resnet50 = models.resnet50(pretrained=True)
     resnet50.eval()
 
-    output_path = os.path.join(current_path, '../Results/Task_e/style_transfer/post_detection')
+    output_path = os.path.join(current_path, '../Results/Task_e/style_transfer/post_detection/')
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
     read_path = os.path.join(current_path, '../Results/Task_e/style_transfer/')
     # read images from read_path
-    image_list = [Image.open(os.path.join(read_path, filename))
+    image_list = [os.path.join(read_path, filename)
                   for filename in os.listdir(read_path)
                   if os.path.isfile(os.path.join(read_path, filename)) and filename.endswith('.png')]
 
@@ -201,7 +201,8 @@ if __name__ == '__main__':
         # TODO: POSSIBILITAT DE FER SEGMENTATION O DIRECTAMENT LA IMATGE
         # PREDICCIO DE LA IMATGE
         # img_1 to numpy array
-        img_1 = np.array(img_1)
+        # conver image to cv2
+        img_1 = cv2.imread(img_1)
 
         outputs_img1 = predictor(img_1)
         v = Visualizer(img_1[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
@@ -213,7 +214,7 @@ if __name__ == '__main__':
 
         # get only segmentation and put pixels outside the mask to white
 
-        image_name = os.path.splitext(image.filename)[0].split('/')[-1]
+        image_name = os.path.splitext(image)[0].split('/')[-1]
 
         cv2.imwrite(output_path + "final_detect_"+image_name + ".png", output_img1.get_image()[:, :, ::-1])
 
