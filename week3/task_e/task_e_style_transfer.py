@@ -41,7 +41,7 @@ NUM_STEPS = 600
 CONTENT_WEIGHT = 1
 STYLE_WEIGHT = 100000
 CURRENT_PATH = os.getcwd()
-RESULT_PATH = os.path.join(CURRENT_PATH, "Results/Task_e/style_transfer")
+RESULT_PATH = os.path.join(CURRENT_PATH, "../Results/Task_e/style_transfer")
 if not os.path.exists(RESULT_PATH):
     os.makedirs(RESULT_PATH)
 
