@@ -87,6 +87,7 @@ for ii, (style, content) in enumerate(zip(style_images, content_images)):
     # split .jpg from name
     style = style.split(".")[0]
     content = content.split(".")[0]
+    print("SAVING IMAGE, STYLE: ", style, " CONTENT: ", content)
     save_image(output, os.path.join(RESULT_PATH, f'{style + "_+_" + content}.png'))
     torch.cuda.empty_cache()
 
