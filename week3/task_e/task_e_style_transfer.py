@@ -10,7 +10,17 @@ from torchvision.utils import save_image
 from week3.task_e.utils import image_loader, run_style_transfer, get_num
 
 # Generate a folder to save results
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.is_available():
+    print("CUDA is available")
+    device = torch.device("cuda")
+    torch.cuda.amp.GradScaler()
+elif torch.backends.mps.is_available():
+    print("MPS is available")
+    # device = torch.device("mps")
+    device = torch.device("cpu")
+else:
+    print("CPU is available")
+    device = torch.device("cpu")
 
 # read all images that contain the word "style" in the folder
 STYLE_PATH = "../Results/Task_e/mask_RCNN/"
@@ -29,9 +39,12 @@ cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
 NUM_STEPS = 600
 CONTENT_WEIGHT = 1
 STYLE_WEIGHT = 100000
-RESULT_PATH = "../Results/Task_e/style_transfer"
+CURRENT_PATH = os.getcwd()
+RESULT_PATH = os.path.join(CURRENT_PATH, "Results/Task_e/style_transfer")
+if not os.path.exists(RESULT_PATH):
+    os.makedirs(RESULT_PATH)
 
-cnn = models.vgg19(pretrained=True).features.to(device).eval()
+cnn = models.vgg19(weights=True).features.to(device).eval()
 
 for ii, (style, content) in enumerate(zip(style_images, content_images)):
     # relevant path
@@ -71,7 +84,10 @@ for ii, (style, content) in enumerate(zip(style_images, content_images)):
                                 content_img, style_img, input_img, num_steps=NUM_STEPS, print_step=100,
                                 content_weight=CONTENT_WEIGHT, style_weight=STYLE_WEIGHT)
     # output = output.reshape(content_size)
-    save_image(output, os.path.join(RESULT_PATH, f'{ii}.png'))
+    # split .jpg from name
+    style = style.split(".")[0]
+    content = content.split(".")[0]
+    save_image(output, os.path.join(RESULT_PATH, f'{style + "_+_" + content}.png'))
     torch.cuda.empty_cache()
 
 print("PROCESS FINISHED")

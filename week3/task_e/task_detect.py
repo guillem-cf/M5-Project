@@ -1,3 +1,4 @@
+import os.path
 import random
 
 import cv2
@@ -145,14 +146,19 @@ if __name__ == '__main__':
 
     # Config
     cfg = get_cfg()
-
+    current_path = os.getcwd()
     if args.network == 'faster_RCNN':
-        output_path = 'Results/Task_e/faster_RCNN/'
+        output_path = os.path.join(current_path, 'Results/Task_e/faster_RCNN/')
+        # get if the path exists, if not create it
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
         cfg.merge_from_file(model_zoo.get_config_file("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml"))
         cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml")
 
     elif args.network == 'mask_RCNN':
-        output_path = 'Results/Task_e/mask_RCNN/'
+        output_path = os.path.join(current_path, 'Results/Task_e/mask_RCNN/')
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
         cfg.merge_from_file(model_zoo.get_config_file("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml"))
         cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml")
 
@@ -200,6 +206,6 @@ if __name__ == '__main__':
 
         cv2.imwrite(output_path + "style_" + img_2_d["file_name"].split('/')[-1], img_2)
 
-        cv2.imwrite(output_path + "original_pred_" + d["file_name"].split('/')[-1], output_img1.get_image()[:, :, ::-1])
+        cv2.imwrite(output_path + "original_detect_" + d["file_name"].split('/')[-1], output_img1.get_image()[:, :, ::-1])
 
 
