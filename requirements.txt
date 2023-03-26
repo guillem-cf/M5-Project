@@ -11,6 +11,12 @@ pandas
 # neptune-client
 # mlflow
 # comet-ml
+tqdm
+ipykernel
+ipywidgets
+notebook
+jupyterlab
+seaborn
 
 # --------- others --------- #
 pre-commit      # hooks for applying linters on commit
@@ -21,7 +27,7 @@ rich            # beautiful text formatting in terminal
 torch>=2.0.0
 torchinfo
 torchvision>=0.15.0
-tqdm
+
 
 # --------- loggers --------- #
 wandb
