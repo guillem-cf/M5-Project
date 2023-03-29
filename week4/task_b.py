@@ -143,7 +143,7 @@ if __name__ == '__main__':
         with torch.no_grad():
             val_loss = 0
             loop = tqdm(val_loader)
-            for idx, (images, labels) in enumerate(loop):
+            for idx, img_triplet in enumerate(loop):
                 anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = img_triplet
                 anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = anchor_img.to(device), pos_img.to(
                     device), neg_img.to(device), anchor_target.to(device), pos_target.to(device), neg_target.to(device)
