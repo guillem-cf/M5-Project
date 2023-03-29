@@ -163,10 +163,7 @@ if __name__ == '__main__':
                     # Calculamos la loss
                     embeddings = torch.cat((E1, E2, E3), dim=0)
                     labels = torch.cat((anchor_target, pos_target, neg_target), dim=0)
-                    val_loss += loss_func(embeddings, labels)
-
-                outputs = model(images)
-                val_loss += loss_func(outputs, labels)
+                val_loss += loss_func(embeddings, labels)
                 loop.set_description(f"Validation: Epoch [{epoch}/{args.num_epochs}]")
                 loop.set_postfix(val_loss=val_loss.item())
 
