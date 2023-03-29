@@ -24,6 +24,8 @@ from models.siameseResnet import SiameseResNet
 from models.tripletResnet import TripletResNet
 from pytorch_metric_learning import losses
 
+from week1.utils.checkpoint import save_checkpoint
+
 if __name__ == '__main__':
     # args parser
     parser = argparse.ArgumentParser(description='Task B')
@@ -59,13 +61,13 @@ if __name__ == '__main__':
             model = SiameseResNet(weights=ResNet18_Weights.IMAGENET1K_V1).to(device)
         else:
             model = SiameseResNet().to(device)
-        loss_func = losses.ContrastiveLoss()
+        loss_func = losses.ContrastiveLoss().to(device)
     elif args.network == 'triplet':
         if args.pretrained:
             model = TripletResNet(weights=ResNet18_Weights.IMAGENET1K_V1).to(device)
         else:
             model = TripletResNet().to(device)
-        loss_func = losses.TripletMarginLoss(margin=args.margin)
+        loss_func = losses.TripletMarginLoss(margin=args.margin).to(device)
 
     # Load the data
     transform = transforms.Compose(
@@ -92,14 +94,11 @@ if __name__ == '__main__':
     # Learning rate scheduler
     lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
 
-    train_acc_list = []
     train_loss_list = []
-    val_acc_list = []
     val_loss_list = []
 
     # best_model_wts = copy.deepcopy(model.state_dict())
     best_val_loss = float('inf')
-    best_val_acc = 0
     total_time = 0
     for epoch in range(1, args.num_epochs + 1):
         t0 = time.time()
@@ -107,9 +106,8 @@ if __name__ == '__main__':
         loop = tqdm(train_loader)
         for idx, img_triplet in enumerate(loop):
             anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = img_triplet
-            anchor_img = anchor_img.to(device)
-            pos_img = pos_img.to(device)
-            neg_img = neg_img.to(device)
+            anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = anchor_img.to(device), pos_img.to(
+                device), neg_img.to(device), anchor_target.to(device), pos_target.to(device), neg_target.to(device)
             if args.network == 'siamese':
                 E1, E2 = model(anchor_img, pos_img)
                 dist_E1_E2 = F.pairwise_distance(E1, E2, 2)
@@ -139,3 +137,78 @@ if __name__ == '__main__':
         print({"epoch": epoch, "train_loss": loss.item()})
 
         train_loss_list.append(loss.item())
+
+        # Validation step
+        model.eval()
+        with torch.no_grad():
+            val_loss = 0
+            loop = tqdm(val_loader)
+            for idx, (images, labels) in enumerate(loop):
+                anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = img_triplet
+                anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = anchor_img.to(device), pos_img.to(
+                    device), neg_img.to(device), anchor_target.to(device), pos_target.to(device), neg_target.to(device)
+
+                if args.network == 'siamese':
+                    E1, E2 = model(anchor_img, pos_img)
+                    dist_E1_E2 = F.pairwise_distance(E1, E2, 2)
+                    # Calculamos la loss
+                    embeddings = torch.cat((E1, E2), dim=0)
+                    labels = torch.cat((anchor_target, pos_target), dim=0)
+                    val_loss += loss_func(embeddings, labels)
+
+                if args.network == 'triplet':
+                    E1, E2, E3 = model(anchor_img, pos_img, neg_img)
+                    dist_E1_E2 = F.pairwise_distance(E1, E2, 2)
+                    dist_E1_E3 = F.pairwise_distance(E1, E3, 2)
+                    # Calculamos la loss
+                    embeddings = torch.cat((E1, E2, E3), dim=0)
+                    labels = torch.cat((anchor_target, pos_target, neg_target), dim=0)
+                    val_loss += loss_func(embeddings, labels)
+
+                outputs = model(images)
+                val_loss += loss_func(outputs, labels)
+                loop.set_description(f"Validation: Epoch [{epoch}/{args.num_epochs}]")
+                loop.set_postfix(val_loss=val_loss.item())
+
+            val_loss = val_loss / (idx + 1)
+            print({"epoch": epoch, "val_loss": val_loss})
+
+            val_loss_list.append(float(val_loss))
+
+            #  # Learning rate scheduler
+            lr_scheduler.step(val_loss)
+
+        # Early stopping
+        if early_stopper.early_stop(val_loss):
+            print("Early stopping at epoch: ", epoch)
+            break
+
+        # Save the best model
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            is_best_loss = True
+        else:
+            is_best_loss = False
+
+        if is_best_loss:
+            print(
+                "Best model saved at epoch: ",
+                epoch,
+                " with val_loss: ",
+                best_val_loss.item()
+            )
+            save_checkpoint(
+                {
+                    'epoch': epoch,
+                    'state_dict': model.state_dict(),
+                    'best_val_loss': best_val_loss,
+                    'optimizer': optimizer.state_dict(),
+                },
+                is_best_loss,
+                filename="task_b_siamese" + '.h5',
+            )
+
+        t1 = time.time()
+        total_time += t1 - t0
+        print("Epoch time: ", t1 - t0)
+        print("Total time: ", total_time)
