@@ -24,7 +24,7 @@ from models.siameseResnet import SiameseResNet
 from models.tripletResnet import TripletResNet
 from pytorch_metric_learning import losses
 
-from week1.utils.checkpoint import save_checkpoint
+from week1.utils.checkpoint import save_checkpoint, save_checkpoint_loss
 
 if __name__ == '__main__':
     # args parser
@@ -194,7 +194,7 @@ if __name__ == '__main__':
                 " with val_loss: ",
                 best_val_loss.item()
             )
-            save_checkpoint(
+            save_checkpoint_loss(
                 {
                     'epoch': epoch,
                     'state_dict': model.state_dict(),
