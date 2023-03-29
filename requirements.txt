@@ -1,10 +1,8 @@
-graphviz
-ipywidgets
-jupyterlab
-matplotlib
-notebook
-opencv-contrib-python>=4.7.0.72
-
+# --------- pytorch --------- #
+torch>=2.0.0
+torchinfo
+torchvision>=0.15.0
+pytorch-metric-learning
 
 # --------- python --------- #
 pandas
@@ -17,17 +15,19 @@ ipywidgets
 notebook
 jupyterlab
 seaborn
+graphviz
+ipywidgets
+jupyterlab
+matplotlib
+notebook
+opencv-contrib-python>=4.7.0.72
+
 
 # --------- others --------- #
 pre-commit      # hooks for applying linters on commit
 pytest          # tests
 pyyaml
 rich            # beautiful text formatting in terminal
-# --------- pytorch --------- #
-torch>=2.0.0
-torchinfo
-torchvision>=0.15.0
-
 
 # --------- loggers --------- #
 wandb
