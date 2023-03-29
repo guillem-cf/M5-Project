@@ -21,6 +21,9 @@ if torch.cuda.is_available():
     print("CUDA is available")
     device = torch.device("cuda")
     torch.cuda.amp.GradScaler()
+elif torch.backends.mps.is_available():
+    print("MPS is available")
+    device = torch.device("mps")
 else:
     print("CPU is available")
     device = torch.device("cpu")

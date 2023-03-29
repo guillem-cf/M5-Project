@@ -48,3 +48,6 @@ class MITDataset(Dataset):
         if self.transform is not None:
             sample = self.transform(sample)
         return sample, target
+
+    def get_labels(self):
+        return self.classes
