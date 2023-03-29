@@ -50,6 +50,7 @@ train_dataset = MITDataset(data_dir=dataset_path, split_name='train', transform=
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 
 loss_fn = torch.nn.CrossEntropyLoss()
+softmax1 = torch.nn.Softmax(dim=1)
 
 y_true_test = []
 y_pred = []
@@ -66,8 +67,7 @@ with torch.no_grad():
         test_loss += loss_fn(outputs, labels)
         test_acc += accuracy(outputs, labels)
 
-        softmax = torch.nn.Softmax(dim=1)
-        outputs = softmax(outputs)
+        outputs = softmax1(outputs)
 
         y_true_test.extend(labels.to("cpu").detach().numpy().flatten().tolist())
         y_pred.extend(np.max(outputs.to("cpu").detach().numpy(), axis=1).flatten().tolist())
@@ -142,25 +142,20 @@ compute_neighbors = image_features_train.shape[0]
 neigh_dist, neigh_ind = knn.kneighbors(image_features_test, n_neighbors=compute_neighbors, return_distance=True)
 neigh_labels = y_true_train[neigh_ind]
 
-print(y_true_test[0:3], neigh_labels[0:3], neigh_dist[0:3], neigh_ind[0:3])
+#print(y_true_test[0:3], neigh_labels[0:3, 0:5], neigh_dist[0:3, 0:5])
 
 y_true_test_repeated = np.repeat(np.expand_dims(y_true_test, axis=1), compute_neighbors, axis=1)
-
-# Sort the similarity scores (distances) for each query image in descending order to compute AP
-#sorted_indices = np.argsort(neight_dist, axis=1)[:, ::-1]
-#sorted_scores = np.take_along_axis(neight_dist, sorted_indices, axis=1)
-
-y_true_binary_mAP = np.zeros((y_true_test.shape[0], compute_neighbors))
-for i, _ in enumerate(y_true_binary_mAP):
-    label_i = y_true_test[i]
-    for j in range(0, compute_neighbors):
-        label_j = y_true_train[j]
-        if label_i == label_j:
-            y_true_binary_mAP[i, j] = 1
 
 # We compare class of query image (test) with neighbors (database images of train subset)
 prec_at_1 = accuracy_score(y_true_test_repeated[:, 0].flatten(), neigh_labels[:, 0].flatten())
 prec_at_5 = accuracy_score(y_true_test_repeated[:, 0:5].flatten(), neigh_labels[:, 0:5].flatten())
+
+print("Prec@1:", prec_at_1)
+print("Prec@5:", prec_at_5)
+
+for k in [1, 3, 5, 10, 20, 30]:
+    prec_at_k = accuracy_score(y_true_test_repeated[:, 0:k].flatten(), neigh_labels[:, 0:k].flatten())
+    print("Prec@" + str(k) + ":", prec_at_k)
 
 """
 # Manually computed (same result than sklearn):
@@ -169,26 +164,41 @@ prec_at_5 = np.mean(np.sum(np.equal(y_true_test_repeated[:, 0:5], neigh_labels[:
 print(prec_at_1, prec_at_5)
 """
 
-#y_true_binary_mAP = np.take_along_axis(y_true_binary_mAP, neigh_ind, axis=1)
-
 """
+# Manually computed:
+y_true_binary_mAP = np.zeros((y_true_test.shape[0], compute_neighbors))
+for i, _ in enumerate(y_true_binary_mAP):
+    label_i = y_true_test[i]
+    for j in range(0, compute_neighbors):
+        label_j = y_true_train[j]
+        if label_i == label_j:
+            y_true_binary_mAP[i, j] = 1
+
+y_true_binary_mAP = np.take_along_axis(y_true_binary_mAP, neigh_ind, axis=1)
+
 aps = []
 for i in range(y_true_binary_mAP.shape[0]):
-    ap = average_precision_score(y_true_binary_mAP[i], neigh_dist[i])
+    ap = average_precision_score(y_true_binary_mAP[i], neigh_dist[i] * -1)
     aps.append(ap)
 mAP = np.mean(aps)
 """
 
-mAP = average_precision_score(y_true_binary_mAP[neigh_ind], neigh_dist, average='macro')
+aps_all = []
+aps_5 = []
+for i in range(neigh_labels.shape[0]):
+    aps_all.append(average_precision_score((neigh_labels[i] == y_true_test[i]).astype(int), -neigh_dist[i]))
+    aps_5.append(average_precision_score((neigh_labels[i, 0:5] == y_true_test[i]).astype(int), -neigh_dist[i, 0:5]))
+mAP_all = np.mean(aps_all)
+mAP_5 = np.mean(aps_5)
 
-print("mAP:", mAP)
-print("Prec@1:", prec_at_1)
-print("Prec@5:", prec_at_5)
+print("mAP@all:", mAP_all)
+print("mAP@5:", mAP_5)
+
 
 # Qualitative results:
 
 fig, ax = plt.subplots(6, 6, figsize=(10, 10), dpi=200)
-for i in range(0, 5):
+for i in range(0, 6):
     ax[i][0].imshow(np.moveaxis(test_images[i], 0, -1))
     ax[i][0].set_title("Test set\n query\n image")
     ax[i][0].set_xticks([])
