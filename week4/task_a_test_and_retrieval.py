@@ -1,17 +1,18 @@
-import torch
-from torchvision.models import resnet50, ResNet50_Weights
-import torchvision.transforms as transforms
-from dataset.mit import MITDataset
-from torch.utils.data import DataLoader
-from utils.metrics import accuracy, tsne_features,plot_retrieval
-from tqdm import tqdm
-from sklearn.metrics import PrecisionRecallDisplay
-from sklearn.metrics import precision_score, average_precision_score, accuracy_score
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+import torchvision.transforms as transforms
+from dataset.mit import MITDataset
+from sklearn.metrics import (
+    PrecisionRecallDisplay,
+    accuracy_score,
+    average_precision_score,
+)
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.manifold import TSNE
-
+from torch.utils.data import DataLoader
+from torchvision.models import ResNet50_Weights, resnet50
+from tqdm import tqdm
+from utils.metrics import accuracy, plot_retrieval, tsne_features
 
 finetuned = True
 dataset_path = '../../mcv/datasets/MIT_split'
@@ -31,7 +32,7 @@ else:
 
 if finetuned:
     model = resnet50()
-    
+
     # Replace the last fully-connected layer with a new one that outputs 8 classes
     fc_in_features = model.fc.in_features
     model.fc = torch.nn.Linear(fc_in_features, 8)
@@ -77,7 +78,6 @@ with torch.no_grad():
         y_true_test.extend(labels.to("cpu").detach().numpy().flatten().tolist())
         y_pred.extend(np.max(outputs.to("cpu").detach().numpy(), axis=1).flatten().tolist())
 
-
     test_loss = float(test_loss / (idx + 1))
     test_acc = float(test_acc / (idx + 1))
 
@@ -87,11 +87,15 @@ with torch.no_grad():
 y_true_test = np.asarray(y_true_test).flatten()
 y_pred = np.asarray(y_pred).flatten()
 
-
-fig, ax = plt.subplots(1, 1, figsize=(10,10), dpi=200)
+fig, ax = plt.subplots(1, 1, figsize=(10, 10), dpi=200)
 ax.set_title("Precision-Recall curve", size=16)
 for class_id in range(0, num_classes):
-    PrecisionRecallDisplay.from_predictions(np.where(y_true_test==class_id, 1, 0), np.where(y_true_test==class_id, y_pred, 1-y_pred), ax=ax, name="Class " + str(test_dataset.classes[class_id]))
+    PrecisionRecallDisplay.from_predictions(
+        np.where(y_true_test == class_id, 1, 0),
+        np.where(y_true_test == class_id, y_pred, 1 - y_pred),
+        ax=ax,
+        name="Class " + str(test_dataset.classes[class_id]),
+    )
 plt.savefig("Results/Task_a/PrecisionRecallCurve.png")
 plt.close()
 
@@ -146,7 +150,7 @@ compute_neighbors = image_features_train.shape[0]
 neigh_dist, neigh_ind = knn.kneighbors(image_features_test, n_neighbors=compute_neighbors, return_distance=True)
 neigh_labels = y_true_train[neigh_ind]
 
-#print(y_true_test[0:3], neigh_labels[0:3, 0:5], neigh_dist[0:3, 0:5])
+# print(y_true_test[0:3], neigh_labels[0:3, 0:5], neigh_dist[0:3, 0:5])
 
 y_true_test_repeated = np.repeat(np.expand_dims(y_true_test, axis=1), compute_neighbors, axis=1)
 
@@ -198,7 +202,6 @@ mAP_5 = np.mean(aps_5)
 print("mAP@all:", mAP_all)
 print("mAP@5:", mAP_5)
 
-
 # Qualitative results:
 """
 def plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, p="BEST", num_queries=6, num_retrievals=6):
@@ -234,9 +237,15 @@ def plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_i
     plt.savefig("Results/Task_a/ImageRetrievalQualitativeResults_" + p + ".png")
     plt.close()"""
 
-plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir = "Results/Task_a", p="" )
-plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir = "Results/Task_a",  p="BEST")
-plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir = "Results/Task_a", p="WORST")
+plot_retrieval(
+    test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir="Results/Task_a", p=""
+)
+plot_retrieval(
+    test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir="Results/Task_a", p="BEST"
+)
+plot_retrieval(
+    test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir="Results/Task_a", p="WORST"
+)
 
 # TSNE of features
 
@@ -254,6 +263,5 @@ plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, 
     ax.set_title("t-SNE of the " + subset + " images features\n (ResNet50 output of last convolutional layer)")
     fig.savefig("Results/Task_a/tsne_" + subset + "_features.png")"""
 
-
-tsne_features(image_features_train, y_true_train, "train",labels= test_dataset.classes,output_dir = "Results/Task_a")
-tsne_features(image_features_test, y_true_test, "test",labels= test_dataset.classes, output_dir = "Results/Task_a")
+tsne_features(image_features_train, y_true_train, "train", labels=test_dataset.classes, output_dir="Results/Task_a")
+tsne_features(image_features_test, y_true_test, "test", labels=test_dataset.classes, output_dir="Results/Task_a")

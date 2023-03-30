@@ -1,4 +1,3 @@
-import copy
 import os
 import re
 
@@ -14,8 +13,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def get_num(filename):
     """Extracts the numerical part of a filename."""
-    match = re.search(r'\d{10}', filename)
-    if match is not None:
+    if (match := re.search(r'\d{10}', filename)) is not None:
         return int(match.group())
     else:
         return -1
@@ -23,7 +21,7 @@ def get_num(filename):
 
 class Normalization(nn.Module):
     def __init__(self, mean, std):
-        super(Normalization, self).__init__()
+        super().__init__()
         # .view the mean and std to make them [C x 1 x 1] so that they can
         # directly work with image Tensor of shape [B x C x H x W].
         # B is batch size. C is number of channels. H is height and W is width.
@@ -36,9 +34,11 @@ class Normalization(nn.Module):
 
 
 class ContentLoss(nn.Module):
-
-    def __init__(self, target, ):
-        super(ContentLoss, self).__init__()
+    def __init__(
+        self,
+        target,
+    ):
+        super().__init__()
         # we 'detach' the target content from the tree used
         # to dynamically compute the gradient: this is a stated value,
         # not a variable. Otherwise the forward method of the criterion
@@ -75,10 +75,9 @@ def gram_matrix(input):
     return G.div(a * b * c * d)
 
 
-def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
-                               style_img, content_img,
-                               content_layers,
-                               style_layers):
+def get_style_model_and_losses(
+    cnn, normalization_mean, normalization_std, style_img, content_img, content_layers, style_layers
+):
     # normalization module
     normalization = Normalization(normalization_mean, normalization_std).to(device)
 
@@ -95,19 +94,19 @@ def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
     for layer in cnn.children():
         if isinstance(layer, nn.Conv2d):
             i += 1
-            name = 'conv_{}'.format(i)
+            name = f'conv_{i}'
         elif isinstance(layer, nn.ReLU):
-            name = 'relu_{}'.format(i)
+            name = f'relu_{i}'
             # The in-place version doesn't play very nicely with the ContentLoss
             # and StyleLoss we insert below. So we replace with out-of-place
             # ones here.
             layer = nn.ReLU(inplace=False)
         elif isinstance(layer, nn.MaxPool2d):
-            name = 'pool_{}'.format(i)
+            name = f'pool_{i}'
         elif isinstance(layer, nn.BatchNorm2d):
-            name = 'bn_{}'.format(i)
+            name = f'bn_{i}'
         else:
-            raise RuntimeError('Unrecognized layer: {}'.format(layer.__class__.__name__))
+            raise RuntimeError(f'Unrecognized layer: {layer.__class__.__name__}')
 
         model.add_module(name, layer)
 
@@ -115,14 +114,14 @@ def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
             # add content loss:
             target = model(content_img).detach()
             content_loss = ContentLoss(target)
-            model.add_module("content_loss_{}".format(i), content_loss)
+            model.add_module(f"content_loss_{i}", content_loss)
             content_losses.append(content_loss)
 
         if name in style_layers:
             # add style loss:
             target_feature = model(style_img).detach()
             style_loss = StyleLoss(target_feature)
-            model.add_module("style_loss_{}".format(i), style_loss)
+            model.add_module(f"style_loss_{i}", style_loss)
             style_losses.append(style_loss)
 
     # now we trim off the layers after the last content and style losses
@@ -130,16 +129,14 @@ def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
         if isinstance(model[i], ContentLoss) or isinstance(model[i], StyleLoss):
             break
 
-    model = model[:(i + 1)]
+    model = model[: (i + 1)]
 
     return model, style_losses, content_losses
 
 
 def image_loader(image_name, to_reshape):
     image = Image.open(image_name)
-    loader = transforms.Compose([
-        transforms.Resize((to_reshape, to_reshape)),
-        transforms.ToTensor()])
+    loader = transforms.Compose([transforms.Resize((to_reshape, to_reshape)), transforms.ToTensor()])
     image = loader(image).unsqueeze(0).to(device, torch.float)
     return image
 
@@ -152,9 +149,20 @@ def get_input_optimizer(input_img):
     return optimizer
 
 
-def run_style_transfer(cnn, normalization_mean, normalization_std, content_img, style_img, input_img,
-                       num_steps=300, print_step=50, style_weight=1000000, content_weight=1,
-                       conten_layers=None, style_layers=None):
+def run_style_transfer(
+    cnn,
+    normalization_mean,
+    normalization_std,
+    content_img,
+    style_img,
+    input_img,
+    num_steps=300,
+    print_step=50,
+    style_weight=1000000,
+    content_weight=1,
+    conten_layers=None,
+    style_layers=None,
+):
     """
     Applies style transfer to an input image, given a content image and a style image.
     """
@@ -164,14 +172,15 @@ def run_style_transfer(cnn, normalization_mean, normalization_std, content_img, 
         style_layers = ['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5']
 
     print('Building the style transfer model..')
-    model, style_losses, content_losses = get_style_model_and_losses(cnn, normalization_mean, normalization_std,
-                                                                     style_img, content_img, conten_layers,
-                                                                     style_layers)
+    model, style_losses, content_losses = get_style_model_and_losses(
+        cnn, normalization_mean, normalization_std, style_img, content_img, conten_layers, style_layers
+    )
     optimizer = get_input_optimizer(input_img)
 
     print('Optimizing..')
     run = [0]
     while run[0] <= num_steps:
+
         def closure():
             # correct the values of updated input image
             input_img.data.clamp_(0, 1)
@@ -194,8 +203,8 @@ def run_style_transfer(cnn, normalization_mean, normalization_std, content_img, 
 
             run[0] += 1
             if run[0] % print_step == 0:
-                print("run {}:".format(run[0]))
-                print('Style Loss : {:4f} Content Loss: {:4f}'.format(style_score.item(), content_score.item()))
+                print(f"run {run[0]}:")
+                print(f'Style Loss : {style_score.item():4f} Content Loss: {content_score.item():4f}')
                 print()
 
             return style_score + content_score

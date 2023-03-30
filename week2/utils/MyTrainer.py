@@ -7,10 +7,10 @@ setup_logger()
 # import some common libraries
 import os
 
+from detectron2.data import DatasetMapper, build_detection_test_loader
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import COCOEvaluator
 from LossEvalHook import *
-from detectron2.data import DatasetMapper, build_detection_test_loader
 
 # import some common detectron2 utilities
 

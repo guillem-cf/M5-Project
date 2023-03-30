@@ -10,11 +10,11 @@
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.554
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.787
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.924
-[03/19 20:47:45 d2.evaluation.coco_evaluation]: Evaluation results for bbox: 
+[03/19 20:47:45 d2.evaluation.coco_evaluation]: Evaluation results for bbox:
 |   AP   |  AP50  |  AP75  |  APs   |  APm   |  APl   |
 |:------:|:------:|:------:|:------:|:------:|:------:|
 | 58.924 | 81.148 | 66.608 | 41.236 | 69.612 | 67.805 |
-[03/19 20:47:45 d2.evaluation.coco_evaluation]: Per-category bbox AP: 
+[03/19 20:47:45 d2.evaluation.coco_evaluation]: Per-category bbox AP:
 | category      | AP     | category       | AP   | category      | AP     |
 |:--------------|:-------|:---------------|:-----|:--------------|:-------|
 | person        | 46.809 | bicycle        | nan  | car           | 71.039 |
@@ -63,11 +63,11 @@ index created!
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.497
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.742
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.857
-[03/19 20:47:47 d2.evaluation.coco_evaluation]: Evaluation results for segm: 
+[03/19 20:47:47 d2.evaluation.coco_evaluation]: Evaluation results for segm:
 |   AP   |  AP50  |  AP75  |  APs   |  APm   |  APl   |
 |:------:|:------:|:------:|:------:|:------:|:------:|
 | 54.387 | 79.629 | 60.256 | 33.387 | 65.307 | 75.222 |
-[03/19 20:47:47 d2.evaluation.coco_evaluation]: Per-category segm AP: 
+[03/19 20:47:47 d2.evaluation.coco_evaluation]: Per-category segm AP:
 | category      | AP     | category       | AP   | category      | AP     |
 |:--------------|:-------|:---------------|:-----|:--------------|:-------|
 | person        | 38.136 | bicycle        | nan  | car           | 70.637 |

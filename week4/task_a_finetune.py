@@ -1,18 +1,17 @@
 import time
 
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torchvision.transforms as transforms
 from dataset.mit import MITDataset
-from torchvision.models import resnet50, ResNet50_Weights
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
-from torchinfo import summary
+from torchvision.models import ResNet50_Weights, resnet50
 from tqdm import tqdm
 from utils.checkpoint import save_checkpoint
 from utils.early_stopper import EarlyStopper
 from utils.metrics import accuracy
-import matplotlib.pyplot as plt
-import numpy as np
 
 dataset_path = '../../mcv/datasets/MIT_split'
 num_classes = 8
@@ -40,34 +39,27 @@ model.fc = torch.nn.Linear(model.fc.in_features, 8)
 
 for name, param in model.named_parameters():
     if 'fc' not in name:
-        param.requires_grad=False
+        param.requires_grad = False
     print(name, param.requires_grad)
 
 model = model.to(device)
 
 # Load the data
 transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
-    )
+    [transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
+)
 
 train_dataset = MITDataset(data_dir=dataset_path, split_name='train', transform=transform)
-train_loader = DataLoader(
-    train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True
-)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
 
 val_dataset = MITDataset(data_dir=dataset_path, split_name='test', transform=transform)
-val_loader = DataLoader(
-    val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True
-)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
 
 # Define the loss function
 loss_fn = torch.nn.CrossEntropyLoss()
 
 # Optimizer
-optimizer = torch.optim.Adam(
-    model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
-)
+optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
 
 # Early stoppper
 early_stopper = EarlyStopper(patience=50, min_delta=10)
@@ -192,10 +184,14 @@ torch.save(model.state_dict(), "Results/Task_a/Task_a_Resnet50_finetuned.pth")
 
 plot_step = 100
 
-plt.figure(figsize=(10,12), dpi=150)
+plt.figure(figsize=(10, 12), dpi=150)
 plt.title("Loss during training", size=18)
-plt.plot(np.arange(0, EPOCHS, plot_step), train_loss_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset")
-plt.plot(np.arange(0, EPOCHS, plot_step), val_loss_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset")
+plt.plot(
+    np.arange(0, EPOCHS, plot_step), train_loss_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
+)
+plt.plot(
+    np.arange(0, EPOCHS, plot_step), val_loss_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset"
+)
 plt.xticks(np.arange(0, EPOCHS, plot_step).astype(int))
 plt.xlabel("Epoch", size=12)
 plt.ylabel("Loss", size=12)
@@ -203,9 +199,11 @@ plt.legend()
 plt.savefig("Results/Task_a/plot_loss.png")
 plt.close()
 
-plt.figure(figsize=(10,12), dpi=150)
+plt.figure(figsize=(10, 12), dpi=150)
 plt.title("Accuracy during training", size=18)
-plt.plot(np.arange(0, EPOCHS, plot_step), train_acc_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset")
+plt.plot(
+    np.arange(0, EPOCHS, plot_step), train_acc_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
+)
 plt.plot(np.arange(0, EPOCHS, plot_step), val_acc_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset")
 plt.xticks(np.arange(0, EPOCHS, plot_step).astype(int))
 plt.xlabel("Epoch", size=12)

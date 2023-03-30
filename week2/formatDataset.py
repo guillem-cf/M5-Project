@@ -1,5 +1,4 @@
 import os
-import random
 
 import cv2
 import numpy as np
@@ -34,7 +33,6 @@ def line_to_object(line, pretrained):
         if class_id > 2:
             return None
         class_id = class_id - 1
-        
 
     # obj_instance_id = obj_id % 1000
 
@@ -42,7 +40,6 @@ def line_to_object(line, pretrained):
     mask = mask_utils.decode(rle)
     # convert mask to binary mask
     mask = np.where(mask > 0, 1, 0).astype(np.uint8)
-
 
     if mask.sum() == 0:
         return None
@@ -70,13 +67,13 @@ def line_to_object(line, pretrained):
     }
 
 
-def get_kitti_dicts(subset, pretrained = False):
+def get_kitti_dicts(subset, pretrained=False):
     anotations_dir = "/ghome/group03/mcv/datasets/KITTI-MOTS/instances_txt/"
     images = "/ghome/group03/mcv/datasets/KITTI-MOTS/training/image_02/"
 
     if subset == "train":
         sequences_id = ["0000", "0001", "0003", "0004", "0005", "0009", "0011", "0012", "0015", "0017", "0019", "0020"]
-        
+
     elif subset == "val":
         sequences_id = ["0002", "0006", "0007", "0008", "0010", "0013", "0014", "0016", "0018"]
 
@@ -103,7 +100,6 @@ def get_kitti_dicts(subset, pretrained = False):
                 frames[frame] = []
             frames[frame].append(i)
 
-
         for i, frame in enumerate(frames):
             record = {}
             # if frame == []:
@@ -111,7 +107,7 @@ def get_kitti_dicts(subset, pretrained = False):
             #     record["image_id"] = idx
             #     record["height"] = height
             #     record["width"] = width
-                
+
             time_frame = str(frame).zfill(6)
             #  time_frame = str(line.split(" ")[0]).zfill(6)
 
@@ -178,11 +174,9 @@ if __name__ == "__main__":
     # for d in random(dataset_dicts, 30):
     # draw 30 random elements from dataset_dicts
     for i, d in enumerate(dataset_dicts):
-            img = cv2.imread(d["file_name"])
-            visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
-            out = visualizer.draw_dataset_dict(d)
-            sequence = d["file_name"].split("/")[-2]
-            name = d["file_name"].split("/")[-1].split(".")[0]
-            cv2.imwrite(
-                f"./Results/preprocessing_1/train_{sequence}_{name}.png", out.get_image()[:, :, ::-1]
-            )
+        img = cv2.imread(d["file_name"])
+        visualizer = Visualizer(img[:, :, ::-1], metadata=kitty_metadata, scale=0.5)
+        out = visualizer.draw_dataset_dict(d)
+        sequence = d["file_name"].split("/")[-2]
+        name = d["file_name"].split("/")[-1].split(".")[0]
+        cv2.imwrite(f"./Results/preprocessing_1/train_{sequence}_{name}.png", out.get_image()[:, :, ::-1])

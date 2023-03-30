@@ -10,11 +10,11 @@
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.536
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.776
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.920
-[03/19 20:43:45 d2.evaluation.coco_evaluation]: Evaluation results for bbox: 
+[03/19 20:43:45 d2.evaluation.coco_evaluation]: Evaluation results for bbox:
 |   AP   |  AP50  |  AP75  |  APs   |  APm   |  APl   |
 |:------:|:------:|:------:|:------:|:------:|:------:|
 | 57.250 | 79.367 | 64.828 | 40.280 | 67.471 | 67.966 |
-[03/19 20:43:45 d2.evaluation.coco_evaluation]: Per-category bbox AP: 
+[03/19 20:43:45 d2.evaluation.coco_evaluation]: Per-category bbox AP:
 | category      | AP     | category       | AP   | category      | AP     |
 |:--------------|:-------|:---------------|:-----|:--------------|:-------|
 | person        | 44.939 | bicycle        | nan  | car           | 69.562 |

@@ -8,8 +8,7 @@ import torchvision.models as models
 from PIL import Image
 from torchvision.models import VGG19_Weights
 from torchvision.utils import save_image
-
-from utils import image_loader, run_style_transfer, get_num
+from utils import get_num, image_loader, run_style_transfer
 
 # Generate a folder to save results
 if torch.cuda.is_available():
@@ -82,9 +81,18 @@ for ii, (style, content) in enumerate(zip(style_images, content_images)):
     blur = torch.from_numpy(blur).to(device).unsqueeze(0)
     """
 
-    output = run_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std,
-                                content_img, style_img, input_img, num_steps=NUM_STEPS, print_step=100,
-                                content_weight=CONTENT_WEIGHT, style_weight=STYLE_WEIGHT)
+    output = run_style_transfer(
+        cnn,
+        cnn_normalization_mean,
+        cnn_normalization_std,
+        content_img,
+        style_img,
+        input_img,
+        num_steps=NUM_STEPS,
+        print_step=100,
+        content_weight=CONTENT_WEIGHT,
+        style_weight=STYLE_WEIGHT,
+    )
     # output = output.reshape(content_size)
     # split .jpg from name
     style = re.sub('[^0-9]', '', style)

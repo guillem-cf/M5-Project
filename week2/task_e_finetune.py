@@ -23,20 +23,18 @@ import os
 # include the utils folder in the path
 import sys
 from datetime import datetime as dt
-import wandb
 
+import wandb
 from detectron2.config import get_cfg
-from detectron2.data import build_detection_test_loader
-from detectron2.engine import DefaultPredictor
-from detectron2.engine import DefaultTrainer
-from detectron2.evaluation import inference_on_dataset
+from detectron2.data import DatasetCatalog, MetadataCatalog, build_detection_test_loader
+from detectron2.engine import DefaultPredictor, DefaultTrainer
+from detectron2.evaluation import COCOEvaluator, DatasetEvaluators, inference_on_dataset
 from formatDataset import get_kitti_dicts
-from detectron2.data import DatasetCatalog, MetadataCatalog
-from detectron2.evaluation import COCOEvaluator, DatasetEvaluators
 
 from detectron2 import model_zoo
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'utils'))
+
 
 # from utils.MyTrainer import *
 class ValidationLoss(HookBase):
@@ -44,15 +42,12 @@ class ValidationLoss(HookBase):
         super().__init__()  # takes init from HookBase
         self.cfg = cfg.clone()
         self.cfg.DATASETS.TRAIN = cfg.DATASETS.TEST
-        self._loader = iter(
-            build_detection_train_loader(self.cfg)
-        )  # builds the dataloader from the provided cfg
+        self._loader = iter(build_detection_train_loader(self.cfg))  # builds the dataloader from the provided cfg
         self.best_loss = float("inf")  # Current best loss, initially infinite
         self.weights = None  # Current best weights, initially none
         self.i = 0  # Something to use for counting the steps
 
     def after_step(self):  # after each step
-
         if self.trainer.iter >= 0:
             print(
                 f"----- Iteration num. {self.trainer.iter} -----"
@@ -65,9 +60,7 @@ class ValidationLoss(HookBase):
 
             losses = sum(loss_dict.values())  #
             assert torch.isfinite(losses).all(), loss_dict
-            loss_dict_reduced = {
-                "val_" + k: v.item() for k, v in comm.reduce_dict(loss_dict).items()
-            }
+            loss_dict_reduced = {"val_" + k: v.item() for k, v in comm.reduce_dict(loss_dict).items()}
             losses_reduced = sum(loss for loss in loss_dict_reduced.values())
 
             if comm.is_main_process():
@@ -78,19 +71,20 @@ class ValidationLoss(HookBase):
                 # save best weights
                 if losses_reduced < self.best_loss:  # if current loss is lower
                     self.best_loss = losses_reduced  # saving the best loss
-                    self.weights = copy.deepcopy(
-                        self.trainer.model.state_dict()
-                    )  # saving the best weights
+                    self.weights = copy.deepcopy(self.trainer.model.state_dict())  # saving the best weights
+
+
 class MyTrainer(DefaultTrainer):
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         if output_folder is None:
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
         coco_evaluator = COCOEvaluator(dataset_name, output_dir=output_folder)
-        
+
         evaluator_list = [coco_evaluator]
-        
+
         return DatasetEvaluators(evaluator_list)
+
 
 #  https://towardsdatascience.com/train-maskrcnn-on-custom-dataset-with-detectron2-in-4-steps-5887a6aa135d
 
@@ -106,9 +100,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # --------------------------------- W&B --------------------------------- #
-    run = wandb.init(sync_tensorboard=True,
-               settings=wandb.Settings(start_method="thread", console="off"), 
-               project = "M5_W2")
+    run = wandb.init(
+        sync_tensorboard=True, settings=wandb.Settings(start_method="thread", console="off"), project="M5_W2"
+    )
     wandb.run.name = args.name
 
     # --------------------------------- OUTPUT --------------------------------- #

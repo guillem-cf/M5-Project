@@ -1,33 +1,30 @@
-# --------- pytorch --------- #
-torch>=2.0.0
-torchinfo
-torchvision>=0.15.0
-pytorch-metric-learning
-
-# --------- python --------- #
-pandas
-# neptune-client
-# mlflow
-# comet-ml
-tqdm
-ipykernel
-ipywidgets
-notebook
-jupyterlab
-seaborn
 graphviz
+ipykernel
 ipywidgets
 jupyterlab
 matplotlib
 notebook
 opencv-contrib-python>=4.7.0.72
 
+# --------- python --------- #
+pandas
+
 
 # --------- others --------- #
 pre-commit      # hooks for applying linters on commit
 pytest          # tests
+pytorch-metric-learning
 pyyaml
 rich            # beautiful text formatting in terminal
+seaborn
+# --------- pytorch --------- #
+torch>=2.0.0
+torchinfo
+torchvision>=0.15.0
+# neptune-client
+# mlflow
+# comet-ml
+tqdm
 
 # --------- loggers --------- #
 wandb

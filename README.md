@@ -23,9 +23,11 @@ autonomous driving technology.
 [Slides](https://docs.google.com/presentation/d/1qPf1RUKpmfSq_BdrmfMl7UuYYeT9Pomr/edit?usp=sharing&ouid=102961831843164052332&rtpof=true&sd=true)
 
 ### [Week 2:Introduction to Object Detection and Segmentation](https://github.com/guillem-cf/M5-Project/tree/main/week2)
+
 [Slides](https://docs.google.com/presentation/d/1MImY756euNMCNL_AaRiOfebnqGOK6JoY/edit?usp=sharing&ouid=112170236769613642804&rtpof=true&sd=true)
 
 ### [Week 3: ](https://github.com/guillem-cf/M5-Project/tree/main/week3)
+
 [Slides](https://docs.google.com/presentation/d/1KpR6sYabwwIBnfnVXtZLX_c1p9nYROwg/edit?usp=sharing&ouid=113215793601171523843&rtpof=true&sd=true)
 
 ### [Week 4:](https://github.com/guillem-cf/M5-Project/tree/main/week4)

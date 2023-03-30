@@ -1,20 +1,15 @@
 import os
-import random
 
 import cv2
-import numpy as np
-import pycocotools.mask as mask_utils
-from detectron2.data import DatasetCatalog, MetadataCatalog
-from detectron2.structures.boxes import BoxMode
-from detectron2.utils.visualizer import Visualizer
 from tqdm import tqdm
 
-def get_ooc_dicts(subset, pretrained = False):
+
+def get_ooc_dicts(subset, pretrained=False):
     images = "/ghome/group03/mcv/datasets/out_of_context/"
 
     if subset == "train":
         sequences_id = os.listdir(images)
-        
+
     elif subset == "val":
         sequences_id = os.listdir(images)
 
@@ -25,7 +20,6 @@ def get_ooc_dicts(subset, pretrained = False):
     idx = 1
 
     for seq_id in tqdm(sequences_id):
-            
         record = {}
 
         filename = os.path.join(images, str(seq_id))
@@ -43,12 +37,13 @@ def get_ooc_dicts(subset, pretrained = False):
 
     return dataset_dicts
 
-def get_coco_dicts(subset, pretrained = False):
+
+def get_coco_dicts(subset, pretrained=False):
     images = "/ghome/group03/test2017"
 
     if subset == "train":
         sequences_id = os.listdir(images)
-        
+
     elif subset == "val":
         sequences_id = os.listdir(images)
 
@@ -59,7 +54,6 @@ def get_coco_dicts(subset, pretrained = False):
     idx = 1
 
     for seq_id in tqdm(sequences_id):
-            
         record = {}
 
         filename = os.path.join(images, str(seq_id))

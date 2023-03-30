@@ -1,6 +1,5 @@
 import torch.nn as nn
-from torchvision.models import resnet50, ResNet50_Weights, resnet18
-
+from torchvision.models import resnet18
 
 
 class SiameseResNet(nn.Module):
@@ -8,13 +7,7 @@ class SiameseResNet(nn.Module):
         super().__init__()
         self.resnet = resnet18(weights=weights)
 
-        self.fc = nn.Sequential(
-            nn.Linear(1000, 512),
-            nn.PReLU(),
-            nn.Linear(1024, 256),
-            nn.PReLU(),
-            nn.Linear(256, 2)
-        )
+        self.fc = nn.Sequential(nn.Linear(1000, 512), nn.PReLU(), nn.Linear(1024, 256), nn.PReLU(), nn.Linear(256, 2))
 
     def forward_once(self, x):
         x = self.resnet(x)
@@ -26,4 +19,3 @@ class SiameseResNet(nn.Module):
         out1 = self.forward_once(x1)
         out2 = self.forward_once(x2)
         return out1, out2
-

@@ -1,5 +1,5 @@
-import random
 import os
+import random
 
 import cv2
 from detectron2.utils.logger import setup_logger
@@ -10,20 +10,15 @@ setup_logger()
 # import some common libraries
 import argparse
 
+import numpy as np
+import pycocotools.mask as mask_utils
 from detectron2.config import get_cfg
-from detectron2.data import build_detection_test_loader, DatasetCatalog, MetadataCatalog
-from detectron2.engine import DefaultPredictor
-from detectron2.evaluation import COCOEvaluator, inference_on_dataset
+from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import register_coco_instances
+from detectron2.engine import DefaultPredictor
 
 # import some common detectron2 utilities
 from detectron2 import model_zoo
-
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-import pycocotools.mask as mask_utils
 
 if __name__ == '__main__':
     # args parser
@@ -45,98 +40,103 @@ if __name__ == '__main__':
     # for subset in ["train", "val", "val_subset"]:
     """
 
-    classes =  {0: u'__background__',
-                1: u'person',
-                2: u'bicycle',
-                3: u'car',
-                4: u'motorcycle',
-                5: u'airplane',
-                6: u'bus',
-                7: u'train',
-                8: u'truck',
-                9: u'boat',
-                10: u'traffic light',
-                11: u'fire hydrant',
-                12: u'stop sign',
-                13: u'parking meter',
-                14: u'bench',
-                15: u'bird',
-                16: u'cat',
-                17: u'dog',
-                18: u'horse',
-                19: u'sheep',
-                20: u'cow',
-                21: u'elephant',
-                22: u'bear',
-                23: u'zebra',
-                24: u'giraffe',
-                25: u'backpack',
-                26: u'umbrella',
-                27: u'handbag',
-                28: u'tie',
-                29: u'suitcase',
-                30: u'frisbee',
-                31: u'skis',
-                32: u'snowboard',
-                33: u'sports ball',
-                34: u'kite',
-                35: u'baseball bat',
-                36: u'baseball glove',
-                37: u'skateboard',
-                38: u'surfboard',
-                39: u'tennis racket',
-                40: u'bottle',
-                41: u'wine glass',
-                42: u'cup',
-                43: u'fork',
-                44: u'knife',
-                45: u'spoon',
-                46: u'bowl',
-                47: u'banana',
-                48: u'apple',
-                49: u'sandwich',
-                50: u'orange',
-                51: u'broccoli',
-                52: u'carrot',
-                53: u'hot dog',
-                54: u'pizza',
-                55: u'donut',
-                56: u'cake',
-                57: u'chair',
-                58: u'couch',
-                59: u'potted plant',
-                60: u'bed',
-                61: u'dining table',
-                62: u'toilet',
-                63: u'tv',
-                64: u'laptop',
-                65: u'mouse',
-                66: u'remote',
-                67: u'keyboard',
-                68: u'cell phone',
-                69: u'microwave',
-                70: u'oven',
-                71: u'toaster',
-                72: u'sink',
-                73: u'refrigerator',
-                74: u'book',
-                75: u'clock',
-                76: u'vase',
-                77: u'scissors',
-                78: u'teddy bear',
-                79: u'hair drier',
-                80: u'toothbrush'}
- 
+    classes = {
+        0: '__background__',
+        1: 'person',
+        2: 'bicycle',
+        3: 'car',
+        4: 'motorcycle',
+        5: 'airplane',
+        6: 'bus',
+        7: 'train',
+        8: 'truck',
+        9: 'boat',
+        10: 'traffic light',
+        11: 'fire hydrant',
+        12: 'stop sign',
+        13: 'parking meter',
+        14: 'bench',
+        15: 'bird',
+        16: 'cat',
+        17: 'dog',
+        18: 'horse',
+        19: 'sheep',
+        20: 'cow',
+        21: 'elephant',
+        22: 'bear',
+        23: 'zebra',
+        24: 'giraffe',
+        25: 'backpack',
+        26: 'umbrella',
+        27: 'handbag',
+        28: 'tie',
+        29: 'suitcase',
+        30: 'frisbee',
+        31: 'skis',
+        32: 'snowboard',
+        33: 'sports ball',
+        34: 'kite',
+        35: 'baseball bat',
+        36: 'baseball glove',
+        37: 'skateboard',
+        38: 'surfboard',
+        39: 'tennis racket',
+        40: 'bottle',
+        41: 'wine glass',
+        42: 'cup',
+        43: 'fork',
+        44: 'knife',
+        45: 'spoon',
+        46: 'bowl',
+        47: 'banana',
+        48: 'apple',
+        49: 'sandwich',
+        50: 'orange',
+        51: 'broccoli',
+        52: 'carrot',
+        53: 'hot dog',
+        54: 'pizza',
+        55: 'donut',
+        56: 'cake',
+        57: 'chair',
+        58: 'couch',
+        59: 'potted plant',
+        60: 'bed',
+        61: 'dining table',
+        62: 'toilet',
+        63: 'tv',
+        64: 'laptop',
+        65: 'mouse',
+        66: 'remote',
+        67: 'keyboard',
+        68: 'cell phone',
+        69: 'microwave',
+        70: 'oven',
+        71: 'toaster',
+        72: 'sink',
+        73: 'refrigerator',
+        74: 'book',
+        75: 'clock',
+        76: 'vase',
+        77: 'scissors',
+        78: 'teddy bear',
+        79: 'hair drier',
+        80: 'toothbrush',
+    }
+
     """# Register ms coco dataset
     for d in ["train", "val"]:
         DatasetCatalog.register("coco_" + d, lambda d=d: get_coco_dicts(d))
         MetadataCatalog.get("coco_" + d).set(thing_classes=classes)
     """
-    
-    # Register ms coco dataset
-    register_coco_instances("coco2017_test", {}, "/ghome/group03/annotations/image_info_test2017.json", "/ghome/group03/test2017")
-    register_coco_instances("coco2017_val", {}, "/ghome/group03/annotations/instances_val2017.json", "/ghome/group03/val2017")
 
+    # Register ms coco dataset
+    register_coco_instances(
+        "coco2017_test", {}, "/ghome/group03/annotations/image_info_test2017.json", "/ghome/group03/test2017"
+    )
+    register_coco_instances(
+        "coco2017_val", {}, "/ghome/group03/annotations/instances_val2017.json", "/ghome/group03/val2017"
+    )
 
     # Config
     cfg = get_cfg()
@@ -158,13 +158,11 @@ if __name__ == '__main__':
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
     cfg.DATASETS.TEST = ("coco2017_val",)
 
-
     # Predictor
     predictor = DefaultPredictor(cfg)
 
-    dataset_dicts_val = DatasetCatalog.get('coco2017_val') #get_coco_dicts('val', pretrained=True)
+    dataset_dicts_val = DatasetCatalog.get('coco2017_val')  # get_coco_dicts('val', pretrained=True)
     dataset_dicts_test = DatasetCatalog.get('coco2017_test')
-
 
     image_count = 0
     for d in random.sample(dataset_dicts_val, len(dataset_dicts_val)):
@@ -179,7 +177,6 @@ if __name__ == '__main__':
         out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
         path = output_path + d["file_name"].split('/')[-1].split('.')[0] + '_pred.jpg'
         cv2.imwrite(path, out.get_image()[:, :, ::-1])
-
 
         # Get the list of the objects in the image represented by their class
         classes_im = outputs["instances"].to("cpu").pred_classes.tolist()
@@ -197,7 +194,7 @@ if __name__ == '__main__':
             except:
                 counter += 1
                 continue
-                
+
         if counter == 10:
             continue
 
@@ -208,8 +205,8 @@ if __name__ == '__main__':
 
         a = np.where(mask != False)
         try:
-            im2 = im[np.min(a[0]):np.max(a[0])+1, np.min(a[1]):np.max(a[1])+1]
-            mask2 = mask[np.min(a[0]):np.max(a[0])+1, np.min(a[1]):np.max(a[1])+1]
+            im2 = im[np.min(a[0]) : np.max(a[0]) + 1, np.min(a[1]) : np.max(a[1]) + 1]
+            mask2 = mask[np.min(a[0]) : np.max(a[0]) + 1, np.min(a[1]) : np.max(a[1]) + 1]
         except:
             print("Empty mask")
             continue
@@ -219,14 +216,15 @@ if __name__ == '__main__':
         if im2c.shape[0] >= im.shape[0] or im2c.shape[1] >= im.shape[1]:
             continue
 
-        
-        
         for i in range(4):
             im3 = np.copy(im)
-            p0, p1 = np.random.uniform(low=0, high=im.shape[0]-im2c.shape[0], size=(1)).astype(int)[0], np.random.uniform(low=0, high=im.shape[1]-im2c.shape[1], size=(1)).astype(int)[0]
-            im3[p0:p0+im2c.shape[0], p1:p1+im2c.shape[1]] = im2c
+            p0, p1 = (
+                np.random.uniform(low=0, high=im.shape[0] - im2c.shape[0], size=(1)).astype(int)[0],
+                np.random.uniform(low=0, high=im.shape[1] - im2c.shape[1], size=(1)).astype(int)[0],
+            )
+            im3[p0 : p0 + im2c.shape[0], p1 : p1 + im2c.shape[1]] = im2c
 
-            im3 = np.where(im3==0, im, im3)
+            im3 = np.where(im3 == 0, im, im3)
 
             # Write the modified image with the predictions
             outputs3 = predictor(im3)

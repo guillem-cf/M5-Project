@@ -79,8 +79,6 @@ def results_kitti(split_path, coco_results_path, kitti_results_path):
 if __name__ == "__main__":
     split_path = '/home/mcv/datasets/KITTI/test_kitti.txt'
     coco_results_path = '/ghome/group03/M5-Project/week2/Results/Task_d/faster_RCNN/'
-    kitti_results_path = (
-        '/ghome/group03/M5-Project/week2/Results/Task_d/faster_RCNN/'
-    )
+    kitti_results_path = '/ghome/group03/M5-Project/week2/Results/Task_d/faster_RCNN/'
 
     results_kitti(split_path, coco_results_path, kitti_results_path)
