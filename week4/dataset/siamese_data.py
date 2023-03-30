@@ -21,8 +21,6 @@ class SiameseMITDataset(Dataset):
                     path1 = os.path.join(root, fname1)
                     item1 = (path1, self.class_to_idx[target])
                     for fname2 in sorted(fnames):
-                        if fname1 == fname2:
-                            continue
                         path2 = os.path.join(root, fname2)
                         item2 = (path2, self.class_to_idx[target])
                         self.samples.append((item1, item2))

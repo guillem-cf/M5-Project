@@ -24,14 +24,14 @@ from models.siameseResnet import SiameseResNet
 from models.tripletResnet import TripletResNet
 from pytorch_metric_learning import losses
 
-from week1.utils.checkpoint import save_checkpoint, save_checkpoint_loss
+from utils.checkpoint import save_checkpoint, save_checkpoint_loss
 
 if __name__ == '__main__':
     # args parser
     parser = argparse.ArgumentParser(description='Task B')
     parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
     parser.add_argument('--weights', type=str, default=None, help='Path to weights')
-    parser.add_argument('--batch_size', type=int, default=256, help='Batch size')
+    parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=0.00001, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
@@ -106,7 +106,9 @@ if __name__ == '__main__':
             img1, img2, label = img1.to(device), img2.to(device), label.to(device)
             # Forward pass
             E1, E2 = model(img1, img2)
-            loss = loss_func(E1, E2, label)
+            # labels must be a 1D tensor of shape (batch_size,)
+            loss = loss_func(E1, E2, label.numpy())
+
 
             # ponemos a cero los gradientes
             optimizer.zero_grad()
