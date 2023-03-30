@@ -34,7 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--weights', type=str, default=None, help='Path to weights')
     parser.add_argument('--batch_size', type=int, default=256, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs')
-    parser.add_argument('--learning_rate', type=float, default=0.0001, help='Learning rate')
+    parser.add_argument('--learning_rate', type=float, default=0.00001, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
     args = parser.parse_args()
@@ -71,8 +71,13 @@ if __name__ == '__main__':
 
     # Load the data
     transform = transforms.Compose(
-        [transforms.ToTensor(),
-         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
+        [
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomAffine(degrees=0, shear=0, translate=(0, 0.1)),
+            transforms.ToTensor(),
+            transforms.Resize((64, 64), antialias=False),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ]
     )
 
     train_dataset = TripletMITDataset(data_dir=dataset_path, split_name='train', transform=transform)
