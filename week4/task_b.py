@@ -49,7 +49,7 @@ if __name__ == '__main__':
         torch.cuda.amp.GradScaler()
     elif torch.backends.mps.is_available():
         print("MPS is available")
-        device = torch.device("mps")
+        device = torch.device("cpu")
     else:
         print("CPU is available")
         device = torch.device("cpu")
