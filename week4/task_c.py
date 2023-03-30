@@ -6,7 +6,7 @@ import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchvision.models import resnet50, ResNet50_Weights, ResNet18_Weights
 import torchvision.transforms as transforms
-from dataset.siamese_data import SiameseMITDataset
+from dataset.triplet_data import TripletMITDataset
 from torch.utils.data import DataLoader
 from utils.metrics import accuracy
 from utils.early_stopper import EarlyStopper
@@ -55,11 +55,10 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     if args.pretrained:
-        model = SiameseResNet(weights=ResNet18_Weights.IMAGENET1K_V1).to(device)
+        model = TripletResNet(weights=ResNet18_Weights.IMAGENET1K_V1).to(device)
     else:
-        model = SiameseResNet().to(device)
-    loss_func = losses.ContrastiveLoss().to(device)
-
+        model = TripletResNet().to(device)
+    loss_func = losses.TripletMarginLoss(margin=args.margin).to(device)
 
     # Load the data
     transform = transforms.Compose(
@@ -67,12 +66,12 @@ if __name__ == '__main__':
          transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
     )
 
-    train_dataset = SiameseMITDataset(data_dir=dataset_path, split_name='train', transform=transform)
+    train_dataset = TripletMITDataset(data_dir=dataset_path, split_name='train', transform=transform)
     train_loader = DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True
     )
 
-    val_dataset = SiameseMITDataset(data_dir=dataset_path, split_name='test', transform=transform)
+    val_dataset = TripletMITDataset(data_dir=dataset_path, split_name='test', transform=transform)
     val_loader = DataLoader(
         val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True
     )
@@ -97,11 +96,10 @@ if __name__ == '__main__':
         t0 = time.time()
         model.train()
         loop = tqdm(train_loader)
-        for idx, (img1, img2, label) in enumerate(loop):
-            img1, img2, label = img1.to(device), img2.to(device), label.to(device)
-            # Forward pass
-            E1, E2 = model(img1, img2)
-            loss = loss_func(E1, E2, label)
+        for idx, img_triplet in enumerate(loop):
+            anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = img_triplet
+            anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = anchor_img.to(device), pos_img.to(
+                device), neg_img.to(device), anchor_target.to(device), pos_target.to(device), neg_target.to(device)
 
             # ponemos a cero los gradientes
             optimizer.zero_grad()
