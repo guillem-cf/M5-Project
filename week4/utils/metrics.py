@@ -1,5 +1,7 @@
 import torch
-
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+import numpy as np
 
 def accuracy(output, target):
     with torch.no_grad():
@@ -20,7 +22,7 @@ def top_k_acc(output, target, k=3):
     return correct / len(target)
 
 
-def tsne_features(image_features, y_true, subset):
+def tsne_features(image_features, y_true, subset, labels, output_dir):
 
     tsne = TSNE(n_components=2)
     X_tsne = tsne.fit_transform(image_features, y_true)
@@ -29,12 +31,12 @@ def tsne_features(image_features, y_true, subset):
     colors = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink']
     for i, c in enumerate(set(y_true)):
         mask = (y_true == c)
-        ax.scatter(X_tsne[mask, 0], X_tsne[mask, 1], label=test_dataset.classes[i], c=colors[i], alpha=0.7)
+        ax.scatter(X_tsne[mask, 0], X_tsne[mask, 1], label=labels[i] , c=colors[i], alpha=0.7)
     ax.legend()
     ax.set_title("t-SNE of the " + subset + " images features\n (ResNet50 output of last convolutional layer)")
-    fig.savefig("Results/Task_a/tsne_" + subset + "_features.png")
+    fig.savefig(output_dir + "/tsne_" + subset + "_features.png")
 
-def plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, p="BEST", num_queries=6, num_retrievals=6):
+def plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir, p="BEST", num_queries=6, num_retrievals=6):
 
     if p=="BEST":
         ind = np.argsort(np.sum(neigh_dist[:, 0:5], axis=1), axis=0)
@@ -64,5 +66,5 @@ def plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_i
             ax[i][j].set_xticks([])
             ax[i][j].set_yticks([])
     fig.tight_layout()
-    plt.savefig("Results/Task_a/ImageRetrievalQualitativeResults_" + p + ".png")
+    plt.savefig(output_dir + "/ImageRetrievalQualitativeResults_" + p + ".png")
     plt.close()
