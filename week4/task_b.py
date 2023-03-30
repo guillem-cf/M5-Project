@@ -5,21 +5,21 @@ import time
 import torch
 import torchvision.transforms as transforms
 from dataset.siamese_data import SiameseMITDataset
-from models.siameseResnet import SiameseResNet
-from pytorch_metric_learning import losses
+from models.models import SiameseResNet
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchvision.models import ResNet18_Weights
 from tqdm import tqdm
 from utils.checkpoint import save_checkpoint_loss
 from utils.early_stopper import EarlyStopper
+from utils import losses
 
 if __name__ == '__main__':
     # args parser
     parser = argparse.ArgumentParser(description='Task B')
     parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
     parser.add_argument('--weights', type=str, default=None, help='Path to weights')
-    parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
+    parser.add_argument('--batch_size', type=int, default=256, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=0.00001, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
@@ -46,7 +46,7 @@ if __name__ == '__main__':
         model = SiameseResNet(weights=ResNet18_Weights.IMAGENET1K_V1).to(device)
     else:
         model = SiameseResNet().to(device)
-    loss_func = losses.ContrastiveLoss().to(device)
+    loss_func = losses.ContrastiveLoss().to(device)  # margin
 
     # Load the data
     transform = transforms.Compose(
@@ -88,7 +88,7 @@ if __name__ == '__main__':
             # Forward pass
             E1, E2 = model(img1, img2)
             # labels must be a 1D tensor of shape (batch_size,)
-            loss = loss_func(E1, E2, label.numpy())
+            loss = loss_func(E1, E2, label)
 
             # ponemos a cero los gradientes
             optimizer.zero_grad()
@@ -109,17 +109,11 @@ if __name__ == '__main__':
             val_loss = 0
             loop = tqdm(val_loader)
             for idx, img_triplet in enumerate(loop):
-                anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = img_triplet
-                anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = (
-                    anchor_img.to(device),
-                    pos_img.to(device),
-                    neg_img.to(device),
-                    anchor_target.to(device),
-                    pos_target.to(device),
-                    neg_target.to(device),
-                )
-
-                val_loss += loss_func(embeddings, labels)
+                img1, img2, label = img1.to(device), img2.to(device), label.to(device)
+                # Forward pass
+                E1, E2 = model(img1, img2)
+                # labels must be a 1D tensor of shape (batch_size,)
+                val_loss += loss_func(E1, E2, label)
                 loop.set_description(f"Validation: Epoch [{epoch}/{args.num_epochs}]")
                 loop.set_postfix(val_loss=val_loss.item())
 
