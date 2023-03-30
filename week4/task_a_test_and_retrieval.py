@@ -3,7 +3,7 @@ from torchvision.models import resnet50, ResNet50_Weights
 import torchvision.transforms as transforms
 from dataset.mit import MITDataset
 from torch.utils.data import DataLoader
-from utils.metrics import accuracy
+from utils.metrics import accuracy, tsne_features,plot_retrieval
 from tqdm import tqdm
 from sklearn.metrics import PrecisionRecallDisplay
 from sklearn.metrics import precision_score, average_precision_score, accuracy_score
@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.manifold import TSNE
+
 
 finetuned = True
 dataset_path = '../../mcv/datasets/MIT_split'
@@ -199,7 +200,7 @@ print("mAP@5:", mAP_5)
 
 
 # Qualitative results:
-
+"""
 def plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, p="BEST", num_queries=6, num_retrievals=6):
 
     if p=="BEST":
@@ -231,15 +232,15 @@ def plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_i
             ax[i][j].set_yticks([])
     fig.tight_layout()
     plt.savefig("Results/Task_a/ImageRetrievalQualitativeResults_" + p + ".png")
-    plt.close()
+    plt.close()"""
 
-plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, p="")
-plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, p="BEST")
-plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, p="WORST")
+plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir = "Results/Task_a", p="" )
+plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir = "Results/Task_a",  p="BEST")
+plot_retrieval(test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir = "Results/Task_a", p="WORST")
 
 # TSNE of features
 
-def tsne_features(image_features, y_true, subset):
+"""def tsne_features(image_features, y_true, subset):
 
     tsne = TSNE(n_components=2)
     X_tsne = tsne.fit_transform(image_features, y_true)
@@ -251,8 +252,8 @@ def tsne_features(image_features, y_true, subset):
         ax.scatter(X_tsne[mask, 0], X_tsne[mask, 1], label=test_dataset.classes[i], c=colors[i], alpha=0.7)
     ax.legend()
     ax.set_title("t-SNE of the " + subset + " images features\n (ResNet50 output of last convolutional layer)")
-    fig.savefig("Results/Task_a/tsne_" + subset + "_features.png")
+    fig.savefig("Results/Task_a/tsne_" + subset + "_features.png")"""
 
 
-tsne_features(image_features_train, y_true_train, "train")
-tsne_features(image_features_test, y_true_test, "test")
+tsne_features(image_features_train, y_true_train, "train",labels= test_dataset.classes,output_dir = "Results/Task_a")
+tsne_features(image_features_test, y_true_test, "test",labels= test_dataset.classes, output_dir = "Results/Task_a")
