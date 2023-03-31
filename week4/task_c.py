@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--weights', type=str, default=None, help='Path to weights')
     parser.add_argument('--batch_size', type=int, default=256, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=10, help='Number of epochs')
-    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
+    parser.add_argument('--learning_rate', type=float, default=0.0001, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
     args = parser.parse_args()
