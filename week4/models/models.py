@@ -32,7 +32,7 @@ class ClassNet(nn.Module):
 
 
 class SiameseResNet(nn.Module):
-    def __init__(self, weights):
+    def __init__(self, weights=None):
         super(SiameseResNet, self).__init__()
         self.resnet = resnet18(weights=weights)
         # remove last layer
@@ -51,7 +51,7 @@ class SiameseResNet(nn.Module):
 
 
 class TripletResNet(nn.Module):
-    def __init__(self, weights):
+    def __init__(self, weights=None):
         super(TripletResNet, self).__init__()
         self.resnet = resnet18(weights=weights)
         # remove last layer

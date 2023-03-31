@@ -6,14 +6,13 @@ import torch
 import torchvision.transforms as transforms
 from dataset.triplet_data import TripletMITDataset
 from models.models import TripletResNet
-from pytorch_metric_learning import losses
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchvision.models import ResNet18_Weights
 from tqdm import tqdm
-from utils.early_stopper import EarlyStopper
-
 from utils.checkpoint import save_checkpoint_loss
+from utils.early_stopper import EarlyStopper
+from utils import losses
 
 if __name__ == '__main__':
     # args parser
@@ -46,12 +45,18 @@ if __name__ == '__main__':
     if args.pretrained:
         model = TripletResNet(weights=ResNet18_Weights.IMAGENET1K_V1).to(device)
     else:
-        model = TripletResNet(weights=None).to(device)
-    loss_func = losses.TripletMarginLoss(margin=args.margin).to(device)
+        model = TripletResNet().to(device)
+    loss_func = losses.TripletLoss().to(device)  # margin
 
     # Load the data
     transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
+        [
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomAffine(degrees=0, shear=0, translate=(0, 0.1)),
+            transforms.ToTensor(),
+            transforms.Resize((64, 64), antialias=False),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
     )
 
     train_dataset = TripletMITDataset(data_dir=dataset_path, split_name='train', transform=transform)
@@ -78,16 +83,12 @@ if __name__ == '__main__':
         t0 = time.time()
         model.train()
         loop = tqdm(train_loader)
-        for idx, img_triplet in enumerate(loop):
-            anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = img_triplet
-            anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = (
-                anchor_img.to(device),
-                pos_img.to(device),
-                neg_img.to(device),
-                anchor_target.to(device),
-                pos_target.to(device),
-                neg_target.to(device),
-            )
+        for idx, (img1, img2, img3) in enumerate(loop):
+            anchor_img, positive_img, negative_img = img1.to(device), img2.to(device), img3.to(device)
+            # Forward pass
+            E1, E2, E3 = model(anchor_img, positive_img, negative_img)
+            # labels must be a 1D tensor of shape (batch_size,)
+            loss = loss_func(E1, E2, E3)
 
             # ponemos a cero los gradientes
             optimizer.zero_grad()
@@ -108,22 +109,16 @@ if __name__ == '__main__':
             val_loss = 0
             loop = tqdm(val_loader)
             for idx, img_triplet in enumerate(loop):
-                anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = img_triplet
-                anchor_img, pos_img, neg_img, anchor_target, pos_target, neg_target = (
-                    anchor_img.to(device),
-                    pos_img.to(device),
-                    neg_img.to(device),
-                    anchor_target.to(device),
-                    pos_target.to(device),
-                    neg_target.to(device),
-                )
-
-                val_loss += loss_func(embeddings, labels)
+                anchor_img, positive_img, negative_img = img1.to(device), img2.to(device), img3.to(device)
+                # Forward pass
+                E1, E2, E3 = model(anchor_img, positive_img, negative_img)
+                # labels must be a 1D tensor of shape (batch_size,)
+                val_loss += loss_func(E1, E2, E3)
                 loop.set_description(f"Validation: Epoch [{epoch}/{args.num_epochs}]")
                 loop.set_postfix(val_loss=val_loss.item())
 
             val_loss = val_loss / (idx + 1)
-            print({"epoch": epoch, "val_loss": val_loss})
+            print({"epoch": epoch, "val_loss": val_loss.item()})
 
             val_loss_list.append(float(val_loss))
 

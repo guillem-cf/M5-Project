@@ -27,7 +27,7 @@ class TripletLoss(nn.Module):
     Takes embeddings of an anchor sample, a positive sample and a negative sample
     """
 
-    def __init__(self, margin):
+    def __init__(self, margin=1.0):
         super(TripletLoss, self).__init__()
         self.margin = margin
 
