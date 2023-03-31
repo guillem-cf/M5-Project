@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn import Sequential
 
 from torchvision import models
 from torchvision.models import resnet18
@@ -10,7 +11,7 @@ class ClassNet(nn.Module):
     # NETWORK FROM SLIDES
     def __init__(self):
         super(ClassNet, self).__init__()
-        self.convnet = nn.Sequential(nn.Conv2d(3, 32, 5), nn.PReLU(),
+        self.convnet = nn.Sequential(nn.Conv2d(1, 32, 5), nn.PReLU(),
                                      nn.MaxPool2d(2, stride=2),
                                      nn.Conv2d(32, 64, 5), nn.PReLU(),
                                      nn.MaxPool2d(2, stride=2))
@@ -23,6 +24,8 @@ class ClassNet(nn.Module):
                                 )
 
     def forward(self, x):
+
+        x = x.view(x.size()[0], 1, x.size()[1], 1)
         x = self.convnet(x)
         x = x.view(x.size()[0], -1)
         x = self.fc(x)
@@ -36,10 +39,14 @@ class SiameseResNet(nn.Module):
     def __init__(self, weights):
         super(SiameseResNet, self).__init__()
         self.resnet = resnet18(weights=weights)
+        # remove last layer
+        self.resnet.fc = Sequential(*list(self.resnet.fc.children())[:-1])
         self.class_net = ClassNet()
 
     def forward_once(self, x):
-        return self.class_net(x)
+        x = self.resnet(x)
+        x = self.class_net(x)
+        return x
 
     def forward(self, x1, x2):
         x1 = self.forward_once(x1)
@@ -48,12 +55,17 @@ class SiameseResNet(nn.Module):
 
 
 class TripletResNet(nn.Module):
-    def __init__(self, class_net):
+    def __init__(self, weights):
         super(TripletResNet, self).__init__()
-        self.class_net = class_net
+        self.resnet = resnet18(weights=weights)
+        # remove last layer
+        self.resnet.fc = Sequential(*list(self.resnet.fc.children())[:-1])
+        self.class_net = ClassNet()
 
     def forward_once(self, x):
-        return self.class_net(x)
+        x = self.resnet(x)
+        x = self.class_net(x)
+        return x
 
     def forward(self, x1, x2, x3):
         x1 = self.forward_once(x1)

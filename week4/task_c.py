@@ -5,7 +5,7 @@ import time
 import torch
 import torchvision.transforms as transforms
 from dataset.triplet_data import TripletMITDataset
-from models.tripletResnet import TripletResNet
+from models.models import TripletResNet
 from pytorch_metric_learning import losses
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
@@ -13,7 +13,7 @@ from torchvision.models import ResNet18_Weights
 from tqdm import tqdm
 from utils.early_stopper import EarlyStopper
 
-from week1.utils.checkpoint import save_checkpoint_loss
+from utils.checkpoint import save_checkpoint_loss
 
 if __name__ == '__main__':
     # args parser
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     if args.pretrained:
         model = TripletResNet(weights=ResNet18_Weights.IMAGENET1K_V1).to(device)
     else:
-        model = TripletResNet().to(device)
+        model = TripletResNet(weights=None).to(device)
     loss_func = losses.TripletMarginLoss(margin=args.margin).to(device)
 
     # Load the data
