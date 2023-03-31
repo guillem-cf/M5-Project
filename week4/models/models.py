@@ -7,16 +7,16 @@ from torchvision.models import resnet18
 
 
 class ClassNet(nn.Module):
-
-    # NETWORK FROM SLIDES
     def __init__(self):
         super(ClassNet, self).__init__()
-        self.convnet = nn.Sequential(nn.Conv2d(1, 32, 5), nn.PReLU(),
+
+        # NETWORK FROM SLIDES
+        self.convnet = nn.Sequential(nn.Conv2d(3, 32, 5), nn.PReLU(),
                                      nn.MaxPool2d(2, stride=2),
                                      nn.Conv2d(32, 64, 5), nn.PReLU(),
                                      nn.MaxPool2d(2, stride=2))
 
-        self.fc = nn.Sequential(nn.Linear(10816, 256),
+        self.fc = nn.Sequential(nn.Linear(512, 256),
                                 nn.PReLU(),
                                 nn.Linear(256, 256),
                                 nn.PReLU(),
@@ -24,10 +24,6 @@ class ClassNet(nn.Module):
                                 )
 
     def forward(self, x):
-
-        x = x.view(x.size()[0], 1, x.size()[1], 1)
-        x = self.convnet(x)
-        x = x.view(x.size()[0], -1)
         x = self.fc(x)
         return x
 
