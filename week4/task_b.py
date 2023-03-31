@@ -7,8 +7,14 @@ import torch
 import torchvision.transforms as transforms
 from matplotlib import pyplot as plt
 
+from sklearn.metrics import (
+    PrecisionRecallDisplay,
+    accuracy_score,
+    average_precision_score,
+)
+
 from dataset.siamese_data import SiameseMITDataset
-from models.models import SiameseResNet
+from models.models import SiameseNet, EmbeddingNet
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchvision.models import ResNet18_Weights, ResNet50_Weights
@@ -18,11 +24,16 @@ from utils.early_stopper import EarlyStopper
 from utils import losses
 import torch.nn.functional as F
 
+import os
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+
+
 if __name__ == '__main__':
     # args parser
     parser = argparse.ArgumentParser(description='Task B')
     parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
-    parser.add_argument('--weights', type=str, default=None, help='Path to weights')
+    parser.add_argument('--weights', type=str, default='/ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5', help='Path to weights')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
@@ -32,7 +43,8 @@ if __name__ == '__main__':
 
     # current path
     current_path = os.getcwd()
-    dataset_path = os.path.join(current_path, '../../mcv/datasets/MIT_split')
+    dataset_path = os.path.join(current_path, 'mcv/datasets/MIT_split')
+   
 
     # device
     if torch.cuda.is_available():
@@ -47,9 +59,21 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     if args.pretrained:
-        model = SiameseResNet(weights=ResNet50_Weights.IMAGENET1K_V2).to(device)
+        # model = SiameseResNet(weights=ResNet50_Weights.IMAGENET1K_V2).to(device)
+        # Load the weights of /ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5, remove the last layer 
+        # model = SiameseResNet().to(device)
+        # model.load_state_dict(torch.load(args.weights)['model_state_dict'])
+        # Remove the last layer
+        # model = torch.nn.Sequential(*(list(model.children())[:-1]))
+        # Load weights of resnet50 model from /ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5
+        embedding_net = EmbeddingNet(weights=ResNet50_Weights.IMAGENET1K_V2).to(device)
+        model = SiameseNet(embedding_net).to(device)
     else:
-        model = SiameseResNet().to(device)
+        weights_model = torch.load(args.weights)['model_state_dict']
+        embedding_net = EmbeddingNet(weights=weights_model).to(device)
+        model = SiameseNet(embedding_net).to(device)
+        
+        
     loss_func = losses.ContrastiveLoss().to(device)  # margin
 
     transform_train = transforms.Compose(
@@ -61,6 +85,17 @@ if __name__ == '__main__':
     )
 
     transform_val = ResNet50_Weights.IMAGENET1K_V2.transforms()
+    
+    # transform = transforms.Compose(
+    #     [
+    #         # RandomHorizontalFlip(),
+    #         # RandomRotation(15),
+    #         transforms.ToTensor(),
+    #         transforms.Normalize(
+    #             mean=[0.485, 0.456, 0.406],
+    #             std=[0.229, 0.224, 0.225]),
+    #     ]
+    # )
 
     train_dataset = SiameseMITDataset(data_dir=dataset_path, split_name='train', transform=transform_train)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
@@ -90,19 +125,29 @@ if __name__ == '__main__':
         t0 = time.time()
         model.train()
         loop = tqdm(train_loader)
+        
+        loss_batch = []
+        total_loss = 0
         for idx, (img1, img2, label) in enumerate(loop):
             img1, img2, label = img1.to(device), img2.to(device), label.to(device)
+            for j in range(len(img1)):
+                view1 = img1[j]
+                view2 = img2[j]
+                a = 1
             # Forward pass
             E1, E2 = model(img1, img2)
             # labels must be a 1D tensor of shape (batch_size,)
             loss = loss_func(E1, E2, label)
-            dist_E1_E2 = F.pairwise_distance(E1, E2, 2)
+            loss_batch.append(loss.item())
+            total_loss += loss.item()
+            
+            # dist_E1_E2 = F.pairwise_distance(E1, E2, 2)
 
-            pred = dist_E1_E2 < 0.5
-            pred = pred.type(torch.FloatTensor).to(device)
-            num_correct += torch.sum(torch.Tensor(pred == label)).item()
-            num_total += label.size(0)
-            train_accuracy = num_correct / num_total
+            # pred = dist_E1_E2 < 0.5
+            # pred = pred.type(torch.FloatTensor).to(device)
+            # num_correct += torch.sum(torch.Tensor(pred == label)).item()
+            # num_total += label.size(0)
+            # train_accuracy = num_correct / num_total
 
             # ponemos a cero los gradientes
             optimizer.zero_grad()
@@ -111,19 +156,21 @@ if __name__ == '__main__':
             # update de los pesos
             optimizer.step()
             loop.set_description(f"Train: Epoch [{epoch}/{args.num_epochs}]")
-            loop.set_postfix(loss=loss.item(), accuracy=train_accuracy)
+            # loop.set_postfix(loss=loss.item(), accuracy=train_accuracy)
+            loop.set_postfix(loss=loss.item())
 
-        print({"epoch": epoch, "val_loss": loss.item(), "train_accuracy": train_accuracy})
+        # print({"epoch": epoch, "train_loss": loss.item(), "train_accuracy": train_accuracy})
+        print({"epoch": epoch, "train_loss": loss.item()})
 
         train_loss_list.append(loss.item())
-        train_acc_list.append(train_accuracy)
+        # train_acc_list.append(train_accuracy)
 
         # Validation step
         model.eval()
         with torch.no_grad():
             val_loss = 0
             loop = tqdm(val_loader)
-            for idx, img_triplet in enumerate(loop):
+            for idx, (img1, img2, label) in enumerate(loop):
                 num_correct = 0
                 num_total = 0
                 img1, img2, label = img1.to(device), img2.to(device), label.to(device)
@@ -131,20 +178,24 @@ if __name__ == '__main__':
                 E1, E2 = model(img1, img2)
                 # labels must be a 1D tensor of shape (batch_size,)
                 val_loss += loss_func(E1, E2, label)
-                dist_E1_E2 = F.pairwise_distance(E1, E2, 2)
-                pred = dist_E1_E2 < 0.5
-                pred = pred.type(torch.FloatTensor).to(device)
-                num_correct += torch.sum(pred == label).item()
-                num_total += label.size(0)
-                val_accuracy = num_correct / num_total
+                # dist_E1_E2 = F.pairwise_distance(E1, E2, 2)
+                
+                # pred = dist_E1_E2 < 0.5
+                # pred = pred.type(torch.FloatTensor).to(device)
+                # num_correct += torch.sum(pred == label).item()
+                # num_total += label.size(0)
+                # val_accuracy = num_correct / num_total
+                
                 loop.set_description(f"Validation: Epoch [{epoch}/{args.num_epochs}]")
-                loop.set_postfix(val_loss=val_loss.item(), val_accuracy=val_accuracy)
+                # loop.set_postfix(val_loss=val_loss.item(), val_accuracy=val_accuracy)
+                loop.set_postfix(val_loss=val_loss.item())
 
             val_loss = val_loss / (idx + 1)
-            print({"epoch": epoch, "val_loss": val_loss.item(), "val_accuracy": val_accuracy})
+            # print({"epoch": epoch, "val_loss": val_loss.item(), "val_accuracy": val_accuracy})
+            print({"epoch": epoch, "val_loss": val_loss.item()})
 
             val_loss_list.append(float(val_loss))
-            val_acc_list.append(float(val_accuracy))
+            # val_acc_list.append(float(val_accuracy))
 
             #  # Learning rate scheduler
             lr_scheduler.step(val_loss)

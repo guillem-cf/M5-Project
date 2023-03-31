@@ -46,12 +46,14 @@ class SiameseMITDataset(Dataset):
             img1, label1 = self.data[index], self.labels[index]
 
             if target == 1:
-                siamese_label = np.random.choice(list(self.label_to_indices.keys() - {label1}))
-                siamese_index = np.random.choice(self.label_to_indices[siamese_label])
-            else:
                 siamese_index = index
                 while siamese_index == index:
                     siamese_index = np.random.choice(self.label_to_indices[label1])
+                
+            else:
+                siamese_label = np.random.choice(list(self.label_to_indices.keys() - {label1}))
+                siamese_index = np.random.choice(self.label_to_indices[siamese_label])
+                
 
             img2 = self.data[siamese_index]
 
