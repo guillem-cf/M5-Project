@@ -13,7 +13,8 @@ from utils.checkpoint import save_checkpoint
 from utils.early_stopper import EarlyStopper
 from utils.metrics import accuracy
 
-dataset_path = '../../mcv/datasets/MIT_split'
+# dataset_path = '../../mcv/datasets/MIT_split'
+dataset_path = '../../dataset/MIT_split'
 num_classes = 8
 BATCH_SIZE = 256
 LEARNING_RATE = 1e-4
@@ -45,20 +46,20 @@ for name, param in model.named_parameters():
 model = model.to(device)
 
 # Load the data
-transform = transforms.Compose(
+transform_train = transforms.Compose(
     [
+        ResNet50_Weights.IMAGENET1K_V2.transforms(),
         transforms.RandomHorizontalFlip(),
         transforms.RandomAffine(degrees=0, shear=0, translate=(0, 0.1)),
-        transforms.ToTensor(),
-        transforms.Resize((64, 64), antialias=False),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ]
 )
 
-train_dataset = MITDataset(data_dir=dataset_path, split_name='train', transform=transform)
+transform_val = ResNet50_Weights.IMAGENET1K_V2.transforms()
+
+train_dataset = MITDataset(data_dir=dataset_path, split_name='train', transform=transform_train)
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True)
 
-val_dataset = MITDataset(data_dir=dataset_path, split_name='test', transform=transform)
+val_dataset = MITDataset(data_dir=dataset_path, split_name='test', transform=transform_val)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
 
 # Define the loss function

@@ -11,7 +11,7 @@ from dataset.siamese_data import SiameseMITDataset
 from models.models import SiameseResNet
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
-from torchvision.models import ResNet18_Weights
+from torchvision.models import ResNet18_Weights, ResNet50_Weights
 from tqdm import tqdm
 from utils.checkpoint import save_checkpoint_loss
 from utils.early_stopper import EarlyStopper
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     loss_func = losses.ContrastiveLoss().to(device)  # margin
 
     # Load the data
-    transform = transforms.Compose(
+    """transform = transforms.Compose(
         [
             transforms.RandomHorizontalFlip(),
             transforms.RandomAffine(degrees=0, shear=0, translate=(0, 0.1)),
@@ -61,7 +61,9 @@ if __name__ == '__main__':
             transforms.Resize((64, 64), antialias=False),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
-    )
+    )"""
+
+    transform = ResNet18_Weights.IMAGENET1K_V1.transforms()
 
     train_dataset = SiameseMITDataset(data_dir=dataset_path, split_name='train', transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
