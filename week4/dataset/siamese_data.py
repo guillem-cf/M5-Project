@@ -67,7 +67,7 @@ class SiameseMITDataset(Dataset):
             img1 = self.transform(img1)
             img2 = self.transform(img2)
 
-        return (img1, img2), torch.tensor(target)
+        return img1, img2, torch.tensor(target, dtype=torch.float32)
 
     def __len__(self):
         return self.n_samples
