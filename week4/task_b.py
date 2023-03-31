@@ -23,8 +23,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Task B')
     parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
     parser.add_argument('--weights', type=str, default=None, help='Path to weights')
-    parser.add_argument('--batch_size', type=int, default=256, help='Batch size')
-    parser.add_argument('--num_epochs', type=int, default=5, help='Number of epochs')
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
+    parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     # current path
     current_path = os.getcwd()
-    dataset_path = os.path.join(current_path, '../../dataset/MIT_split')
+    dataset_path = os.path.join(current_path, '../../mcv/datasets/MIT_split')
 
     # device
     if torch.cuda.is_available():
@@ -47,28 +47,25 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     if args.pretrained:
-        model = SiameseResNet(weights=ResNet18_Weights.IMAGENET1K_V1).to(device)
+        model = SiameseResNet(weights=ResNet50_Weights.IMAGENET1K_V2).to(device)
     else:
         model = SiameseResNet().to(device)
     loss_func = losses.ContrastiveLoss().to(device)  # margin
 
-    # Load the data
-    """transform = transforms.Compose(
+    transform_train = transforms.Compose(
         [
+            ResNet50_Weights.IMAGENET1K_V2.transforms(),
             transforms.RandomHorizontalFlip(),
             transforms.RandomAffine(degrees=0, shear=0, translate=(0, 0.1)),
-            transforms.ToTensor(),
-            transforms.Resize((64, 64), antialias=False),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
-    )"""
+    )
 
-    transform = ResNet18_Weights.IMAGENET1K_V1.transforms()
+    transform_val = ResNet50_Weights.IMAGENET1K_V2.transforms()
 
-    train_dataset = SiameseMITDataset(data_dir=dataset_path, split_name='train', transform=transform)
+    train_dataset = SiameseMITDataset(data_dir=dataset_path, split_name='train', transform=transform_train)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
 
-    val_dataset = SiameseMITDataset(data_dir=dataset_path, split_name='test', transform=transform)
+    val_dataset = SiameseMITDataset(data_dir=dataset_path, split_name='test', transform=transform_val)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     # Optimizer
@@ -83,7 +80,6 @@ if __name__ == '__main__':
     train_loss_list = []
     val_acc_list = []
     val_loss_list = []
-
 
     # best_model_wts = copy.deepcopy(model.state_dict())
     best_val_loss = float('inf')
@@ -104,7 +100,7 @@ if __name__ == '__main__':
 
             pred = dist_E1_E2 < 0.5
             pred = pred.type(torch.FloatTensor).to(device)
-            num_correct += torch.sum(pred == label).item()
+            num_correct += torch.sum(torch.Tensor(pred == label)).item()
             num_total += label.size(0)
             train_accuracy = num_correct / num_total
 
@@ -183,7 +179,6 @@ if __name__ == '__main__':
         print("Epoch time: ", t1 - t0)
         print("Total time: ", total_time)
 
-
     output_path = os.path.join(current_path, 'Results/Task_b/')
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -194,10 +189,12 @@ if __name__ == '__main__':
     plt.figure(figsize=(10, 12), dpi=150)
     plt.title("Loss during training", size=18)
     plt.plot(
-        np.arange(0, args.num_epochs, plot_step), train_loss_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
+        np.arange(0, args.num_epochs, plot_step), train_loss_list[0::plot_step], color="blue", linewidth=2.5,
+        label="Train subset"
     )
     plt.plot(
-        np.arange(0, args.num_epochs, plot_step), val_loss_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset"
+        np.arange(0, args.num_epochs, plot_step), val_loss_list[0::plot_step], color="orange", linewidth=2.5,
+        label="Val subset"
     )
     plt.xticks(np.arange(0, args.num_epochs, plot_step).astype(int))
     plt.xlabel("Epoch", size=12)
@@ -209,9 +206,11 @@ if __name__ == '__main__':
     plt.figure(figsize=(10, 12), dpi=150)
     plt.title("Accuracy during training", size=18)
     plt.plot(
-        np.arange(0, args.num_epochs, plot_step), train_acc_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
+        np.arange(0, args.num_epochs, plot_step), train_acc_list[0::plot_step], color="blue", linewidth=2.5,
+        label="Train subset"
     )
-    plt.plot(np.arange(0, args.num_epochs, plot_step), val_acc_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset")
+    plt.plot(np.arange(0, args.num_epochs, plot_step), val_acc_list[0::plot_step], color="orange", linewidth=2.5,
+             label="Val subset")
     plt.xticks(np.arange(0, args.num_epochs, plot_step).astype(int))
     plt.xlabel("Epoch", size=12)
     plt.ylabel("Accuracy", size=12)

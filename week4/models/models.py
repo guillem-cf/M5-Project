@@ -3,11 +3,11 @@ import torch.nn.functional as F
 from torch.nn import Sequential
 
 from torchvision import models
-from torchvision.models import resnet18
+from torchvision.models import resnet18, resnet50
 
 
 class ClassNet(nn.Module):
-    def __init__(self):
+    def __init__(self, in_features_resnet):
         super(ClassNet, self).__init__()
 
         # NETWORK FROM SLIDES
@@ -16,7 +16,7 @@ class ClassNet(nn.Module):
                                      nn.Conv2d(32, 64, 5), nn.PReLU(),
                                      nn.MaxPool2d(2, stride=2))
 
-        self.fc = nn.Sequential(nn.Linear(512, 256),
+        self.fc = nn.Sequential(nn.Linear(in_features_resnet, 256),
                                 nn.PReLU(),
                                 nn.Linear(256, 256),
                                 nn.PReLU(),
@@ -34,14 +34,14 @@ class ClassNet(nn.Module):
 class SiameseResNet(nn.Module):
     def __init__(self, weights=None):
         super(SiameseResNet, self).__init__()
-        self.resnet = resnet18(weights=weights)
+        self.resnet = resnet50(weights=weights)
         # remove last layer
-        self.resnet.fc = Sequential(*list(self.resnet.fc.children())[:-1])
-        self.class_net = ClassNet()
+        self.class_net = ClassNet(self.resnet.fc.in_features)
+
+        self.resnet.fc = self.class_net
 
     def forward_once(self, x):
         x = self.resnet(x)
-        x = self.class_net(x)
         return x
 
     def forward(self, x1, x2):
@@ -53,7 +53,7 @@ class SiameseResNet(nn.Module):
 class TripletResNet(nn.Module):
     def __init__(self, weights=None):
         super(TripletResNet, self).__init__()
-        self.resnet = resnet18(weights=weights)
+        self.resnet = resnet50(weights=weights)
         # remove last layer
         self.resnet.fc = Sequential(*list(self.resnet.fc.children())[:-1])
         self.class_net = ClassNet()
