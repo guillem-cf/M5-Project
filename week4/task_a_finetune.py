@@ -13,13 +13,13 @@ from utils.checkpoint import save_checkpoint
 from utils.early_stopper import EarlyStopper
 from utils.metrics import accuracy
 
-# dataset_path = '../../mcv/datasets/MIT_split'
-dataset_path = '../../dataset/MIT_split'
+dataset_path = '../../mcv/datasets/MIT_split'
+#dataset_path = '../../dataset/MIT_split'
 num_classes = 8
 BATCH_SIZE = 256
 LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 0.001
-EPOCHS = 1000
+EPOCHS = 150
 
 if torch.cuda.is_available():
     print("CUDA is available")
@@ -189,7 +189,7 @@ for epoch in range(1, EPOCHS + 1):
 
 torch.save(model.state_dict(), "Results/Task_a/Task_a_Resnet50_finetuned.pth")
 
-plot_step = 100
+plot_step = 1
 
 plt.figure(figsize=(10, 12), dpi=150)
 plt.title("Loss during training", size=18)
