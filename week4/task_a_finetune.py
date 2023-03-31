@@ -46,7 +46,13 @@ model = model.to(device)
 
 # Load the data
 transform = transforms.Compose(
-    [transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
+    [
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomAffine(degrees=0, shear=0, translate=(0, 0.1)),
+        transforms.ToTensor(),
+        transforms.Resize((64, 64), antialias=False),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
 )
 
 train_dataset = MITDataset(data_dir=dataset_path, split_name='train', transform=transform)

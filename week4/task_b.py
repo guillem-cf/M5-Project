@@ -73,7 +73,9 @@ if __name__ == '__main__':
     # Learning rate scheduler
     lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
 
+    train_acc_list = []
     train_loss_list = []
+    val_acc_list = []
     val_loss_list = []
 
     # best_model_wts = copy.deepcopy(model.state_dict())
@@ -154,3 +156,35 @@ if __name__ == '__main__':
         total_time += t1 - t0
         print("Epoch time: ", t1 - t0)
         print("Total time: ", total_time)
+
+torch.save(model.state_dict(), "Results/Task_b/Task_b_siamese.pth")
+
+plot_step = 100
+
+plt.figure(figsize=(10, 12), dpi=150)
+plt.title("Loss during training", size=18)
+plt.plot(
+    np.arange(0, EPOCHS, plot_step), train_loss_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
+)
+plt.plot(
+    np.arange(0, EPOCHS, plot_step), val_loss_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset"
+)
+plt.xticks(np.arange(0, EPOCHS, plot_step).astype(int))
+plt.xlabel("Epoch", size=12)
+plt.ylabel("Loss", size=12)
+plt.legend()
+plt.savefig("Results/Task_b/plot_loss.png")
+plt.close()
+
+plt.figure(figsize=(10, 12), dpi=150)
+plt.title("Accuracy during training", size=18)
+plt.plot(
+    np.arange(0, EPOCHS, plot_step), train_acc_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
+)
+plt.plot(np.arange(0, EPOCHS, plot_step), val_acc_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset")
+plt.xticks(np.arange(0, EPOCHS, plot_step).astype(int))
+plt.xlabel("Epoch", size=12)
+plt.ylabel("Accuracy", size=12)
+plt.legend()
+plt.savefig("Results/Task_b/plot_accuracy.png")
+plt.close()
