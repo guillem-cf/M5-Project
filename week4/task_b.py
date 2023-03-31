@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
     parser.add_argument('--weights', type=str, default=None, help='Path to weights')
     parser.add_argument('--batch_size', type=int, default=256, help='Batch size')
-    parser.add_argument('--num_epochs', type=int, default=10, help='Number of epochs')
+    parser.add_argument('--num_epochs', type=int, default=5, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
@@ -182,37 +182,37 @@ if __name__ == '__main__':
         print("Total time: ", total_time)
 
 
-output_path = os.path.join(current_path, 'Results/Task_b/')
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
-torch.save(model.state_dict(), output_path + "Task_b_siamese.pth")
+    output_path = os.path.join(current_path, 'Results/Task_b/')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    torch.save(model.state_dict(), output_path + "Task_b_siamese.pth")
 
-plot_step = 100
+    plot_step = 100
 
-plt.figure(figsize=(10, 12), dpi=150)
-plt.title("Loss during training", size=18)
-plt.plot(
-    np.arange(0, args.num_epochs, plot_step), train_loss_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
-)
-plt.plot(
-    np.arange(0, args.num_epochs, plot_step), val_loss_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset"
-)
-plt.xticks(np.arange(0, args.num_epochs, plot_step).astype(int))
-plt.xlabel("Epoch", size=12)
-plt.ylabel("Loss", size=12)
-plt.legend()
-plt.savefig("Results/Task_b/plot_loss.png")
-plt.close()
+    plt.figure(figsize=(10, 12), dpi=150)
+    plt.title("Loss during training", size=18)
+    plt.plot(
+        np.arange(0, args.num_epochs, plot_step), train_loss_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
+    )
+    plt.plot(
+        np.arange(0, args.num_epochs, plot_step), val_loss_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset"
+    )
+    plt.xticks(np.arange(0, args.num_epochs, plot_step).astype(int))
+    plt.xlabel("Epoch", size=12)
+    plt.ylabel("Loss", size=12)
+    plt.legend()
+    plt.savefig("Results/Task_b/plot_loss.png")
+    plt.close()
 
-plt.figure(figsize=(10, 12), dpi=150)
-plt.title("Accuracy during training", size=18)
-plt.plot(
-    np.arange(0, args.num_epochs, plot_step), train_acc_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
-)
-plt.plot(np.arange(0, args.num_epochs, plot_step), val_acc_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset")
-plt.xticks(np.arange(0, args.num_epochs, plot_step).astype(int))
-plt.xlabel("Epoch", size=12)
-plt.ylabel("Accuracy", size=12)
-plt.legend()
-plt.savefig("Results/Task_b/plot_accuracy.png")
-plt.close()
+    plt.figure(figsize=(10, 12), dpi=150)
+    plt.title("Accuracy during training", size=18)
+    plt.plot(
+        np.arange(0, args.num_epochs, plot_step), train_acc_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
+    )
+    plt.plot(np.arange(0, args.num_epochs, plot_step), val_acc_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset")
+    plt.xticks(np.arange(0, args.num_epochs, plot_step).astype(int))
+    plt.xlabel("Epoch", size=12)
+    plt.ylabel("Accuracy", size=12)
+    plt.legend()
+    plt.savefig("Results/Task_b/plot_accuracy.png")
+    plt.close()
