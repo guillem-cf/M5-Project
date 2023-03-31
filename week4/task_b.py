@@ -2,8 +2,11 @@ import argparse
 import os
 import time
 
+import numpy as np
 import torch
 import torchvision.transforms as transforms
+from matplotlib import pyplot as plt
+
 from dataset.siamese_data import SiameseMITDataset
 from models.models import SiameseResNet
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -13,6 +16,7 @@ from tqdm import tqdm
 from utils.checkpoint import save_checkpoint_loss
 from utils.early_stopper import EarlyStopper
 from utils import losses
+import torch.nn.functional as F
 
 if __name__ == '__main__':
     # args parser
@@ -78,10 +82,13 @@ if __name__ == '__main__':
     val_acc_list = []
     val_loss_list = []
 
+
     # best_model_wts = copy.deepcopy(model.state_dict())
     best_val_loss = float('inf')
     total_time = 0
     for epoch in range(1, args.num_epochs + 1):
+        num_correct = 0
+        num_total = 0
         t0 = time.time()
         model.train()
         loop = tqdm(train_loader)
@@ -91,6 +98,13 @@ if __name__ == '__main__':
             E1, E2 = model(img1, img2)
             # labels must be a 1D tensor of shape (batch_size,)
             loss = loss_func(E1, E2, label)
+            dist_E1_E2 = F.pairwise_distance(E1, E2, 2)
+
+            pred = dist_E1_E2 < 0.5
+            pred = pred.type(torch.FloatTensor).to(device)
+            num_correct += torch.sum(pred == label).item()
+            num_total += label.size(0)
+            train_accuracy = num_correct / num_total
 
             # ponemos a cero los gradientes
             optimizer.zero_grad()
@@ -99,11 +113,12 @@ if __name__ == '__main__':
             # update de los pesos
             optimizer.step()
             loop.set_description(f"Train: Epoch [{epoch}/{args.num_epochs}]")
-            loop.set_postfix(loss=loss.item())
+            loop.set_postfix(loss=loss.item(), accuracy=train_accuracy)
 
-        print({"epoch": epoch, "train_loss": loss.item()})
+        print({"epoch": epoch, "val_loss": loss.item(), "train_accuracy": train_accuracy})
 
         train_loss_list.append(loss.item())
+        train_acc_list.append(train_accuracy)
 
         # Validation step
         model.eval()
@@ -111,18 +126,27 @@ if __name__ == '__main__':
             val_loss = 0
             loop = tqdm(val_loader)
             for idx, img_triplet in enumerate(loop):
+                num_correct = 0
+                num_total = 0
                 img1, img2, label = img1.to(device), img2.to(device), label.to(device)
                 # Forward pass
                 E1, E2 = model(img1, img2)
                 # labels must be a 1D tensor of shape (batch_size,)
                 val_loss += loss_func(E1, E2, label)
+                dist_E1_E2 = F.pairwise_distance(E1, E2, 2)
+                pred = dist_E1_E2 < 0.5
+                pred = pred.type(torch.FloatTensor).to(device)
+                num_correct += torch.sum(pred == label).item()
+                num_total += label.size(0)
+                val_accuracy = num_correct / num_total
                 loop.set_description(f"Validation: Epoch [{epoch}/{args.num_epochs}]")
-                loop.set_postfix(val_loss=val_loss.item())
+                loop.set_postfix(val_loss=val_loss.item(), val_accuracy=val_accuracy)
 
             val_loss = val_loss / (idx + 1)
-            print({"epoch": epoch, "val_loss": val_loss.item()})
+            print({"epoch": epoch, "val_loss": val_loss.item(), "val_accuracy": val_accuracy})
 
             val_loss_list.append(float(val_loss))
+            val_acc_list.append(float(val_accuracy))
 
             #  # Learning rate scheduler
             lr_scheduler.step(val_loss)
@@ -157,19 +181,23 @@ if __name__ == '__main__':
         print("Epoch time: ", t1 - t0)
         print("Total time: ", total_time)
 
-torch.save(model.state_dict(), "Results/Task_b/Task_b_siamese.pth")
+
+output_path = os.path.join(current_path, 'Results/Task_b/')
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
+torch.save(model.state_dict(), output_path + "Task_b_siamese.pth")
 
 plot_step = 100
 
 plt.figure(figsize=(10, 12), dpi=150)
 plt.title("Loss during training", size=18)
 plt.plot(
-    np.arange(0, EPOCHS, plot_step), train_loss_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
+    np.arange(0, args.num_epochs, plot_step), train_loss_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
 )
 plt.plot(
-    np.arange(0, EPOCHS, plot_step), val_loss_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset"
+    np.arange(0, args.num_epochs, plot_step), val_loss_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset"
 )
-plt.xticks(np.arange(0, EPOCHS, plot_step).astype(int))
+plt.xticks(np.arange(0, args.num_epochs, plot_step).astype(int))
 plt.xlabel("Epoch", size=12)
 plt.ylabel("Loss", size=12)
 plt.legend()
@@ -179,10 +207,10 @@ plt.close()
 plt.figure(figsize=(10, 12), dpi=150)
 plt.title("Accuracy during training", size=18)
 plt.plot(
-    np.arange(0, EPOCHS, plot_step), train_acc_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
+    np.arange(0, args.num_epochs, plot_step), train_acc_list[0::plot_step], color="blue", linewidth=2.5, label="Train subset"
 )
-plt.plot(np.arange(0, EPOCHS, plot_step), val_acc_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset")
-plt.xticks(np.arange(0, EPOCHS, plot_step).astype(int))
+plt.plot(np.arange(0, args.num_epochs, plot_step), val_acc_list[0::plot_step], color="orange", linewidth=2.5, label="Val subset")
+plt.xticks(np.arange(0, args.num_epochs, plot_step).astype(int))
 plt.xlabel("Epoch", size=12)
 plt.ylabel("Accuracy", size=12)
 plt.legend()
