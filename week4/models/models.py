@@ -6,66 +6,32 @@ from torchvision import models
 from torchvision.models import resnet18, resnet50
 
 
-# class EmbeddingNet(nn.Module):
-#     def __init__(self, in_features_resnet):
-#         super(EmbeddingNet, self).__init__()
-
-#         # NETWORK FROM SLIDES
-#         self.convnet = nn.Sequential(
-#                                      nn.Conv2d(3, 32, 5), nn.PReLU(),
-#                                      nn.MaxPool2d(2, stride=2),
-#                                      nn.Conv2d(32, 64, 5), nn.PReLU(),
-#                                      nn.MaxPool2d(2, stride=2))
-
-#         self.fc = nn.Sequential(nn.Linear(in_features_resnet, 256),
-#                                 nn.PReLU(),
-#                                 nn.Linear(256, 256),
-#                                 nn.PReLU(),
-#                                 nn.Linear(256, 2)
-#                                 )
-
-#     def forward(self, x):
-#         x = self.convnet(x)
-#         x = self.fc(x)
-#         return x
-
-#     def forward_once(self, x):
-#         return self.forward(x)
-
-
-# class SiameseResNet(nn.Module):
-#     def __init__(self, weights=None):
-#         super(SiameseResNet, self).__init__()
-#         self.resnet = resnet50(weights=weights)
-#         # remove last layer
-#         self.class_net = EmbeddingNet(self.resnet.fc.in_features)
-
-#         self.resnet.fc = self.class_net
-
-#     def forward_once(self, x):
-#         x = self.resnet(x)
-#         return x
-
-#     def forward(self, x1, x2):
-#         x1 = self.forward_once(x1)
-#         x2 = self.forward_once(x2)
-#         return x1, x2
-
 
 class EmbeddingNet(nn.Module):
-    def __init__(self, weights):
+    def __init__(self, weights, resnet_type='resnet50'):
         super(EmbeddingNet, self).__init__()
-        self.resnet = resnet50(weights=weights)
-        self.resnet = nn.Sequential(*(list(self.resnet.children())[:-1]))
-        # print dimensionality of the last layer
-                                
-        self.fc = nn.Sequential(nn.Linear(2048, 256),
-                                nn.PReLU(),
-                                nn.Linear(256, 256),
-                                nn.PReLU(),
-                                nn.Linear(256, 2)
-                                )
-                                
+        
+        if resnet_type == 'resnet50':
+            self.resnet = resnet50(weights=weights)
+            self.resnet = nn.Sequential(*(list(self.resnet.children())[:-1]))
+            # print dimensionality of the last layer                          
+            self.fc = nn.Sequential(nn.Linear(2048, 256),
+                                    nn.PReLU(),
+                                    nn.Linear(256, 256),
+                                    nn.PReLU(),
+                                    nn.Linear(256, 2)
+                                    )
+        elif resnet_type == 'resnet18':
+            self.resnet = resnet18(weights=weights)
+            self.resnet = nn.Sequential(*(list(self.resnet.children())[:-1]))
+            
+            self.fc = nn.Sequential(nn.Linear(512, 256),
+                                    nn.PReLU(),
+                                    nn.Linear(256, 256),
+                                    nn.PReLU(),
+                                    nn.Linear(256, 2)
+                                    )
+                  
                                            
         # self.convnet = nn.Sequential(nn.Conv2d(1, 32, 5), nn.PReLU(),
         #                 nn.MaxPool2d(2, stride=2),
@@ -103,24 +69,19 @@ class SiameseNet(nn.Module):
         return self.embedding_net(x)
 
 
+    
 
-class TripletResNet(nn.Module):
-    def __init__(self, weights=None):
-        super(TripletResNet, self).__init__()
-        self.resnet = resnet50(weights=weights)
-        # remove last layer
-        self.resnet.fc = Sequential(*list(self.resnet.fc.children())[:-1])
-        self.class_net = EmbeddingNet()
-
-    def forward_once(self, x):
-        x = self.resnet(x)
-        x = self.class_net(x)
-        return x
+class TripletNet(nn.Module):
+    def __init__(self, embedding_net):
+        super(TripletNet, self).__init__()
+        self.embedding_net = embedding_net
 
     def forward(self, x1, x2, x3):
-        x1 = self.forward_once(x1)
-        x2 = self.forward_once(x2)
-        x3 = self.forward_once(x3)
-        return x1, x2, x3
+        output1 = self.embedding_net(x1)
+        output2 = self.embedding_net(x2)
+        output3 = self.embedding_net(x3)
+        return output1, output2, output3
 
+    def get_embedding(self, x):
+        return self.embedding_net(x)
 
