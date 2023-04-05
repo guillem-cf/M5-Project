@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
 
     # ------------------------------- MODEL --------------------------------
-    margin = 1.
+    margin = args.margin
     
     # Pretrained model from torchvision or from checkpoint
     if args.pretrained:

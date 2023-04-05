@@ -1,93 +1,74 @@
 import argparse
+import os
+import time
 import json
-from tqdm import tqdm
-import cv2
+
 import numpy as np
-
-
 import torch
-import torchvision
+import torchvision.transforms as transforms
+from torchvision.datasets import ImageFolder, CocoDetection
+from matplotlib import pyplot as plt
+
+from sklearn.metrics import (
+    PrecisionRecallDisplay,
+    accuracy_score,
+    average_precision_score,
+)
+
+from dataset.triplet_data import TripletCOCODataset
+from models.models import TripletNet_fasterRCNN, ObjectEmbeddingNet
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
-
-import torch.utils.tensorboard as tensorboard 
-
-from torchvision.datasets.coco import CocoDetection, CocoCaptions
-from torchvision import transforms
-from torchvision.models.detection import fasterrcnn_resnet50_fpn, FasterRCNN_ResNet50_FPN_Weights
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-
-from pycocotools.coco import COCO
-
-# Import losses for faster rcnn
-
+from torchvision.models.detection import RetinaNet_ResNet50_FPN_Weights
+from utils.early_stopper import EarlyStopper
+from utils import metrics
+from utils import trainer
+from utils import losses
 
 import os
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-# os.environ["CUDA_VISIBLE_DEVICES"] = "4"
-
-# Define the COCO classes
-COCO_CLASSES = [
-    '__background__', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck',
-    'boat', 'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat',
-    'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella',
-    'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat',
-    'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup', 'fork',
-    'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog',
-    'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv',
-    'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
-    'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'
-]
+# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 
-def train_one_epoch(model,  writer,  optimizer, data_loader, device, epoch, print_freq):
-    model.train()
-    # summary = tensorboard.Epoch# summary(writer, epoch, prefix='train')
-
-    for i, (images, targets) in enumerate(data_loader):
-        images = list(image.to(device) for image in images)
-        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
-
-        loss_dict = model(images, targets)
-
-        losses = sum(loss for loss in loss_dict.values())
-
-        optimizer.zero_grad()
-        losses.backward()
-        optimizer.step()
-
-        # Log the loss and learning rate to tensorboard
-        # summary.add_scalar('loss', losses.item())
-        # summary.add_scalar('lr', optimizer.param_groups[0]["lr"])
-
-        if i % print_freq == 0:
-            print(f"Epoch {epoch}, iteration {i}: loss = {losses.item()}")
-
-    # summary.flush()
-
-def evaluate(model, writer, data_loader, device, epoch, print_freq):
-    model.eval()
-    # summary = tensorboard.Epoch# summary(writer, epoch, prefix='val')
-
-    with torch.no_grad():
-        for i, (images, targets) in enumerate(data_loader):
-            images = list(image.to(device) for image in images)
-            targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
-
-            output = model(images)
-
-            # get the evaluation metrics
-            loss_dict = output['loss_classifier'] + output['loss_box_reg'] + output['loss_objectness'] + output['loss_rpn_box_reg']
-            losses = sum(loss for loss in loss_dict.values())
-
-            # Log the loss to tensorboard
-            # summary.add_scalar('loss', losses.item())
-
-            if i % print_freq == 0:
-                print(f"Epoch {epoch}, iteration {i}: loss = {losses.item()}")
-
-        # summary.flush()
-
+def triplet_collate_fn(batch):
+    anchor_images = []
+    positive_images = []
+    negative_images = []
+    anchor_boxes = []
+    anchor_labels = []
+    positive_boxes = []
+    positive_labels = []
+    negative_boxes = []
+    negative_labels = []
+    
+    for item in batch:
+        # Unpack data and target from item
+        (anchor_img, positive_img, negative_img), target = item
+        
+        # Append images to lists
+        anchor_images.append(anchor_img)
+        positive_images.append(positive_img)
+        negative_images.append(negative_img)
+        
+        # Unpack target
+        anchor_boxes_, anchor_labels_, positive_boxes_, positive_labels_, negative_boxes_, negative_labels_ = target
+        
+        # Append bounding boxes and labels to lists
+        anchor_boxes.append(anchor_boxes_)
+        anchor_labels.append(anchor_labels_)
+        positive_boxes.append(positive_boxes_)
+        positive_labels.append(positive_labels_)
+        negative_boxes.append(negative_boxes_)
+        negative_labels.append(negative_labels_)
+    
+    # Stack images into tensors
+    anchor_images = torch.stack(anchor_images)
+    positive_images = torch.stack(positive_images)
+    negative_images = torch.stack(negative_images)
+    
+    # Return tuple of tensors
+    return (anchor_images, positive_images, negative_images), (anchor_boxes, anchor_labels, positive_boxes, positive_labels, negative_boxes, negative_labels)
 
 
 
@@ -97,7 +78,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Task E')
     parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
     parser.add_argument('--weights', type=str, default='/ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5', help='Path to weights')
-    parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
+    parser.add_argument('--batch_size', type=int, default=2, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
@@ -127,150 +108,81 @@ if __name__ == '__main__':
         print("CPU is available")
         device = torch.device("cpu")
         
-    # ------------------------------------ EXTRACT FEATURES ----------------------------------------------
+    
     # ------------------------------- DATASET --------------------------------
-    # mean = [0.485, 0.456, 0.406]
-    # std = [0.229, 0.224, 0.225]
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
     
-    transform = transforms.Compose([FasterRCNN_ResNet50_FPN_Weights.COCO_V1.transforms()])
-    # #  Accepts PIL.Image, batched (B, C, H, W) and single (C, H, W) image torch.Tensor objects. The images are rescaled to [0.0, 1.0]
+    train_path = os.path.join(dataset_path, 'train2014')
+    val_path = os.path.join(dataset_path, 'val2014')
     
-    # transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean, std)])
+    train_annot_path = os.path.join(dataset_path,'instances_train2014.json')
+    val_annot_path   = os.path.join(dataset_path,'instances_val2014.json')
     
-    # transform = transforms.Compose([
-    #     transforms.Resize((256, 256)), # resize image
-    #     transforms.Pad((0, 32), fill=0), # pad image to (256, 288)
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=[0.485, 0.456, 0.406],
-    #                         std=[0.229, 0.224, 0.225])
-    # ])
+    object_image_dict = json.load(open(os.path.join(dataset_path,'mcv_image_retrieval_annotations.json')))
     
-    train_data_dir = os.path.join(dataset_path, 'train2014')
-    val_data_dir = os.path.join(dataset_path, 'val2014')
+    transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize((256, 256), antialias=True),
+            transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),  # scale to range [0,1]
+            ])
     
-    train_annot_path = os.path.join(dataset_path, 'instances_train2014.json')
-    val_annot_path = os.path.join(dataset_path, 'instances_val2014.json')
+    train_dataset = CocoDetection(root = train_path, annFile = train_annot_path, transform=transform, target_transform=transform).coco
+    val_dataset = CocoDetection(root = val_path, annFile = val_annot_path, transform=transform, target_transform=transform).coco
     
+    triplet_train_dataset = TripletCOCODataset(train_dataset, object_image_dict, train_path, split_name='train', transform = transform)
+    triplet_test_dataset = TripletCOCODataset(val_dataset,    object_image_dict, val_path, split_name='val', transform = transform)
     
-    annotations = json.load(open(os.path.join(dataset_path, 'mcv_image_retrieval_annotations.json')))
-    
-    train_dataset = CocoDetection(train_data_dir, train_annot_path, transform=transform)
-    val_dataset = CocoDetection(val_data_dir, val_annot_path, transform=transform)
     
     
     # ------------------------------- DATALOADER --------------------------------
+    # kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
+    # train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True, **kwargs)
+    # val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, **kwargs)
+    
+    
     kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-    train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True,**kwargs)
-    val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False,**kwargs)
+    triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=args.batch_size, shuffle=True, collate_fn=triplet_collate_fn, **kwargs)
+    triplet_test_loader = DataLoader(triplet_test_dataset, batch_size=args.batch_size, shuffle=False, collate_fn = triplet_collate_fn, **kwargs)
 
-    
+
     # ------------------------------- MODEL --------------------------------
-    # Load the pre-trained Faster R-CNN model
+    margin = 1.
     
-    model = fasterrcnn_resnet50_fpn(weights = FasterRCNN_ResNet50_FPN_Weights.COCO_V1)
- 
-    # num_classes
-    num_classes = len(COCO_CLASSES)
-    # get number of input features for the classifier
-    in_features = model.roi_heads.box_predictor.cls_score.in_features
+    # Pretrained model from torchvision or from checkpoint
+    if args.pretrained:
+        embedding_net = ObjectEmbeddingNet(weights=RetinaNet_ResNet50_FPN_Weights.COCO_V1, num_classes = len(train_dataset.cats)).to(device)
 
-    model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+    model = TripletNet_fasterRCNN(embedding_net).to(device)
     
-    model.to(device)
-    model.eval()
+    #--------------------------------- TRAINING --------------------------------  
     
-    # ------------------------------- OPTIMIZER --------------------------------
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    # Loss function
+    loss_func = losses.TripletLoss(margin).to(device)
     
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
+    # Optimizer
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
     
-    # ------------------------------- TRAIN --------------------------------
-    
-    # writer = tensorboard.# summaryWriter(log_dir= output_path + '/logs')
-    writer = None
-    
-    num_epochs = 10
-    for epoch in range(num_epochs):
-        train_one_epoch(model, writer, optimizer, train_loader, device, epoch, print_freq=10)
-        lr_scheduler.step()
-        evaluate(model, writer, val_loader, device=device, print_freq=10)
+    # Early stoppper
+    early_stopper = EarlyStopper(patience=50, min_delta=10)
 
-    # Save the fine-tuned model
-    torch.save(model.state_dict(), output_path + '/fine_tuned_model.pth')
+    # Learning rate scheduler
+    # lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.1, last_epoch=-1)
     
+    log_interval = 5
     
-    
-   
-    
-    
-    
-    
+    trainer.fit(triplet_train_loader, triplet_test_loader, model, loss_func, optimizer, lr_scheduler, args.num_epochs, device, log_interval, output_path, name='task_e')
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    # # siamese_train_dataset = TripletCOCODataset(train_dataset, split_name='train')
-    # # siamese_test_dataset = TripletCOCODataset(test_dataset, split_name='test')
-    
-    
-    # # ------------------------------- DATALOADER --------------------------------
-    # kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-    # train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=256, shuffle=True, **kwargs)
-    # test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=256, shuffle=False, **kwargs)
-    
-    
-    # kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-    # siamese_train_loader = DataLoader(siamese_train_dataset, batch_size=args.batch_size, shuffle=True, **kwargs)
-    # siamese_test_loader = DataLoader(siamese_test_dataset, batch_size=args.batch_size, shuffle=False, **kwargs)
-
-
-    # # ------------------------------- MODEL --------------------------------
-    # margin = 1.
-    
-    # # Pretrained model from torchvision or from checkpoint
-    # if args.pretrained:
-    #     embedding_net = EmbeddingNet(weights=ResNet50_Weights.IMAGENET1K_V2).to(device)
-        
-    # # else:
-    # #     weights_model = torch.load(args.weights)['model_state_dict']
-    # #     embedding_net = EmbeddingNet(weights=weights_model).to(device)
-    
-    # model = SiameseNet(embedding_net).to(device)
-    
-    # #--------------------------------- TRAINING --------------------------------  
-    
-    # # Loss function
-    # loss_func = losses.ContrastiveLoss().to(device)  # margin
-    
-    # # Optimizer
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
-    
-    # # Early stoppper
-    # early_stopper = EarlyStopper(patience=50, min_delta=10)
-
-    # # Learning rate scheduler
-    # # lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
-    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.1, last_epoch=-1)
-    
-    # log_interval = 5
-    
-    # trainer.fit(siamese_train_loader, siamese_test_loader, model, loss_func, optimizer, lr_scheduler, args.num_epochs, device, log_interval, output_path)
-
-    # # Plot emmbeddings
+    # # Plot emmbedings
     # train_embeddings_cl, train_labels_cl = metrics.extract_embeddings(train_loader, model, device)
     # path = os.path.join(output_path, 'train_embeddings.png')
     # metrics.plot_embeddings(train_embeddings_cl, train_labels_cl, path)
-
     # val_embeddings_cl, val_labels_cl = metrics.extract_embeddings(test_loader, model, device)
     # path = os.path.join(output_path, 'val_embeddings.png')
     # metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, path)
 
-    # metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=test_dataset.classes, output_dir="Results/Task_b")
-    # metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=test_dataset.classes, output_dir="Results/Task_b")
+    
+    # metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=test_dataset.classes, output_dir="Results/Task_c")
+    # metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=test_dataset.classes, output_dir="Results/Task_c")
     

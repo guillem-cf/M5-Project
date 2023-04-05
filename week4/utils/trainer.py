@@ -7,7 +7,7 @@ from utils.checkpoint import save_checkpoint_loss
 
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, output_path, metrics=[],
-        start_epoch=0):
+        start_epoch=0, name = None):
     """
     Loaders, model, loss function and metrics should work together for a given task,
     i.e. The model should be able to process data output of loaders,
@@ -27,7 +27,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
         
     for epoch in range(start_epoch, n_epochs):
         # Train stage
-        train_loss, metrics = train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics)
+        train_loss, metrics = train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics, name)
         train_loss_list.append(train_loss)
         
         scheduler.step()
@@ -71,7 +71,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
     plot_loss(train_loss_list, val_loss_list, path)
 
 
-def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics):
+def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, metrics, name):
     for metric in metrics:
         metric.reset()
 
@@ -86,11 +86,34 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
         if cuda:
             data = tuple(d.cuda() for d in data)
             if target is not None:
-                target = target.cuda()
-
+                try:
+                    target = target.cuda()
+                except:
+                    a = 1
 
         optimizer.zero_grad()
-        outputs = model(*data)
+        
+        if name == 'task_e':
+            target1 = []
+            target2 = []
+            target3 = []
+            for i in range(data[0].shape[0]):
+                d1={}
+                d1['boxes']=target[0][i].cuda()
+                d1['labels']=target[1][i].cuda()
+                target1.append(d1)
+                d2={}
+                d2['boxes']=target[2][i].cuda()
+                d2['labels']=target[3][i].cuda()
+                target2.append(d2)
+                d3={}
+                d3['boxes']=target[4][i].cuda()
+                d3['labels']=target[5][i].cuda()
+                target3.append(d3)
+            target_in = (target1,target2,target3)  
+            outputs = model(*data, *target_in)
+        else:
+            outputs = model(*data)
 
         if type(outputs) not in (tuple, list):
             outputs = (outputs,)
