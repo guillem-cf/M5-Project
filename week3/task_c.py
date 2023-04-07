@@ -205,8 +205,8 @@ if __name__ == '__main__':
 
         a = np.where(mask != False)
         try:
-            im2 = im[np.min(a[0]) : np.max(a[0]) + 1, np.min(a[1]) : np.max(a[1]) + 1]
-            mask2 = mask[np.min(a[0]) : np.max(a[0]) + 1, np.min(a[1]) : np.max(a[1]) + 1]
+            im2 = im[np.min(a[0]): np.max(a[0]) + 1, np.min(a[1]): np.max(a[1]) + 1]
+            mask2 = mask[np.min(a[0]): np.max(a[0]) + 1, np.min(a[1]): np.max(a[1]) + 1]
         except:
             print("Empty mask")
             continue
@@ -222,7 +222,7 @@ if __name__ == '__main__':
                 np.random.uniform(low=0, high=im.shape[0] - im2c.shape[0], size=(1)).astype(int)[0],
                 np.random.uniform(low=0, high=im.shape[1] - im2c.shape[1], size=(1)).astype(int)[0],
             )
-            im3[p0 : p0 + im2c.shape[0], p1 : p1 + im2c.shape[1]] = im2c
+            im3[p0: p0 + im2c.shape[0], p1: p1 + im2c.shape[1]] = im2c
 
             im3 = np.where(im3 == 0, im, im3)
 

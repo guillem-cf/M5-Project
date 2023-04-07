@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torchvision.transforms as transforms
-from dataset.mit import MITDataset
 from sklearn.metrics import (
     PrecisionRecallDisplay,
     accuracy_score,
@@ -12,6 +10,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from torch.utils.data import DataLoader
 from torchvision.models import ResNet50_Weights, resnet50
 from tqdm import tqdm
+
+from dataset.mit import MITDataset
 from utils.metrics import accuracy, plot_retrieval, tsne_features
 
 finetuned = True
@@ -48,8 +48,8 @@ else:
 model = model.to(device)
 
 transform = ResNet50_Weights.IMAGENET1K_V2.transforms()
-#transform to tensor
-#transform = transforms.Compose( [transforms.ToTensor()] )
+# transform to tensor
+# transform = transforms.Compose( [transforms.ToTensor()] )
 
 test_dataset = MITDataset(data_dir=dataset_path, split_name='test', transform=transform)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)

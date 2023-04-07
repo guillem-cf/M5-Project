@@ -8,6 +8,7 @@ import torchvision.models as models
 from PIL import Image
 from torchvision.models import VGG19_Weights
 from torchvision.utils import save_image
+
 from utils import get_num, image_loader, run_style_transfer
 
 # Generate a folder to save results

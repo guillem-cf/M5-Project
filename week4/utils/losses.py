@@ -1,7 +1,5 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 
 
 class ContrastiveLoss(nn.Module):
@@ -20,7 +18,6 @@ class ContrastiveLoss(nn.Module):
         losses = 0.5 * (target.float() * distances +
                         (1 + -1 * target).float() * F.relu(self.margin - (distances + self.eps).sqrt()).pow(2))
         return losses.mean() if size_average else losses.sum()
-
 
 
 class TripletLoss(nn.Module):

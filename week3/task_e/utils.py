@@ -35,8 +35,8 @@ class Normalization(nn.Module):
 
 class ContentLoss(nn.Module):
     def __init__(
-        self,
-        target,
+            self,
+            target,
     ):
         super().__init__()
         # we 'detach' the target content from the tree used
@@ -76,7 +76,7 @@ def gram_matrix(input):
 
 
 def get_style_model_and_losses(
-    cnn, normalization_mean, normalization_std, style_img, content_img, content_layers, style_layers
+        cnn, normalization_mean, normalization_std, style_img, content_img, content_layers, style_layers
 ):
     # normalization module
     normalization = Normalization(normalization_mean, normalization_std).to(device)
@@ -150,18 +150,18 @@ def get_input_optimizer(input_img):
 
 
 def run_style_transfer(
-    cnn,
-    normalization_mean,
-    normalization_std,
-    content_img,
-    style_img,
-    input_img,
-    num_steps=300,
-    print_step=50,
-    style_weight=1000000,
-    content_weight=1,
-    conten_layers=None,
-    style_layers=None,
+        cnn,
+        normalization_mean,
+        normalization_std,
+        content_img,
+        style_img,
+        input_img,
+        num_steps=300,
+        print_step=50,
+        style_weight=1000000,
+        content_weight=1,
+        conten_layers=None,
+        style_layers=None,
 ):
     """
     Applies style transfer to an input image, given a content image and a style image.

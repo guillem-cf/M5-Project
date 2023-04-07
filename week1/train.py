@@ -3,12 +3,13 @@ import time
 import torch
 import torchvision.transforms as transforms
 import wandb
-from dataset.mit import MITDataset
-from models.resnet import ResNet
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchinfo import summary
 from tqdm import tqdm
+
+from dataset.mit import MITDataset
+from models.resnet import ResNet
 from utils.checkpoint import save_checkpoint
 from utils.early_stopper import EarlyStopper
 from utils.metrics import accuracy
