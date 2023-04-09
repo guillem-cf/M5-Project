@@ -99,6 +99,7 @@ if __name__ == '__main__':
 
     output_path = os.path.join(env_path, 'M5-Project/week4/Results/Task_e')
 
+
     # Create output path if it does not exist
     if not os.path.exists(output_path):
         os.mkdir(output_path)

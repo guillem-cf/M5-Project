@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     # Create output path if it does not exist
     if not os.path.exists(output_path):
-        os.mkdir(output_path)
+        os.makedirs(output_path)
 
     # -------------------------------- DEVICE --------------------------------
     if torch.cuda.is_available():
