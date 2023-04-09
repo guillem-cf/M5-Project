@@ -6,7 +6,7 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision.datasets import CocoDetection
-from torchvision.models.detection import RetinaNet_ResNet50_FPN_Weights
+from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
 
 from dataset.triplet_data import TripletCOCODataset
 from models.models import TripletNet_fasterRCNN, ObjectEmbeddingNet
@@ -113,12 +113,11 @@ if __name__ == '__main__':
         transforms.Resize((256, 256), antialias=True),
         transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),  # scale to range [0,1]
     ])
-
+    
     train_dataset = CocoDetection(root=train_path, annFile=train_annot_path, transform=transform,
                                   target_transform=transform).coco
     val_dataset = CocoDetection(root=val_path, annFile=val_annot_path, transform=transform,
                                 target_transform=transform).coco
-
     triplet_train_dataset = TripletCOCODataset(train_dataset, object_image_dict, train_path, split_name='train',
                                                transform=transform)
     triplet_test_dataset = TripletCOCODataset(val_dataset, object_image_dict, val_path, split_name='val',
@@ -140,7 +139,7 @@ if __name__ == '__main__':
 
     # Pretrained model from torchvision or from checkpoint
     if args.pretrained:
-        embedding_net = ObjectEmbeddingNet(weights=RetinaNet_ResNet50_FPN_Weights.COCO_V1,
+        embedding_net = ObjectEmbeddingNet(weights=FasterRCNN_ResNet50_FPN_Weights.COCO_V1,
                                            num_classes=len(train_dataset.cats)).to(device)
 
     model = TripletNet_fasterRCNN(embedding_net).to(device)

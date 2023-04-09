@@ -4,7 +4,8 @@ import torch.nn as nn
 from torchvision import models
 from torchvision.models import resnet18, resnet50
 from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, FasterRCNN_ResNet50_FPN_V2_Weights
-
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from torchvision.models.detection.image_list import ImageList
 
 class EmbeddingNet(nn.Module):
     def __init__(self, weights, resnet_type='resnet50'):
@@ -47,11 +48,11 @@ class ObjectEmbeddingNet(nn.Module):
     def __init__(self, weights, num_classes):
         super(ObjectEmbeddingNet, self).__init__()
 
-        self.faster_rcnn = models.detection.fasterrcnn_resnet50_fpn(weights=FasterRCNN_ResNet50_FPN_Weights.DEFAULT)
+        self.faster_rcnn = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
         
 
-        # in_features = self.faster_rcnn.roi_heads.box_predictor.cls_score.in_features
-        # self.faster_rcnn.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+        in_features = self.faster_rcnn.roi_heads.box_predictor.cls_score.in_features
+        self.faster_rcnn.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
 
         # Remove the softmax layer
         self.faster_rcnn.roi_heads.box_predictor.cls_score = nn.Identity()
@@ -66,7 +67,8 @@ class ObjectEmbeddingNet(nn.Module):
     def forward(self, x, target):
         # detections = self.faster_rcnn(x, target)
         # object_embeddings = []
-        images, _ = self.faster_rcnn.transform(x)
+        images, target = self.faster_rcnn.transform(x, target)# target)
+        # images = ImageList(x, [(x.size(2), x.size(3))] * x.size(0))
         features = self.faster_rcnn.backbone(images.tensors)
         proposals, _ = self.faster_rcnn.rpn(images, features, target)
         detections, _ = self.faster_rcnn.roi_heads(features, proposals, images.image_sizes, target)  # FIX THIS
@@ -77,7 +79,7 @@ class ObjectEmbeddingNet(nn.Module):
             object_embeddings.append(self.fc(object_features))
         
         if not object_embeddings:
-            zero_tensor = torch.zeros(x.size(0), 2).to(x.device)
+            zero_tensor = torch.zeros(x.size(0), 2)
             zero_tensor.requires_grad = True  # Set requires_grad=True for the zero tensor
             return zero_tensor
         object_embeddings = torch.stack(object_embeddings).mean(dim=0)
