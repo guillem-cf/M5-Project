@@ -76,7 +76,7 @@ class ObjectEmbeddingNet(nn.Module):
         # detections = self.faster_rcnn(x, target)
         # object_embeddings = []
         # and list is not empty
-        images, target = self.faster_rcnn.transform(x, target)
+        images, _ = self.faster_rcnn.transform(x)
         features = self.faster_rcnn.backbone(images.tensors)
         proposals, _ = self.faster_rcnn.rpn(images, features, target)
         detections, _ = self.faster_rcnn.roi_heads(features, proposals, images.image_sizes, target)  # FIX THIS

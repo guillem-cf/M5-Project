@@ -261,7 +261,7 @@ class TripletCOCODataset(Dataset):
                 positive_boxes.append(ann['bbox'])
                 positive_labels.append(ann['category_id'])
 
-        negative_boxes = torch.zeros((1, 4), dtype=torch.float32)
+        negative_boxes = torch.zeros((0, 4), dtype=torch.float32)
         negative_labels = torch.zeros((1, 1), dtype=torch.int64)
 
         target_size = [256, 256]
