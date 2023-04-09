@@ -2,6 +2,16 @@ import numpy as np
 import torch
 from utils.checkpoint import save_checkpoint_loss
 
+if torch.cuda.is_available():
+    print("CUDA is available")
+    device = torch.device("cuda")
+    torch.cuda.amp.GradScaler()
+elif torch.backends.mps.is_available():
+    print("MPS is available")
+    device = torch.device("cpu")
+else:
+    print("CPU is available")
+    device = torch.device("cpu")
 
 def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs, cuda, log_interval, output_path,
         metrics=[],
@@ -83,10 +93,10 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
         if not type(data) in (tuple, list):
             data = (data,)
         if cuda:
-            data = tuple(d.cuda() for d in data)
+            data = tuple(d.to(device) for d in data)
             if target is not None:
                 try:
-                    target = target.cuda()
+                    target = target.to(device)
                 except:
                     a = 1
 
@@ -98,16 +108,16 @@ def train_epoch(train_loader, model, loss_fn, optimizer, cuda, log_interval, met
             target3 = []
             for i in range(data[0].shape[0]):
                 d1 = {}
-                d1['boxes'] = target[0][i].cuda()
-                d1['labels'] = target[1][i].cuda()
+                d1['boxes'] = target[0][i].to(device)
+                d1['labels'] = target[1][i].to(device)
                 target1.append(d1)
                 d2 = {}
-                d2['boxes'] = target[2][i].cuda()
-                d2['labels'] = target[3][i].cuda()
+                d2['boxes'] = target[2][i].to(device)
+                d2['labels'] = target[3][i].to(device)
                 target2.append(d2)
                 d3 = {}
-                d3['boxes'] = target[4][i].cuda()
-                d3['labels'] = target[5][i].cuda()
+                d3['boxes'] = target[4][i].to(device)
+                d3['labels'] = target[5][i].to(device)
                 target3.append(d3)
             target_in = (target1, target2, target3)
             outputs = model(*data, *target_in)
@@ -159,9 +169,9 @@ def test_epoch(val_loader, model, loss_fn, cuda, metrics):
             if not type(data) in (tuple, list):
                 data = (data,)
             if cuda:
-                data = tuple(d.cuda() for d in data)
+                data = tuple(d.to(device) for d in data)
                 if target is not None:
-                    target = target.cuda()
+                    target = target.to(device)
 
             outputs = model(*data)
 

@@ -153,7 +153,7 @@ class TripletCOCODataset(Dataset):
 
     def __init__(self, coco_dataset, obj_img_dict, dataset_path, split_name='train', transform=None):
 
-        self.coco = coco_dataset
+        self.coco = coco_dataset.coco
         self.obj_img_dict = obj_img_dict[split_name]
         self.transform = transform
         self.dataset_path = dataset_path
@@ -261,8 +261,8 @@ class TripletCOCODataset(Dataset):
                 positive_boxes.append(ann['bbox'])
                 positive_labels.append(ann['category_id'])
 
-        negative_boxes = []
-        negative_labels = []
+        negative_boxes = torch.zeros((0, 4), dtype=torch.float32)
+        negative_labels = torch.zeros((1, 1), dtype=torch.int64)
 
         target_size = [256, 256]
         anchor_boxes = torch.Tensor(self.resize_bounding_boxes(anchor_boxes, anchor_img.size, target_size))
@@ -276,7 +276,7 @@ class TripletCOCODataset(Dataset):
             negative_img = self.transform(negative_img)
 
         target = [anchor_boxes, torch.LongTensor(anchor_labels), positive_boxes, torch.LongTensor(positive_labels),
-                  negative_boxes, torch.LongTensor(negative_labels)]
+                  negative_boxes, negative_labels]
 
         return (anchor_img, positive_img, negative_img), target
 
