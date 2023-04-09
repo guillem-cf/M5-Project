@@ -40,6 +40,15 @@ class EmbeddingNet(nn.Module):
     def get_embedding(self, x):
         return self.forward(x)
 
+def is_target_empty(target):
+    if target is None:
+        return True
+
+    if all(len(t['boxes']) == 0 and len(t['labels']) == 0 for t in target):
+        return True
+
+    return False
+
 
 # No updates in faster RCNN
 # https://pytorch.org/vision/main/models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn.html
@@ -66,7 +75,8 @@ class ObjectEmbeddingNet(nn.Module):
     def forward(self, x, target):
         # detections = self.faster_rcnn(x, target)
         # object_embeddings = []
-        images, _ = self.faster_rcnn.transform(x)
+        # and list is not empty
+        images, target = self.faster_rcnn.transform(x, target)
         features = self.faster_rcnn.backbone(images.tensors)
         proposals, _ = self.faster_rcnn.rpn(images, features, target)
         detections, _ = self.faster_rcnn.roi_heads(features, proposals, images.image_sizes, target)  # FIX THIS

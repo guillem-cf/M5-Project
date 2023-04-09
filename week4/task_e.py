@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     # ------------------------------- PATHS --------------------------------
     env_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    dataset_path = os.path.join(env_path, 'mcv/datasets/COCO')
+    dataset_path = os.path.join(env_path, 'dataset/COCO')
 
     output_path = os.path.join(env_path, 'M5-Project/week4/Results/Task_e')
 
@@ -91,7 +91,7 @@ if __name__ == '__main__':
         torch.cuda.amp.GradScaler()
     elif torch.backends.mps.is_available():
         print("MPS is available")
-        device = torch.device("mps")
+        device = torch.device("cpu")
     else:
         print("CPU is available")
         device = torch.device("cpu")
@@ -114,10 +114,8 @@ if __name__ == '__main__':
         transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),  # scale to range [0,1]
     ])
 
-    train_dataset = CocoDetection(root=train_path, annFile=train_annot_path, transform=transform,
-                                  target_transform=transform).coco
-    val_dataset = CocoDetection(root=val_path, annFile=val_annot_path, transform=transform,
-                                target_transform=transform).coco
+    train_dataset = CocoDetection(root=train_path, annFile=train_annot_path)
+    val_dataset = CocoDetection(root=val_path, annFile=val_annot_path)
 
     triplet_train_dataset = TripletCOCODataset(train_dataset, object_image_dict, train_path, split_name='train',
                                                transform=transform)
@@ -141,7 +139,7 @@ if __name__ == '__main__':
     # Pretrained model from torchvision or from checkpoint
     if args.pretrained:
         embedding_net = ObjectEmbeddingNet(weights=RetinaNet_ResNet50_FPN_Weights.COCO_V1,
-                                           num_classes=len(train_dataset.cats)).to(device)
+                                           num_classes=len(train_dataset.coco.cats)).to(device)
 
     model = TripletNet_fasterRCNN(embedding_net).to(device)
 
