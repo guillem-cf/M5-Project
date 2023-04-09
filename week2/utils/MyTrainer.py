@@ -12,6 +12,7 @@ from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import COCOEvaluator
 from LossEvalHook import *
 
+
 # import some common detectron2 utilities
 
 

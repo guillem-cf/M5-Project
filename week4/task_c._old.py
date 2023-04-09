@@ -4,15 +4,16 @@ import time
 
 import torch
 import torchvision.transforms as transforms
-from dataset.triplet_data import TripletMITDataset
-from models.models import TripletResNet
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchvision.models import ResNet18_Weights
 from tqdm import tqdm
+
+from dataset.triplet_data import TripletMITDataset
+from models.models import TripletResNet
+from utils import losses
 from utils.checkpoint import save_checkpoint_loss
 from utils.early_stopper import EarlyStopper
-from utils import losses
 
 if __name__ == '__main__':
     # args parser

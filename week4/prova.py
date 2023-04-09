@@ -1,7 +1,7 @@
+import matplotlib.pyplot as plt
 import torch
 import torchvision
 from PIL import Image
-import matplotlib.pyplot as plt
 
 # Define the model
 model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weigts='COCO_V1')
@@ -38,7 +38,7 @@ for i in range(len(predictions[0]['scores'])):
     box = predictions[0]['boxes'][i].tolist()
 
     if score > 0.5:
-        ax.add_patch(plt.Rectangle((box[0], box[1]), box[2]-box[0], box[3]-box[1], edgecolor='r', facecolor='none'))
+        ax.add_patch(plt.Rectangle((box[0], box[1]), box[2] - box[0], box[3] - box[1], edgecolor='r', facecolor='none'))
         ax.text(box[0], box[1], f"{label}: {score:.2f}", fontsize=10, color='r')
 
 plt.show()

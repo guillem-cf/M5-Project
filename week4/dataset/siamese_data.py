@@ -1,13 +1,6 @@
-import os
-
-import torch
-from torch.utils.data import Dataset
-from torchvision.datasets import ImageFolder
-from torchvision.transforms import ToTensor, Normalize
 import numpy as np
 from PIL import Image
-
-import numpy as np
+from torch.utils.data import Dataset
 
 
 # class SiameseMITDataset(Dataset):
@@ -51,11 +44,11 @@ import numpy as np
 #                 siamese_index = index
 #                 while siamese_index == index:
 #                     siamese_index = np.random.choice(self.label_to_indices[label1])
-                
+
 #             else:
 #                 siamese_label = np.random.choice(list(self.label_to_indices.keys() - {label1}))
 #                 siamese_index = np.random.choice(self.label_to_indices[siamese_label])
-                
+
 
 #             img2 = self.data[siamese_index]
 
@@ -77,8 +70,6 @@ import numpy as np
 #         return self.n_samples
 
 
-
-
 class SiameseMITDataset(Dataset):
     """
     Train: For each sample creates randomly a positive or a negative pair
@@ -89,8 +80,7 @@ class SiameseMITDataset(Dataset):
         self.mit_dataset = mit_dataset
 
         self.train = split_name == 'train'
-     
-            
+
         self.transform = self.mit_dataset.transform
 
         if self.train:
@@ -143,7 +133,7 @@ class SiameseMITDataset(Dataset):
 
         img1 = Image.open(img1[0])
         img2 = Image.open(img2[0])
-    
+
         if self.transform is not None:
             img1 = self.transform(img1)
             img2 = self.transform(img2)

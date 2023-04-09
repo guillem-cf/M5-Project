@@ -52,15 +52,15 @@ if __name__ == '__main__':
     args = parse_args()
     path = os.path.expanduser(args.download_dir)
     if (
-        not os.path.isdir(path)
-        or not os.path.isdir(os.path.join(path, 'train2017'))
-        or not os.path.isdir(os.path.join(path, 'val2017'))
-        or not os.path.isdir(os.path.join(path, 'annotations'))
+            not os.path.isdir(path)
+            or not os.path.isdir(os.path.join(path, 'train2017'))
+            or not os.path.isdir(os.path.join(path, 'val2017'))
+            or not os.path.isdir(os.path.join(path, 'annotations'))
     ):
         if args.no_download:
             raise ValueError(
-                    '{} is not a valid directory, make sure it is present.'
-                    ' Or you should not disable "--no-download" to grab it'.format(path)
+                '{} is not a valid directory, make sure it is present.'
+                ' Or you should not disable "--no-download" to grab it'.format(path)
             )
         else:
             download_coco(path, overwrite=args.overwrite)

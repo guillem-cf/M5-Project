@@ -4,17 +4,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torchvision.transforms as transforms
-from dataset.mit import MITDataset
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from torchvision.models import ResNet50_Weights, resnet50
 from tqdm import tqdm
+
+from dataset.mit import MITDataset
 from utils.checkpoint import save_checkpoint
 from utils.early_stopper import EarlyStopper
 from utils.metrics import accuracy
 
 dataset_path = '../../mcv/datasets/MIT_split'
-#dataset_path = '../../dataset/MIT_split'
+# dataset_path = '../../dataset/MIT_split'
 num_classes = 8
 BATCH_SIZE = 256
 LEARNING_RATE = 1e-4

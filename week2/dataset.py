@@ -1,8 +1,8 @@
 import os
 
+import PIL.Image as Image
 import numpy as np
 import pandas as pd
-import PIL.Image as Image
 
 path = "/export/home/group03/mcv/datasets/KITTI-MOTS/instances/"
 

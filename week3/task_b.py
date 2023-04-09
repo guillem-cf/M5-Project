@@ -183,7 +183,7 @@ if __name__ == '__main__':
                     if object_class2 != 0:  # Avoid background
                         if object_class1 != object_class2:
                             co_ocurrence_matrix[object_class1][object_class2] = (
-                                co_ocurrence_matrix[object_class1][object_class2] + 1
+                                    co_ocurrence_matrix[object_class1][object_class2] + 1
                             )
 
     co_ocurrence_matrix = np.where(co_ocurrence_matrix == 0, np.inf, co_ocurrence_matrix)
@@ -265,8 +265,8 @@ if __name__ == '__main__':
 
             a = np.where(mask != False)
             try:
-                im2b = im2[np.min(a[0]) : np.max(a[0]) + 1, np.min(a[1]) : np.max(a[1]) + 1]
-                maskb = mask[np.min(a[0]) : np.max(a[0]) + 1, np.min(a[1]) : np.max(a[1]) + 1]
+                im2b = im2[np.min(a[0]): np.max(a[0]) + 1, np.min(a[1]): np.max(a[1]) + 1]
+                maskb = mask[np.min(a[0]): np.max(a[0]) + 1, np.min(a[1]): np.max(a[1]) + 1]
             except:
                 print('Empty mask')
                 continue
@@ -281,7 +281,7 @@ if __name__ == '__main__':
                 np.random.uniform(low=0, high=im.shape[0] - im2c.shape[0], size=(1)).astype(int)[0],
                 np.random.uniform(low=0, high=im.shape[1] - im2c.shape[1], size=(1)).astype(int)[0],
             )
-            im3[p0 : p0 + im2c.shape[0], p1 : p1 + im2c.shape[1]] = im2c
+            im3[p0: p0 + im2c.shape[0], p1: p1 + im2c.shape[1]] = im2c
 
             im3 = np.where(im3 == 0, im, im3)
 
