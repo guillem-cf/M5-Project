@@ -75,8 +75,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # ------------------------------- PATHS --------------------------------
-    env_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    dataset_path = os.path.join(env_path, 'dataset/COCO')
+    # env_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    # get path of current file
+    env_path = '/ghome/group03'
+    dataset_path = os.path.join(env_path, 'mcv/datasets/COCO')
 
     output_path = os.path.join(env_path, 'M5-Project/week4/Results/Task_e')
 
