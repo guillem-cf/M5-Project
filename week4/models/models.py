@@ -73,29 +73,9 @@ class ObjectEmbeddingNet(nn.Module):
                                               nn.Linear(256, 2)
                                               ))
 
-    def forward(self, x, target):
-        # detections = self.faster_rcnn(x, target)
-        # object_embeddings = []
-        images, target = self.faster_rcnn.transform(x, target)# target)
-        # images = ImageList(x, [(x.size(2), x.size(3))] * x.size(0))
-        # and list is not empty
-        images, _ = self.faster_rcnn.transform(x)
-        features = self.faster_rcnn.backbone(images.tensors)
-        proposals, _ = self.faster_rcnn.rpn(images, features, target)
-        detections, _ = self.faster_rcnn.roi_heads(features, proposals, images.image_sizes, target)  # FIX THIS
-
-        object_embeddings = []
-        for detection in detections:
-            object_features = detection['features']
-            object_embeddings.append(self.fc(object_features))
-        
-        if not object_embeddings:
-            zero_tensor = torch.zeros(x.size(0), 2)
-            zero_tensor.requires_grad = True  # Set requires_grad=True for the zero tensor
-            return zero_tensor
-        object_embeddings = torch.stack(object_embeddings).mean(dim=0)
-
-        return object_embeddings
+    def forward(self, x, target=None):
+        features = self.faster_rcnn(x)
+        return features
 
     def get_embedding(self, x):
         return self.forward(x)

@@ -15,8 +15,8 @@ from utils import trainer
 from utils.early_stopper import EarlyStopper
 
 
-# os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 def triplet_collate_fn(batch):
@@ -139,8 +139,6 @@ if __name__ == '__main__':
 
     # Pretrained model from torchvision or from checkpoint
     if args.pretrained:
-        embedding_net = ObjectEmbeddingNet(weights=FasterRCNN_ResNet50_FPN_Weights.COCO_V1,
-                                           num_classes=len(train_dataset.cats)).to(device)
         embedding_net = ObjectEmbeddingNet(weights=FasterRCNN_ResNet50_FPN_Weights.COCO_V1,
                                            num_classes=len(train_dataset.coco.cats)).to(device)
 
