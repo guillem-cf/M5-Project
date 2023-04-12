@@ -61,21 +61,51 @@ class ObjectEmbeddingNet(nn.Module):
         
 
         in_features = self.faster_rcnn.roi_heads.box_predictor.cls_score.in_features
-        self.faster_rcnn.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
+        # self.faster_rcnn.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
 
         # Remove the softmax layer
-        self.faster_rcnn.roi_heads.box_predictor.cls_score = nn.Identity()
+        # self.faster_rcnn.roi_heads.box_predictor.cls_score = nn.Identity()
 
-        self.fc = nn.Sequential(nn.Sequential(nn.Linear(2048, 256),
+        self.fc = nn.Sequential(nn.Sequential(nn.Linear(1024, 256),
                                               nn.PReLU(),
                                               nn.Linear(256, 256),
                                               nn.PReLU(),
                                               nn.Linear(256, 2)
                                               ))
 
-    def forward(self, x, target=None):
-        features = self.faster_rcnn(x)
-        return features
+    def forward(self, x, target):
+        # detections = self.faster_rcnn(x, target)
+        # object_embeddings = []
+        # images, target = self.faster_rcnn.transform(x, target)
+        # images = ImageList(x, [(x.size(2), x.size(3))] * x.size(0))
+        # and list is not empty
+        images, _ = self.faster_rcnn.transform(x)
+        features = self.faster_rcnn.backbone(images.tensors)
+        proposals, _ = self.faster_rcnn.rpn(images, features, targets=target)
+        roi_features = self.faster_rcnn.roi_heads.box_roi_pool(features, proposals, images.image_sizes)
+        box_features = self.faster_rcnn.roi_heads.box_head(roi_features)
+        # Obtain the output of the fc7 layer
+        fc7_output = box_features.view(box_features.size(0), -1)  # flatten the features
+        fc7_output = self.faster_rcnn.roi_heads.box_head.fc7(fc7_output)
+        # detections, _ = self.faster_rcnn.roi_heads(features, proposals, images.image_sizes, targets=target)
+        # outputs = self.faster_rcnn(x, target)
+        # feature_vectors = self.faster_rcnn.roi_heads.box_head.fc7(outputs[0]['boxes'])
+     
+        # object_embeddings = []
+        # for box in fc7_output:
+        #     # object_features = detection['features']
+        #     object_embeddings.append(self.fc(fc7_output))
+        
+        # if not object_embeddings:
+        #     # zero_tensor = torch.zeros(x.size(0), 2)
+        #     # zero_tensor.requires_grad = True  # Set requires_grad=True for the zero tensor
+        #     # return zero_tensor
+        #     object_embeddings = 1
+  
+        # object_embeddings = torch.stack(fc7_output).mean(dim=0)
+        
+        
+        return fc7_output
 
     def get_embedding(self, x):
         return self.forward(x)

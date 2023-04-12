@@ -218,6 +218,9 @@ class TripletCOCODataset(Dataset):
             positive_img_id = random.choice(possible_positive_imgs)
 
         positive_img = self.coco.loadImgs(positive_img_id)[0]
+        positive_ann_ids = self.coco.getAnnIds(imgIds=positive_img_id)  # Get the id of the instances
+        positive_anns = self.coco.loadAnns(positive_ann_ids)
+        positive_cat_ids = list(set([ann['category_id'] for ann in positive_anns]))
 
         # negative_img_id = anchor_img_id
         # # Choose negative image that does not contain any object from the same class as the anchor
@@ -233,7 +236,11 @@ class TripletCOCODataset(Dataset):
         # Choose negative image that does not contain any object from the same class as the anchor
         negative_img_id = random.choice([item for item in self.obj_img_ids if item != anchor_img_id and all(
             cat_id not in self.obj_img_dict for cat_id in anchor_cat_ids)])
+        
         negative_img = self.coco.loadImgs(negative_img_id)[0]
+        negative_ann_ids = self.coco.getAnnIds(imgIds=negative_img_id)  # Get the id of the instances
+        negative_anns = self.coco.loadAnns(negative_ann_ids)
+        negative_cat_ids = list(set([ann['category_id'] for ann in negative_anns]))
 
         # Load anchor, positive, and negative images
         anchor_img_path = os.path.join(self.dataset_path, anchor_img['file_name'])
@@ -249,20 +256,26 @@ class TripletCOCODataset(Dataset):
         anchor_labels = []
         positive_boxes = []
         positive_labels = []
+        negative_boxes = []
+        negative_labels = []
 
         for ann in anchor_anns:
             anchor_boxes.append(ann['bbox'])
             anchor_labels.append(ann['category_id'])
 
-        positive_ann_ids = self.coco.getAnnIds(imgIds=positive_img_id)
-        positive_anns = self.coco.loadAnns(positive_ann_ids)
         for ann in positive_anns:
-            if ann['category_id'] in anchor_cat_ids:
-                positive_boxes.append(ann['bbox'])
-                positive_labels.append(ann['category_id'])
+            # if ann['category_id'] in anchor_cat_ids:
+            positive_boxes.append(ann['bbox'])
+            positive_labels.append(ann['category_id'])
+            
+        for ann in negative_anns:
+            negative_boxes.append(ann['bbox'])
+            negative_labels.append(ann['category_id'])
 
-        negative_boxes = torch.zeros((0, 4), dtype=torch.float32)
-        negative_labels = torch.zeros((1, 1), dtype=torch.int64)
+        # # AssertionError: Expected target boxes to be a tensor of shape [N, 4], got torch.Size([0]).
+        # negative_boxes = torch.zeros((0, 4), dtype=torch.float32)
+        # # Expected target boxes to be a tensor of shape [N, 4], got torch.Size([0])
+        # negative_labels = torch.zeros((1, 1), dtype=torch.int64)
 
         target_size = [256, 256]
         anchor_boxes = torch.Tensor(self.resize_bounding_boxes(anchor_boxes, anchor_img.size, target_size))
@@ -276,71 +289,11 @@ class TripletCOCODataset(Dataset):
             negative_img = self.transform(negative_img)
 
         target = [anchor_boxes, torch.LongTensor(anchor_labels), positive_boxes, torch.LongTensor(positive_labels),
-                  negative_boxes, negative_labels]
+                  negative_boxes, torch.LongTensor(negative_labels)]
 
         return (anchor_img, positive_img, negative_img), target
 
     def __len__(self):
         return len(self.obj_img_ids)
 
-    #     self.train = split_name == 'train'
 
-    #     self.transform = self.mit_dataset.transform
-
-    #     if self.train:
-    #         self.train_labels = self.mit_dataset.targets
-    #         self.train_data = self.mit_dataset.samples
-    #         self.labels_set = set(self.train_labels)
-    #         self.label_to_indices = {label: np.where(np.asarray(self.train_labels) == label)[0]
-    #                                  for label in self.labels_set}
-    #     else:
-    #         # generate fixed pairs for testing
-    #         self.test_labels = self.mit_dataset.targets
-    #         self.test_data = self.mit_dataset.samples
-    #         self.labels_set = set(self.test_labels)
-    #         self.label_to_indices = {label: np.where(np.asarray(self.test_labels) == label)[0]
-    #                                  for label in self.labels_set}
-
-    #         random_state = np.random.RandomState(29)
-
-    #         triplets = [[i,
-    #                      random_state.choice(self.label_to_indices[self.test_labels[i]]),
-    #                      random_state.choice(self.label_to_indices[
-    #                                              np.random.choice(
-    #                                                  list(self.labels_set - set([self.test_labels[i]]))
-    #                                              )
-    #                                          ])
-    #                      ]
-    #                     for i in range(len(self.test_data))]
-    #         self.test_triplets = triplets
-
-    # def __getitem__(self, index):
-    #     if self.train:
-    #         img1, label1 = self.train_data[index], self.train_labels[index]
-    #         positive_index = index
-    #         while positive_index == index:
-    #             positive_index = np.random.choice(self.label_to_indices[label1])
-    #         negative_label = np.random.choice(list(self.labels_set - set([label1])))
-    #         negative_index = np.random.choice(self.label_to_indices[negative_label])
-    #         img2 = self.train_data[positive_index]
-    #         img3 = self.train_data[negative_index]
-    #     else:
-    #         img1 = self.test_data[self.test_triplets[index][0]]
-    #         img2 = self.test_data[self.test_triplets[index][1]]
-    #         img3 = self.test_data[self.test_triplets[index][2]]
-
-    #     img1 = Image.open(img1[0])
-    #     img2 = Image.open(img2[0])
-    #     img3 = Image.open(img3[0])
-
-    #     # img1 = Image.fromarray(img1.numpy(), mode='L')
-    #     # img2 = Image.fromarray(img2.numpy(), mode='L')
-    #     # img3 = Image.fromarray(img3.numpy(), mode='L')
-    #     if self.transform is not None:
-    #         img1 = self.transform(img1)
-    #         img2 = self.transform(img2)
-    #         img3 = self.transform(img3)
-    #     return (img1, img2, img3), []
-
-    # def __len__(self):
-    #     return len(self.mit_dataset)
