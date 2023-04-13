@@ -78,9 +78,9 @@ if __name__ == '__main__':
     # ------------------------------- PATHS --------------------------------
     env_path = os.path.dirname(os.path.abspath(__file__))
     # get path of current file
-    dataset_path = os.path.join(env_path, '../../datasets/COCO')
+    dataset_path = '/ghome/mcv/datasets/COCO'
 
-    output_path = os.path.join(env_path, './Results/Task_e')
+    output_path = os.path.join(env_path, 'Results/Task_e')
 
     # Create output path if it does not exist
     if not os.path.exists(output_path):
@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Resize((256, 256), antialias=True),
+        transforms.Resize((800, 800), antialias=True),
         transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),  # scale to range [0,1]
     ])
 

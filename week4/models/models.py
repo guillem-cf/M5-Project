@@ -7,6 +7,8 @@ from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, Faster
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.ops import boxes as box_ops
 
+import cv2
+
 
 class EmbeddingNet(nn.Module):
     def __init__(self, weights, resnet_type='resnet50'):
@@ -59,55 +61,175 @@ class ObjectEmbeddingNet(nn.Module):
     def __init__(self, weights, num_classes):
         super(ObjectEmbeddingNet, self).__init__()
 
+        # Load the Faster R-CNN model with ResNet-50 backbone
         self.faster_rcnn = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
 
-        num_features_in = self.faster_rcnn.roi_heads.box_head.fc7.in_features
-        self.faster_rcnn.roi_heads.box_predictor = FastRCNNPredictor(num_features_in, 91)
+        # Replace the box predictor with a custom Fast R-CNN predictor
+        in_features = self.faster_rcnn.roi_heads.box_head.fc7.in_features
+        # self.faster_rcnn.roi_heads.box_predictor = FastRCNNPredictor(in_features, 91)   # El nostre dataset te 80 classes, no 91. Per aixo passavem num_classes
 
-        self.fc = nn.Sequential(nn.Sequential(nn.Linear(1024, 256),
+        # Define the fully connected layers for embedding
+        self.fc = nn.Sequential(nn.Sequential(nn.Linear(in_features, 256),
                                               nn.PReLU(),
                                               nn.Linear(256, 256),
                                               nn.PReLU(),
                                               nn.Linear(256, 2)
                                               ))
 
+        self.proposals = []
+        def hook_proposals(module, input, output):
+            self.proposals.append(input)
         self.features = []
-        def hook(module, input, output):
+        def hook_features(module, input, output):
             self.features.append(output)
+        self.scores = []
+        def hook_scores(module, input, output):
+            self.scores.append(output)
 
-        self.faster_rcnn.roi_heads.box_head.fc7.register_forward_hook(hook)
+        
+        layer_to_hook_proposals = 'roi_heads.box_roi_pool'
+        layer_to_hook_features = 'roi_heads.box_head.fc7'
+        layer_to_hook_scores = 'roi_heads.box_predictor.cls_score'
+        for name, layer in self.faster_rcnn.named_modules():
+            if name == layer_to_hook_proposals:
+                layer.register_forward_hook(hook_proposals)
+            if name == layer_to_hook_features:
+                layer.register_forward_hook(hook_features)
+            if name == layer_to_hook_scores:
+                layer.register_forward_hook(hook_scores)
+        
+        
+        # # Define a hook to extract the object features from the Fast R-CNN head
+        # self.features = []
+        # def hook(module, input, output):
+        #     self.features.append(output)
+
+        # self.faster_rcnn.roi_heads.box_head.fc7.register_forward_hook(hook)
 
     def extract_roi_features(self, images, targets=None):
-        images, targets = self.faster_rcnn.transform(images, targets)
+        # Apply the transform to the input images
+        images, targets = self.faster_rcnn.transform(images, targets)   # Aqui suposo que es fa el resize de les bounding boxes del GT, si no surten be els resultats es una cosa que podriem revisar
+        
+        # Pass the images through the Faster R-CNN backbone and RPN
         features = self.faster_rcnn.backbone(images.tensors)
         proposals, proposal_losses = self.faster_rcnn.rpn(images, features, targets)
-        detections, detector_losses = self.faster_rcnn.roi_heads(features, proposals, images.image_sizes, targets)
-        return detections, detector_losses
+        
+        # RoI pooling
+        object_features = self.faster_rcnn.roi_heads.box_roi_pool(features, proposals, images.image_sizes)
+        
+        # Pass the features through the Fast R-CNN head
+        bbox_features = self.faster_rcnn.roi_heads.box_head(object_features)
+        
+        # Scores and bounding boxes
+        scores = self.faster_rcnn.roi_heads.box_predictor(bbox_features)
+        
+        # # Pass the features and proposals through the Fast R-CNN head
+        # detections, detector_losses = self.faster_rcnn.roi_heads(features, proposals, images.image_sizes, targets)
+        
+        return bbox_features 
 
-    def forward(self, images, targets=None):
+    def forward(self, x, targets=None):
         if self.training and targets is None:
-            raise ValueError("In training mode, targets should be provided")
+            raise ValueError("In training mode, targets should be provided") 
+        
+        # Write the detections to the images to check the results
+        im_1 = x[0].permute(1, 2, 0).cpu().numpy()
+        # im_2 = x[1].permute(1, 2, 0).cpu().numpy()
+        
+        # use cv2 to draw the bounding boxes
+        im_1 = cv2.cvtColor(im_1, cv2.COLOR_RGB2BGR)
+        # im_2 = cv2.cvtColor(im_2, cv2.COLOR_RGB2BGR)
+        
+        # im_1_boxes = detections[0]['boxes'].detach().cpu().numpy()
+        im_1_boxes_gt = targets[0]['boxes'].detach().cpu().numpy()
+        # im_2_boxes = detections[1]['boxes'].detach().cpu().numpy()
+        # im_2_boxes_gt = targets[1]['boxes'].detach().cpu().numpy()
+        
+        for box_gt in list(im_1_boxes_gt):
+        #     cv2.rectangle(im_1, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (0, 255, 0), 2)
+            cv2.rectangle(im_1, (int(box_gt[0]), int(box_gt[1])), (int(box_gt[2]), int(box_gt[3])), (255, 0, 0), 2)
+            
+        # for box_gt in list(im_2_boxes_gt):
+        #     # cv2.rectangle(im_2, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (0, 255, 0), 2)
+        #     cv2.rectangle(im_2, (int(box_gt[0]), int(box_gt[1])), (int(box_gt[2]), int(box_gt[3])), (255, 0, 0), 2) 
 
-        if self.training:
-            n = self.faster_rcnn.backbone(images)
-            # change format to calculate triplet loss
-            n = list(n.values())
+        # images,targets = self.faster_rcnn.transform(images,targets)
+        # outputs = self.faster_rcnn(images, targets) [4000, 1024]
+        # bbox_features = self.extract_roi_features(images, targets)
+        
+        targets = {}
+        targets['boxes'] = torch.zeros((0,4)).to(x.device)
+        targets['labels'] = torch.zeros((0), dtype = torch.int64).to(x.device)
+        targets['image_id'] = torch.zeros((0), dtype = torch.int64).to(x.device)
+        
+        targets = [targets]*x.shape[0]
+        
+        output = self.faster_rcnn(x, targets)
+        
+        proposals = self.proposals[0]
+        self.proposals = []
+        scores = self.scores[0]
+        self.scores = []
+        features = self.features[0]
+        self.features = []
+        
+        
+        
+        
+        
+    
+        # if self.training:
+        #     # Apply the transform to the input images
+        #     images, targets = self.faster_rcnn.transform(x, targets)   # Aqui suposo que es fa el resize de les bounding boxes del GT, si no surten be els resultats es una cosa que podriem revisar
+            
+        #     # Pass the images through the Faster R-CNN backbone and RPN
+        #     features = self.faster_rcnn.backbone(images.tensors)
+        #     proposals, proposal_losses = self.faster_rcnn.rpn(images, features, targets)
+            
+        #     # RoI pooling
+        #     object_features = self.faster_rcnn.roi_heads.box_roi_pool(features, proposals, images.image_sizes)
+            
+        #     # Pass the features through the Fast R-CNN head
+        #     bbox_features = self.faster_rcnn.roi_heads.box_head(object_features)
+            
+        #     # Pass the features through the fully connected layers [4000,2] # Problem here, not always dimensionality 4000!!
+        #     bbox_features = self.fc(bbox_features)
+            
+        #     # Split the features for each image in the batch and construct a tensor with dim [batch_size, num_objects, 2]
+        #     bbox_features_split = torch.split(bbox_features, bbox_features.shape[0]//x.shape[0], dim=0)
+        #     # bbox_features_split = [bbox_features_split[i].squeeze() for i in range(len(bbox_features_split))]
+        #     bbox_features_split = torch.mean(torch.stack(bbox_features_split, dim=0), dim=1)
+            
+        #     # If some bbox_featurs_split is nan or inf, replace it with 0
+        #     if torch.isnan(bbox_features_split).any():
+        #         bbox_features_split[bbox_features_split == torch.nan] = 0
+                
+        #     return bbox_features_split
+        
+        # else:
+        #     output = self.faster_rcnn(x)
+            
+            # Extract the features for the selected objects
+            
 
-        else:
-            detections, losses = self.extract_roi_features(images, targets)
+        # embeddings = []
+        # for image_detections in detections:
+        #     # indices = box_ops.batched_nms(
+        #     #     image_detections['boxes'],
+        #     #     image_detections['scores'],
+        #     #     image_detections['labels'],
+        #     #     self.threshold
+        #     # )
+        #     # selected_features = image_detections['roi_features'][indices]
+        #     # embeddings.append(torch.mean(selected_features, dim=0))
+            
+        #     # Compute the features for the selected objects
+        #     object_features = 1
 
-        embeddings = []
-        for image_detections in detections:
-            indices = box_ops.batched_nms(
-                image_detections['boxes'],
-                image_detections['scores'],
-                image_detections['labels'],
-                self.threshold
-            )
-            selected_features = image_detections['roi_features'][indices]
-            embeddings.append(torch.mean(selected_features, dim=0))
-
-        return torch.stack(embeddings)
+        # embeddings = torch.stack(embeddings)
+        # embeddings = self.fc(embeddings)
+        
+        # # TODO: PASSAR LA FULLY CONNECTED PER TENIR ELS EMBEDDINGS DE CADA IMATGE DE DIMENSIO 2
 
     def get_embedding(self, x):
         return self.forward(x)

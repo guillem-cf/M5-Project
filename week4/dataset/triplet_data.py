@@ -177,13 +177,15 @@ class TripletCOCODataset(Dataset):
         # negative_img = self.coco.loadImgs(negative_img_id)[0]
 
         # Choose negative image that does not contain any object from the same class as the anchor
-        negative_img_id = random.choice([item for item in self.obj_img_ids if item != anchor_img_id and all(
-            cat_id not in self.obj_img_dict for cat_id in anchor_cat_ids)])
-        
-        negative_img = self.coco.loadImgs(negative_img_id)[0]
-        negative_ann_ids = self.coco.getAnnIds(imgIds=negative_img_id)  # Get the id of the instances
-        negative_anns = self.coco.loadAnns(negative_ann_ids)
-        negative_cat_ids = list(set([ann['category_id'] for ann in negative_anns]))
+        negative_anns = []
+        while negative_anns == []:
+            negative_img_id = random.choice([item for item in self.obj_img_ids if item != anchor_img_id and all(
+                cat_id not in self.obj_img_dict for cat_id in anchor_cat_ids)])
+            
+            negative_img = self.coco.loadImgs(negative_img_id)[0]
+            negative_ann_ids = self.coco.getAnnIds(imgIds=negative_img_id)  # Get the id of the instances
+            negative_anns = self.coco.loadAnns(negative_ann_ids)
+            negative_cat_ids = list(set([ann['category_id'] for ann in negative_anns]))
 
         # Load anchor, positive, and negative images
         anchor_img_path = os.path.join(self.dataset_path, anchor_img['file_name'])
@@ -213,14 +215,22 @@ class TripletCOCODataset(Dataset):
             
         for ann in negative_anns:
             negative_boxes.append(ann['bbox'])
+        
             negative_labels.append(ann['category_id'])
 
+        if negative_boxes == []:
+            print("negative_boxes is empty")
+        if positive_boxes == []:
+            print("positive_boxes is empty")
+        if anchor_boxes == []:
+            print("anchor_boxes is empty")
+        
         # # AssertionError: Expected target boxes to be a tensor of shape [N, 4], got torch.Size([0]).
         # negative_boxes = torch.zeros((0, 4), dtype=torch.float32)
         # # Expected target boxes to be a tensor of shape [N, 4], got torch.Size([0])
         # negative_labels = torch.zeros((1, 1), dtype=torch.int64)
 
-        target_size = [256, 256]
+        target_size = [800, 800]
         anchor_boxes = torch.Tensor(self.resize_bounding_boxes(anchor_boxes, anchor_img.size, target_size))
         positive_boxes = torch.Tensor(self.resize_bounding_boxes(positive_boxes, positive_img.size, target_size))
         negative_boxes = torch.Tensor(self.resize_bounding_boxes(negative_boxes, negative_img.size, target_size))
