@@ -76,12 +76,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # ------------------------------- PATHS --------------------------------
-    # env_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    env_path = os.path.dirname(os.path.abspath(__file__))
     # get path of current file
-    env_path = '/ghome/group03'
-    dataset_path = os.path.join(env_path, 'mcv/datasets/COCO')
+    dataset_path = os.path.join(env_path, '../../datasets/COCO')
 
-    output_path = os.path.join(env_path, 'M5-Project/week4/Results/Task_e')
+    output_path = os.path.join(env_path, './Results/Task_e')
 
     # Create output path if it does not exist
     if not os.path.exists(output_path):
@@ -141,7 +140,7 @@ if __name__ == '__main__':
     # Pretrained model from torchvision or from checkpoint
     if args.pretrained:
         embedding_net = ObjectEmbeddingNet(weights=FasterRCNN_ResNet50_FPN_Weights.COCO_V1,
-                                           num_classes=len(train_dataset.coco.cats)).to(device)
+                                           num_classes=len(train_dataset.coco.cats)+1).to(device)
 
     model = TripletNet_fasterRCNN(embedding_net).to(device)
 
