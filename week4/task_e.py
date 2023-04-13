@@ -12,6 +12,7 @@ from dataset.triplet_data import TripletCOCODataset
 from models.models import TripletNet_fasterRCNN, ObjectEmbeddingNet
 from utils import losses
 from utils import trainer
+from utils import metrics
 from utils.early_stopper import EarlyStopper
 
 
@@ -124,9 +125,9 @@ if __name__ == '__main__':
                                               transform=transform)
 
     # ------------------------------- DATALOADER --------------------------------
-    # kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-    # train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True, **kwargs)
-    # val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, **kwargs)
+    kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
+    train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True, **kwargs)
+    val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, **kwargs)
 
     kwargs = {'num_workers': 4, 'pin_memory': True} if torch.cuda.is_available() else {}
     triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=args.batch_size, shuffle=True,
@@ -164,13 +165,13 @@ if __name__ == '__main__':
     trainer.fit(triplet_train_loader, triplet_test_loader, model, loss_func, optimizer, lr_scheduler, args.num_epochs,
                 device, log_interval, output_path, name='task_e')
 
-    # # Plot emmbedings
-    # train_embeddings_cl, train_labels_cl = metrics.extract_embeddings(train_loader, model, device)
-    # path = os.path.join(output_path, 'train_embeddings.png')
-    # metrics.plot_embeddings(train_embeddings_cl, train_labels_cl, path)
-    # val_embeddings_cl, val_labels_cl = metrics.extract_embeddings(test_loader, model, device)
-    # path = os.path.join(output_path, 'val_embeddings.png')
-    # metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, path)
+    # Plot emmbedings
+    train_embeddings_cl, train_labels_cl = metrics.extract_embeddings(train_loader, model, device)
+    path = os.path.join(output_path, 'train_embeddings.png')
+    metrics.plot_embeddings(train_embeddings_cl, train_labels_cl, path)
+    val_embeddings_cl, val_labels_cl = metrics.extract_embeddings(val_loader, model, device)
+    path = os.path.join(output_path, 'val_embeddings.png')
+    metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, path)
 
-    # metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=test_dataset.classes, output_dir="Results/Task_c")
-    # metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=test_dataset.classes, output_dir="Results/Task_c")
+    metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=val_dataset.classes, output_dir="Results/Task_e")
+    metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=val_dataset.classes, output_dir="Results/Task_e")

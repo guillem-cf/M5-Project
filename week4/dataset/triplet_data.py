@@ -6,6 +6,8 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset
 
+import cv2
+
 class TripletMITDataset(Dataset):
     """
     Train: For each sample creates randomly a positive or a negative pair
@@ -222,15 +224,28 @@ class TripletCOCODataset(Dataset):
         anchor_boxes = torch.Tensor(self.resize_bounding_boxes(anchor_boxes, anchor_img.size, target_size))
         positive_boxes = torch.Tensor(self.resize_bounding_boxes(positive_boxes, positive_img.size, target_size))
         negative_boxes = torch.Tensor(self.resize_bounding_boxes(negative_boxes, negative_img.size, target_size))
+        
 
         # Apply transformations to images, if provided
         if self.transform is not None:
             anchor_img = self.transform(anchor_img)
             positive_img = self.transform(positive_img)
             negative_img = self.transform(negative_img)
+        
+        # Draw bounding boxes on images
+        # anchor_img_bbox = anchor_img.clone().numpy()
+        # positive_img_bbox = positive_img.clone().numpy()
+        # negative_img_bbox = negative_img.clone().numpy()
+        
+        # cv2.rectangle(anchor_img_bbox, (anchor_boxes[0][0], anchor_boxes[0][1]), (anchor_boxes[0][2], anchor_boxes[0][3]), (0, 255, 0), 2)
+        # cv2.rectangle(positive_img_bbox, (positive_boxes[0][0], positive_boxes[0][1]), (positive_boxes[0][2], positive_boxes[0][3]), (0, 255, 0), 2)
+        # cv2.rectangle(negative_img_bbox, (negative_boxes[0][0], negative_boxes[0][1]), (negative_boxes[0][2], negative_boxes[0][3]), (0, 255, 0), 2)
+        
+        
 
         target = [anchor_boxes, torch.LongTensor(anchor_labels), positive_boxes, torch.LongTensor(positive_labels),
                   negative_boxes, torch.LongTensor(negative_labels)]
+        
 
         return (anchor_img, positive_img, negative_img), target
 
