@@ -126,7 +126,7 @@ class ObjectEmbeddingNet(nn.Module):
         # # Pass the features and proposals through the Fast R-CNN head
         # detections, detector_losses = self.faster_rcnn.roi_heads(features, proposals, images.image_sizes, targets)
         
-        return bbox_features 
+        return bbox_features, scores
 
     def forward(self, x, targets=None):
         if self.training and targets is None:
@@ -155,7 +155,20 @@ class ObjectEmbeddingNet(nn.Module):
 
         # images,targets = self.faster_rcnn.transform(images,targets)
         # outputs = self.faster_rcnn(images, targets) [4000, 1024]
-        # bbox_features = self.extract_roi_features(images, targets)
+        # bbox_features, scores = self.extract_roi_features(images, targets)
+        # # Calculate the most probable class (ignoring the background class) and their scores
+        #         max_scores, max_classes = torch.max(scores[:, 1:], dim=1)
+        #
+        #         # Filter RoIs based on the confidence threshold
+        #         mask = max_scores > confidence_threshold
+        #         filtered_bbox_features = bbox_features[mask]
+
+        # Pass the filtered features through the fully connected layers
+        embeddings = self.fc(filtered_bbox_features)
+
+        # Filter the corresponding scores and classes
+        # filtered_scores = max_scores[mask]
+        # filtered_classes = max_classes[mask] + 1  # Add 1 to the indices to account for the background class
         
         targets = {}
         targets['boxes'] = torch.zeros((0,4)).to(x.device)

@@ -78,7 +78,8 @@ if __name__ == '__main__':
     # ------------------------------- PATHS --------------------------------
     env_path = os.path.dirname(os.path.abspath(__file__))
     # get path of current file
-    dataset_path = '/ghome/mcv/datasets/COCO'
+    # dataset_path = '/ghome/mcv/datasets/COCO'
+    dataset_path = '../../datasets/COCO'
 
     output_path = os.path.join(env_path, 'Results/Task_e')
 
