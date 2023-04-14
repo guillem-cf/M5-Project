@@ -164,7 +164,7 @@ class ObjectEmbeddingNet(nn.Module):
         #         filtered_bbox_features = bbox_features[mask]
 
         # Pass the filtered features through the fully connected layers
-        embeddings = self.fc(filtered_bbox_features)
+        # embeddings = self.fc(filtered_bbox_features)
 
         # Filter the corresponding scores and classes
         # filtered_scores = max_scores[mask]
