@@ -11,6 +11,8 @@ from dataset.siamese_data import SiameseMITDataset
 from models.models import SiameseNet, EmbeddingNet
 from utils import metrics, trainer, losses
 from utils.early_stopper import EarlyStopper
+from sklearn.metrics import precision_recall_curve
+
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "4"
@@ -80,7 +82,8 @@ if __name__ == '__main__':
 
     # Pretrained model from torchvision or from checkpoint
     if args.pretrained:
-        embedding_net = EmbeddingNet(weights=ResNet50_Weights.IMAGENET1K_V2).to(device)
+        #embedding_net = EmbeddingNet(weights=ResNet50_Weights.IMAGENET1K_V2).to(device)
+        embedding_net = EmbeddingNet(weights="/ghome/group03/M5-Project/week4/Results/Task_b/task_b_siamese.h5", resnet_type="None").to(device)
 
     # else:
     #     weights_model = torch.load(args.weights)['model_state_dict']
@@ -116,6 +119,12 @@ if __name__ == '__main__':
     val_embeddings_cl, val_labels_cl = metrics.extract_embeddings(test_loader, model, device)
     path = os.path.join(output_path, 'val_embeddings.png')
     metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, path)
+
+    # precison recall curve
+    precision, recall, thresholds = precision_recall_curve(val_labels_cl, val_embeddings_cl)
+
+
+    # TSNE
 
     metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=test_dataset.classes,
                           output_dir="Results/Task_b")

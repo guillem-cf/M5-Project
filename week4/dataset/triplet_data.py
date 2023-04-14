@@ -7,6 +7,9 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 import cv2
+import tqdm as tqdm
+
+import json
 
 class TripletMITDataset(Dataset):
     """
@@ -86,12 +89,13 @@ class TripletCOCODataset(Dataset):
     Test: Creates fixed pairs for testing
     """
 
-    def __init__(self, coco_dataset, obj_img_dict, dataset_path, split_name='train', transform=None):
+    def __init__(self, coco_dataset, obj_img_dict, dataset_path, split_name='train', dict_negative_img=None, transform=None):
 
         self.coco = coco_dataset.coco
         self.obj_img_dict = obj_img_dict[split_name]
         self.transform = transform
         self.dataset_path = dataset_path
+        self.dict_negative_img = dict_negative_img
 
         # Get ID's of all images
         self.imgs_ids = self.coco.getImgIds()
@@ -106,6 +110,27 @@ class TripletCOCODataset(Dataset):
 
         # # Create a list of all image IDs that do not contain any object from obj_img_dict
         # self.non_obj_img_ids = list(set(self.imgs_ids) - set(self.obj_img_ids))
+        
+        # If dict_negative_img is None, create a dictionary with all id images as keys and for each key a list of all images that do not contain any object of the same category
+        if self.dict_negative_img is None:
+            print("dict_negative_img is not found")
+            print("Creating dict_negative_img")
+            self.dict_negative_img = {}
+            for img_id in tqdm.tqdm(self.obj_img_ids):
+                img_ann_ids = self.coco.getAnnIds(imgIds=img_id)  # Get the id of the instances
+                img_anns = self.coco.loadAnns(img_ann_ids)
+                img_cat_ids = list(set([ann['category_id'] for ann in img_anns]))
+                
+                negative_img_id = [item for item in self.obj_img_ids if item != img_id and all(
+                    cat_id not in self.obj_img_dict for cat_id in img_cat_ids)]
+                self.dict_negative_img[img_id] = negative_img_id
+            
+            path = f'/ghome/group03/mcv/datasets/COCO/{split_name}_dict_negative_img.json'
+            with open(path, 'w') as fp:
+                json.dump(self.dict_negative_img, fp)
+            print("dict_negative_img is created and saved to {}".format(path))
+                
+            
 
     def intersection(self, lst1, lst2):
         lst3 = [value for value in lst1 if value in lst2]
@@ -163,29 +188,15 @@ class TripletCOCODataset(Dataset):
         positive_img = self.coco.loadImgs(positive_img_id)[0]
         positive_ann_ids = self.coco.getAnnIds(imgIds=positive_img_id)  # Get the id of the instances
         positive_anns = self.coco.loadAnns(positive_ann_ids)
-        positive_cat_ids = list(set([ann['category_id'] for ann in positive_anns]))
 
-        # negative_img_id = anchor_img_id
         # # Choose negative image that does not contain any object from the same class as the anchor
-        # non_possible_negative_img = []
-        # for cat in anchor_cat_ids_str:
-        #     non_possible_negative_img += self.obj_img_dict[cat]
-        # non_possible_negative_img = self.intersection(non_possible_negative_img, self.obj_img_ids)
-        # while negative_img_id == anchor_img_id:
-        #     negative_img_id = random.choice([item for item in self.obj_img_ids if item not in non_possible_negative_img])
-
-        # negative_img = self.coco.loadImgs(negative_img_id)[0]
-
-        # Choose negative image that does not contain any object from the same class as the anchor
         negative_anns = []
         while negative_anns == []:
-            negative_img_id = random.choice([item for item in self.obj_img_ids if item != anchor_img_id and all(
-                cat_id not in self.obj_img_dict for cat_id in anchor_cat_ids)])
-            
+            negative_img_id = random.choice(self.dict_negative_img[anchor_img_id])
             negative_img = self.coco.loadImgs(negative_img_id)[0]
             negative_ann_ids = self.coco.getAnnIds(imgIds=negative_img_id)  # Get the id of the instances
             negative_anns = self.coco.loadAnns(negative_ann_ids)
-            negative_cat_ids = list(set([ann['category_id'] for ann in negative_anns]))
+        
 
         # Load anchor, positive, and negative images
         anchor_img_path = os.path.join(self.dataset_path, anchor_img['file_name'])
@@ -215,7 +226,6 @@ class TripletCOCODataset(Dataset):
             
         for ann in negative_anns:
             negative_boxes.append(ann['bbox'])
-        
             negative_labels.append(ann['category_id'])
 
         if negative_boxes == []:

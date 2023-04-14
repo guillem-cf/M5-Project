@@ -15,6 +15,8 @@ from utils import trainer
 from utils import metrics
 from utils.early_stopper import EarlyStopper
 
+import copy
+
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -68,8 +70,8 @@ if __name__ == '__main__':
     parser.add_argument('--weights', type=str,
                         default='/ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5',
                         help='Path to weights')
-    parser.add_argument('--batch_size', type=int, default=2, help='Batch size')
-    parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs')
+    parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
+    parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
@@ -78,8 +80,8 @@ if __name__ == '__main__':
     # ------------------------------- PATHS --------------------------------
     env_path = os.path.dirname(os.path.abspath(__file__))
     # get path of current file
-    # dataset_path = '/ghome/mcv/datasets/COCO'
-    dataset_path = '../../datasets/COCO'
+    dataset_path = '/ghome/mcv/datasets/COCO'
+    # dataset_path = '../../datasets/COCO'
 
     output_path = os.path.join(env_path, 'Results/Task_e')
 
@@ -110,7 +112,15 @@ if __name__ == '__main__':
     val_annot_path = os.path.join(dataset_path, 'instances_val2014.json')
 
     object_image_dict = json.load(open(os.path.join(dataset_path, 'mcv_image_retrieval_annotations.json')))
-
+    
+    try:
+        train_negative_image_dict = json.load(open(os.path.join(dataset_path, 'train_negative_image_dict.json')))
+        val_negative_image_dict = json.load(open(os.path.join(dataset_path, 'val_negative_image_dict.json')))
+    except:
+        train_negative_image_dict = None
+        val_negative_image_dict = None
+    
+    
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Resize((800, 800), antialias=True),
@@ -119,17 +129,25 @@ if __name__ == '__main__':
 
     train_dataset = CocoDetection(root=train_path, annFile=train_annot_path)
     val_dataset = CocoDetection(root=val_path, annFile=val_annot_path)
+    
+    
     triplet_train_dataset = TripletCOCODataset(train_dataset, object_image_dict, train_path, split_name='train',
-                                               transform=transform)
+                                               dict_negative_img=train_negative_image_dict, transform=transform)
     triplet_test_dataset = TripletCOCODataset(val_dataset, object_image_dict, val_path, split_name='val',
-                                              transform=transform)
+                                              dict_negative_img=val_negative_image_dict, transform=transform)
 
     # ------------------------------- DATALOADER --------------------------------
-    kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {}
-    train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True, **kwargs)
-    val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, **kwargs)
+    train_dataset_retrieval = copy.deepcopy(train_dataset)
+    val_dataset_retrieval = copy.deepcopy(val_dataset)
+    
+    train_dataset_retrieval.ids = train_dataset.ids[:2000]
+    val_dataset_retrieval.ids = val_dataset.ids[:2000]
+    
+    kwargs = {'num_workers': 10, 'pin_memory': True} if torch.cuda.is_available() else {}
+    train_loader = DataLoader(train_dataset_retrieval, batch_size=256, shuffle=True, **kwargs)
+    val_loader = DataLoader(val_dataset_retrieval, batch_size=256, shuffle=False, **kwargs)
 
-    kwargs = {'num_workers': 4, 'pin_memory': True} if torch.cuda.is_available() else {}
+    kwargs = {'num_workers': 10, 'pin_memory': True} if torch.cuda.is_available() else {}
     triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=args.batch_size, shuffle=True,
                                       collate_fn=triplet_collate_fn, **kwargs)
     triplet_test_loader = DataLoader(triplet_test_dataset, batch_size=args.batch_size, shuffle=False,
@@ -160,7 +178,7 @@ if __name__ == '__main__':
     # lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.1, last_epoch=-1)
 
-    log_interval = 5
+    log_interval = 1
 
     trainer.fit(triplet_train_loader, triplet_test_loader, model, loss_func, optimizer, lr_scheduler, args.num_epochs,
                 device, log_interval, output_path, name='task_e')

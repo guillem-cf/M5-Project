@@ -73,7 +73,7 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
                     'optimizer': optimizer.state_dict(),
                 },
                 is_best_val_loss,
-                path=output_path + "/task_b_siamese.h5"
+                path=output_path + "/task_b_siamese.pth"
             )
 
     path = output_path + "/loss.png"

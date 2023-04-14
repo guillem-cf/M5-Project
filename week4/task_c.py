@@ -13,6 +13,7 @@ from utils import losses
 from utils import metrics
 from utils import trainer
 from utils.early_stopper import EarlyStopper
+from sklearn.metrics import precision_recall_curve
 
 # os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -86,7 +87,8 @@ if __name__ == '__main__':
 
     # Pretrained model from torchvision or from checkpoint
     if args.pretrained:
-        embedding_net = EmbeddingNet(weights=resnet50, resnet_type='resnet50').to(device)
+        #embedding_net = EmbeddingNet(weights=resnet50, resnet_type='resnet50').to(device)
+        embedding_net = EmbeddingNet(weights="/ghome/group03/M5-Project/week4/Results/Task_c/task_c_triplet.h5", resnet_type="None").to(device)
 
     # else:
     #     weights_model = torch.load(args.weights)['model_state_dict']
@@ -122,6 +124,13 @@ if __name__ == '__main__':
     path = os.path.join(output_path, 'val_embeddings.png')
     metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, path)
 
+
+    # precison recall curve
+    precision, recall, thresholds = precision_recall_curve(val_labels_cl, val_embeddings_cl)
+
+
+
+    #tsne
     metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=test_dataset.classes,
                           output_dir="Results/Task_c")
     metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=test_dataset.classes,
