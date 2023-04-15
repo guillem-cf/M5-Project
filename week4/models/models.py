@@ -35,10 +35,10 @@ class EmbeddingNet(nn.Module):
                                     nn.PReLU(),
                                     nn.Linear(256, 2)
                                     )
-        else:
-            # load a pretrained .h5 model
-            self.resnet = resnet50(pretrained=False)
-            self.resnet.load_state_dict(torch.load(weights))
+        # else:
+        #     # load a pretrained .h5 model
+        #     self.resnet = resnet50(pretrained=False)
+        #     self.resnet.load_state_dict(torch.load(weights))
             
 
     def forward(self, x):
@@ -110,7 +110,7 @@ class ObjectEmbeddingNet(nn.Module):
             # if name == layer_to_hook_boxes:
             #     layer.register_forward_hook(hook_boxes)
         
-        self.attn_layer = nn.Linear(in_features, 1)
+        # self.attn_layer = nn.Linear(in_features, 1)
         # self.attn_layer = nn.MultiheadAttention(in_features, 1)
         # self.out_layer = nn.Linear(output_dim, output_dim)
     
@@ -119,13 +119,13 @@ class ObjectEmbeddingNet(nn.Module):
         if self.training and targets is None:
             raise ValueError("In training mode, targets should be provided") 
         
-        # Write the detections to the images to check the results
-        im_1 = x[0].permute(1, 2, 0).cpu().numpy()
-        im_2 = x[1].permute(1, 2, 0).cpu().numpy()
+        # # Write the detections to the images to check the results
+        # im_1 = x[0].permute(1, 2, 0).cpu().numpy()
+        # im_2 = x[1].permute(1, 2, 0).cpu().numpy()
         
-        # use cv2 to draw the bounding boxes
-        im_1 = cv2.cvtColor(im_1, cv2.COLOR_RGB2BGR)
-        im_2 = cv2.cvtColor(im_2, cv2.COLOR_RGB2BGR)
+        # # use cv2 to draw the bounding boxes
+        # im_1 = cv2.cvtColor(im_1, cv2.COLOR_RGB2BGR)
+        # im_2 = cv2.cvtColor(im_2, cv2.COLOR_RGB2BGR)
         
         # # im_1_boxes = detections[0]['boxes'].detach().cpu().numpy()
         # im_1_boxes_gt = targets[0]['boxes'].detach().cpu().numpy()
@@ -170,18 +170,11 @@ class ObjectEmbeddingNet(nn.Module):
             accumulated_boxes = 0
             for num_boxes in bbox_per_image:
                 features_split = features[accumulated_boxes:accumulated_boxes+num_boxes]
-                scores_split = scores_max[accumulated_boxes:accumulated_boxes+num_boxes]
+                # scores_split = scores_max[accumulated_boxes:accumulated_boxes+num_boxes]
                 accumulated_boxes += num_boxes
                 
                 features_img.append(torch.mean(features_split, dim=0))
                 
-                # attn_scores = self.attn_layer(features_split)   # num_boxes per image and 1 score per box (the maximum score)
-                # attn_scores = torch.softmax(attn_scores, dim=0)  # num_boxes per image and 1 score per box (the maximum score)
-                
-                # features_weighted = torch.sum(features_split * attn_scores, dim=0) # [1, 1024]
-                
-                # features_img.append(self.fc(features_weighted))
-            
             features_img = torch.stack(features_img, dim=0)
                  
         else:

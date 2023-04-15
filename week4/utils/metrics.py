@@ -114,6 +114,7 @@ def plot_embeddings(embeddings, targets, output_path, xlim=None, ylim=None):
         plt.ylim(ylim[0], ylim[1])
     plt.legend(mit_classes)
     plt.savefig(output_path)
+    plt.close()
 
 
 def extract_embeddings(dataloader, model, device):

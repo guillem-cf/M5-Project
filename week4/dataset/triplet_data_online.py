@@ -118,44 +118,8 @@ class TripletCOCODataset(Dataset):
 
         # # Create a list of all image IDs that do not contain any object from obj_img_dict
         # self.non_obj_img_ids = list(set(self.imgs_ids) - set(self.obj_img_ids))
-        
-        
-        # If dict_negative_img is None, create a dictionary with all id images as keys and for each key a list of all images that do not contain any object of the same category
-        if self.dict_negative_img is None:
-            print("dict_negative_img is not found")
-            print("Creating dict_negative_img")
-            self.dict_negative_img = {}
-            for img_id in tqdm(self.obj_img_ids):
-                self.dict_negative_img[img_id] = self.process_img_id(img_id)
-            
-            size = sys.getsizeof(self.dict_negative_img)
-            print("The size of the dictionary is {} bytes".format(size))
-            
-            path = f'/ghome/group03/mcv/datasets/COCO/{split_name}_dict_negative_img_low.json'
-            
-            with open(path, 'w') as fp:
-                json.dump(self.dict_negative_img, fp)
-            
-            print("dict_negative_img is created and saved to {}".format(path))
                 
-                
-    def process_img_id(self, img_id):
-        img_ann_ids = self.coco.getAnnIds(imgIds=img_id)
-        img_anns = self.coco.loadAnns(img_ann_ids)
-        img_cat_ids = list(set([ann['category_id'] for ann in img_anns]))
-
-        negative_img_id = [item for item in self.obj_img_ids if item != img_id and all(
-            cat_id not in self.obj_img_dict for cat_id in img_cat_ids)]
-        
-        try:
-            negative_img_id = random.sample(negative_img_id, 1000)
-        except:
-            negative_img_id = negative_img_id
-            print(f'Image {img_id} has less than 500 negative images')
-        
-        return negative_img_id
        
-
     def intersection(self, lst1, lst2):
         lst3 = [value for value in lst1 if value in lst2]
         return lst3
@@ -216,7 +180,9 @@ class TripletCOCODataset(Dataset):
         # # Choose negative image that does not contain any object from the same class as the anchor
         negative_anns = []
         while negative_anns == []:
-            negative_img_id = random.choice(self.dict_negative_img[str(anchor_img_id)])
+            negative_img_id = random.choice([item for item in self.obj_img_ids if item != anchor_img_id and all(
+            cat_id not in self.obj_img_dict for cat_id in anchor_cat_ids)])
+            
             negative_img = self.coco.loadImgs(negative_img_id)[0]
             negative_ann_ids = self.coco.getAnnIds(imgIds=negative_img_id)  # Get the id of the instances
             negative_anns = self.coco.loadAnns(negative_ann_ids)

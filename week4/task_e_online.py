@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import CocoDetection
 from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
 
-from dataset.triplet_data import TripletCOCODataset
+from dataset.triplet_data_online import TripletCOCODataset
 from models.models import TripletNet_fasterRCNN, ObjectEmbeddingNet
 from utils import losses
 from utils import trainer
@@ -21,7 +21,7 @@ import copy
 
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 def triplet_collate_fn(batch):
@@ -72,8 +72,8 @@ if __name__ == '__main__':
     parser.add_argument('--weights', type=str,
                         default='/ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5',
                         help='Path to weights')
-    parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
-    parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs')
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
+    parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
@@ -115,21 +115,8 @@ if __name__ == '__main__':
 
     object_image_dict = json.load(open(os.path.join(dataset_path, 'mcv_image_retrieval_annotations.json')))
     
-    try:
-        print('Loading train negative image dict')
-        path = os.path.join(dataset_path, 'train_dict_negative_img_low.json')
-        with open(path, 'r') as f:
-            train_negative_image_dict = json.load(f)
-        print('Done!')
-        
-        print('Loading val negative image dict')
-        path = os.path.join(dataset_path, 'val_dict_negative_img_low.json')
-        with open(path, 'r') as f:
-            val_negative_image_dict = json.load(f)
-        print('Done!')
-    except:
-        train_negative_image_dict = None
-        val_negative_image_dict = None
+    train_negative_image_dict = None
+    val_negative_image_dict = None
 
     
     transform = transforms.Compose([
@@ -148,20 +135,21 @@ if __name__ == '__main__':
                                               dict_negative_img=val_negative_image_dict, transform=transform)
 
     # ------------------------------- DATALOADER --------------------------------
-    # train_dataset_retrieval = copy.deepcopy(train_dataset)
-    # val_dataset_retrieval = copy.deepcopy(val_dataset)
+    train_dataset_retrieval = copy.deepcopy(train_dataset)
+    val_dataset_retrieval = copy.deepcopy(val_dataset)
     
-    # train_dataset_retrieval.ids = train_dataset.ids[:2000]
-    # val_dataset_retrieval.ids = val_dataset.ids[:2000]
+    train_dataset_retrieval.ids = train_dataset.ids[:2000]
+    val_dataset_retrieval.ids = val_dataset.ids[:2000]
     
-    # kwargs = {'num_workers': 10, 'pin_memory': True} if torch.cuda.is_available() else {}
-    # train_loader = DataLoader(train_dataset_retrieval, batch_size=256, shuffle=True, **kwargs)
-    # val_loader = DataLoader(val_dataset_retrieval, batch_size=256, shuffle=False, **kwargs)
-    
+    kwargs = {'num_workers': 10, 'pin_memory': True} if torch.cuda.is_available() else {}
+    train_loader = DataLoader(train_dataset_retrieval, batch_size=256, shuffle=True, **kwargs)
+    val_loader = DataLoader(val_dataset_retrieval, batch_size=256, shuffle=False, **kwargs)
+
+    kwargs = {'num_workers': 10, 'pin_memory': True} if torch.cuda.is_available() else {}
     triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=args.batch_size, shuffle=True,
-                                      collate_fn=triplet_collate_fn, pin_memory=True, num_workers=10)
+                                      collate_fn=triplet_collate_fn, **kwargs)
     triplet_test_loader = DataLoader(triplet_test_dataset, batch_size=args.batch_size, shuffle=False,
-                                     collate_fn=triplet_collate_fn, pin_memory=True, num_workers=10)
+                                     collate_fn=triplet_collate_fn, **kwargs)
 
     # ------------------------------- MODEL --------------------------------
     margin = 1.
@@ -193,13 +181,13 @@ if __name__ == '__main__':
     trainer.fit(triplet_train_loader, triplet_test_loader, model, loss_func, optimizer, lr_scheduler, args.num_epochs,
                 device, log_interval, output_path, name='task_e')
 
-    # # Plot emmbedings
-    # train_embeddings_cl, train_labels_cl = metrics.extract_embeddings(train_loader, model, device)
-    # path = os.path.join(output_path, 'train_embeddings.png')
-    # metrics.plot_embeddings(train_embeddings_cl, train_labels_cl, path)
-    # val_embeddings_cl, val_labels_cl = metrics.extract_embeddings(val_loader, model, device)
-    # path = os.path.join(output_path, 'val_embeddings.png')
-    # metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, path)
+    # Plot emmbedings
+    train_embeddings_cl, train_labels_cl = metrics.extract_embeddings(train_loader, model, device)
+    path = os.path.join(output_path, 'train_embeddings.png')
+    metrics.plot_embeddings(train_embeddings_cl, train_labels_cl, path)
+    val_embeddings_cl, val_labels_cl = metrics.extract_embeddings(val_loader, model, device)
+    path = os.path.join(output_path, 'val_embeddings.png')
+    metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, path)
 
-    # metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=val_dataset.classes, output_dir="Results/Task_e")
-    # metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=val_dataset.classes, output_dir="Results/Task_e")
+    metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=val_dataset.classes, output_dir="Results/Task_e")
+    metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=val_dataset.classes, output_dir="Results/Task_e")
