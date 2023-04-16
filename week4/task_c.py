@@ -1,5 +1,9 @@
 import argparse
 import os
+import numpy as np
+from sklearn.metrics import accuracy_score
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
 import torch
 import torchvision.transforms as transforms
@@ -14,6 +18,7 @@ from utils import metrics
 from utils import trainer
 from utils.early_stopper import EarlyStopper
 from sklearn.metrics import precision_recall_curve
+import umap
 
 # os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -24,13 +29,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Task C')
     parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
     parser.add_argument('--weights', type=str,
-                        default='/ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5',
+                        default="/ghome/group03/M5-Project/week4/Results/Task_c/task_c_triplet.h5",
                         help='Path to weights')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
+    parser.add_argument('--inference', type=bool, default=True, help='Inference')
     args = parser.parse_args()
 
     # ------------------------------- PATHS --------------------------------
@@ -85,53 +91,125 @@ if __name__ == '__main__':
     # ------------------------------- MODEL --------------------------------
     margin = args.margin
 
-    # Pretrained model from torchvision or from checkpoint
-    if args.pretrained:
-        #embedding_net = EmbeddingNet(weights=resnet50, resnet_type='resnet50').to(device)
-        embedding_net = EmbeddingNet(weights="/ghome/group03/M5-Project/week4/Results/Task_c/task_c_triplet.h5", resnet_type="None").to(device)
-
-    # else:
-    #     weights_model = torch.load(args.weights)['model_state_dict']
-    #     embedding_net = EmbeddingNet(weights=weights_model).to(device)
-
+    embedding_net = EmbeddingNet(weights=ResNet50_Weights.IMAGENET1K_V2).to(device)
+       
     model = TripletNet(embedding_net).to(device)
 
+    if args.inference:
+
+        weights = torch.load(args.weights)["state_dict"]
+
+        model.load_state_dict(weights)
+        model.eval()
+
     # --------------------------------- TRAINING --------------------------------
+    if not args.inference:
+        # Loss function
+        loss_func = losses.TripletLoss(margin).to(device)
 
-    # Loss function
-    loss_func = losses.TripletLoss(margin).to(device)
+        # Optimizer
+        optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
 
-    # Optimizer
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
+        # Early stoppper
+        early_stopper = EarlyStopper(patience=50, min_delta=10)
 
-    # Early stoppper
-    early_stopper = EarlyStopper(patience=50, min_delta=10)
+        # Learning rate scheduler
+        # lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.1, last_epoch=-1)
 
-    # Learning rate scheduler
-    # lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.1, last_epoch=-1)
+        log_interval = 5
 
-    log_interval = 5
-
-    trainer.fit(triplet_train_loader, triplet_test_loader, model, loss_func, optimizer, lr_scheduler, args.num_epochs,
-                device, log_interval, output_path)
+        trainer.fit(triplet_train_loader, triplet_test_loader, model, loss_func, optimizer, lr_scheduler, args.num_epochs,
+                    device, log_interval, output_path)
 
     # Plot emmbedings
     train_embeddings_cl, train_labels_cl = metrics.extract_embeddings(train_loader, model, device)
     path = os.path.join(output_path, 'train_embeddings.png')
-    metrics.plot_embeddings(train_embeddings_cl, train_labels_cl, path)
+    metrics.plot_embeddings(train_embeddings_cl, train_labels_cl, train_dataset.classes, "Train",  path)
     val_embeddings_cl, val_labels_cl = metrics.extract_embeddings(test_loader, model, device)
     path = os.path.join(output_path, 'val_embeddings.png')
-    metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, path)
+    metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, train_dataset.classes, "Test", path)
 
 
-    # precison recall curve
-    precision, recall, thresholds = precision_recall_curve(val_labels_cl, val_embeddings_cl)
+    # ------------------------------- METRICS  and retrieval --------------------------------
+    # extract number of classes
+    num_classes = len(train_dataset.classes)
+    
+    # Flatten the embeddings to 1D array
+    train_embeddings_cl = train_embeddings_cl.reshape(train_embeddings_cl.shape[0], -1)
+    val_embeddings_cl = val_embeddings_cl.reshape(val_embeddings_cl.shape[0], -1)
+
+    # Create a KNN classifier
+    knn = KNeighborsClassifier(n_neighbors=5)  # You can adjust the number of neighbors as needed
+
+    # Fit the KNN classifier to the train embeddings and labels
+    knn.fit(train_embeddings_cl, train_labels_cl)
+
+    # Predict the labels of the validation  embeddings
+    train_preds = knn.predict(train_embeddings_cl)
+    val_preds = knn.predict(val_embeddings_cl)
+    
+
+    # Calculate accuracy for train and validation data
+    train_accuracy = accuracy_score(train_labels_cl, train_preds)
+    val_accuracy = accuracy_score(val_labels_cl, val_preds)
+
+    print("Train accuracy: ", train_accuracy)
+    print("Validation accuracy: ", val_accuracy)
 
 
+    # Calculate the Precision recall curve
+    clf = OneVsRestClassifier(KNeighborsClassifier(n_neighbors=5, metric = "manhattan"))
+    clf.fit(train_embeddings_cl, train_labels_cl)
 
-    #tsne
-    metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=test_dataset.classes,
-                          output_dir="Results/Task_c")
-    metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=test_dataset.classes,
-                          output_dir="Results/Task_c")
+    y_score_knn = clf.predict_proba(val_embeddings_cl)
+    
+    metrics.plot_PR_multiclass(train_dataset.classes, val_labels_cl, y_score_knn,"Results/Task_c")
+
+
+    #get test images from the test dataloader
+    test_images = np.zeros((0, 3, 224, 224))
+    y_true_test = []
+    for i, (data, target) in enumerate(test_loader):
+        test_images = np.concatenate((test_images, data.to("cpu").detach().numpy()), axis=0)
+       
+
+    #get train images from the train dataloader
+    train_images = np.zeros((0, 3, 224, 224))
+    y_true_train = []
+    for i, (data, target) in enumerate(train_loader):
+        train_images = np.concatenate((train_images, data.to("cpu").detach().numpy()), axis=0)
+        
+  
+    neigh_dist, neigh_ind = knn.kneighbors(val_embeddings_cl, n_neighbors=train_images.shape[0], return_distance=True)
+
+    metrics.plot_retrieval(
+    test_images,train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_c", p="CLASS"
+    )
+    metrics.plot_retrieval(
+        test_images, train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_c", p="BEST"
+    )
+    metrics.plot_retrieval(
+        test_images, train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_c", p="WORST"
+    )
+    
+    y_true_test = np.asarray(val_labels_cl).flatten()
+    y_true_train = np.asarray(train_labels_cl).flatten()
+    y_true_test_repeated = np.repeat(np.expand_dims(y_true_test, axis=1), train_images.shape[0], axis=1)
+    neigh_labels = y_true_train[neigh_ind]
+
+    metrics.calculate_APs(y_true_test, y_true_test_repeated, neigh_labels, neigh_dist)
+
+    # TSNE
+    metrics.tsne_features(train_embeddings_cl, train_labels_cl, labels=test_dataset.classes, title = "TSNE Train", output_path="Results/Task_c/tsne_train_embeddings.png")
+    metrics.tsne_features(val_embeddings_cl, val_labels_cl, labels=test_dataset.classes, title= "TSNE test", output_path="Results/Task_c/tsne_test_embeddings.png")
+            
+    #umap
+    
+    reducer = umap.UMAP(random_state=42)
+    reducer.fit(train_embeddings_cl)
+    umap_train_embeddings = reducer.transform(train_embeddings_cl)
+    umap_val_embeddings = reducer.transform(val_embeddings_cl)
+
+    metrics.plot_embeddings(umap_train_embeddings, train_labels_cl,train_dataset.classes, "UMAP Train", "Results/Task_c/umap_train_embeddings.png")
+    metrics.plot_embeddings(umap_val_embeddings, val_labels_cl, train_dataset.classes, "UMAP test", "Results/Task_c/umap_val_embeddings.png")

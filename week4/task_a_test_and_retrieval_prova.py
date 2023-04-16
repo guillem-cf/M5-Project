@@ -12,8 +12,7 @@ from torchvision.models import ResNet50_Weights, resnet50
 from tqdm import tqdm
 
 from dataset.mit import MITDataset
-from utils.metrics import accuracy, plot_retrieval, tsne_features, plot_embeddings
-import umap
+from utils.metrics import accuracy, plot_retrieval, tsne_features
 
 finetuned = True
 dataset_path = '../../mcv/datasets/MIT_split'
@@ -189,30 +188,5 @@ plot_retrieval(
     test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir="Results/Task_a", p="WORST"
 )
 
-
-tsne_features(image_features_train, y_true_train, labels=test_dataset.classes, title = "TSNE Train", output_path="Results/Task_a")
-tsne_features(image_features_test, y_true_test, labels=test_dataset.classes, title = "TSNE Test",output_path="Results/Task_a")
-
-
-reducer = umap.UMAP(random_state=42)
-reducer.fit(image_features_train)
-umap_train_embeddings = reducer.transform(image_features_train)
-umap_val_embeddings = reducer.transform(image_features_test)
-
-plot_embeddings(umap_train_embeddings, y_true_train, train_dataset.classes, "UMAP Train", "Results/Task_a/umap_train_embeddings.png")
-plot_embeddings(umap_val_embeddings, y_true_test, train_dataset.classes, "UMAP test", "Results/Task_a/umap_val_embeddings.png")
-
-fig, ax = plt.subplots(1, 1, figsize=(10,10), dpi=150)
-ax.set_title("Precision-Recall", size=14)
-for class_id in range(0, 8):
-    PrecisionRecallDisplay.from_predictions(np.where(y_true_test==class_id, 1, 0),
-                                            np.where(y_true_train[neigh_ind][:, 0]==class_id, 1, 0),
-                                            ax=ax, name="Class " + str([class_id]))
-plt.savefig("PR2.png")
-
-fig, ax = plt.subplots(1, 1, figsize=(10,10), dpi=150)
-ax.set_title("Precision-Recall", size=14)
-for i in range(0, 8):
-    PrecisionRecallDisplay.from_predictions((y_true_train[neigh_ind][i] == y_true_test[i]).astype(int), -neigh_dist[i],
-                                            ax=ax, name="Class " + str([i]))
-plt.savefig("PR3.png")
+tsne_features(image_features_train, y_true_train, "train", labels=test_dataset.classes, output_dir="Results/Task_a")
+tsne_features(image_features_test, y_true_test, "test", labels=test_dataset.classes, output_dir="Results/Task_a")
