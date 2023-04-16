@@ -188,5 +188,6 @@ plot_retrieval(
     test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir="Results/Task_a", p="WORST"
 )
 
-tsne_features(image_features_train, y_true_train, "train", labels=test_dataset.classes, output_dir="Results/Task_a")
-tsne_features(image_features_test, y_true_test, "test", labels=test_dataset.classes, output_dir="Results/Task_a")
+
+tsne_features(image_features_train, y_true_train,labels=test_dataset.classes, title = "TSNE Train", output_dir="Results/Task_a")
+tsne_features(image_features_test, y_true_test, labels=test_dataset.classes, title = "TSNE Test",output_dir="Results/Task_a")

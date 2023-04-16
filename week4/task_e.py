@@ -1,91 +1,57 @@
 import argparse
 import json
+import ujson
 import joblib
 import os
+import functools 
 
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision.datasets import CocoDetection
-from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
+from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, FasterRCNN_ResNet50_FPN_V2_Weights, MaskRCNN_ResNet50_FPN_V2_Weights
 
-from dataset.triplet_data import TripletCOCODataset
-from models.models import TripletNet_fasterRCNN, ObjectEmbeddingNet
+# Import tensorboard from pytorch
+import wandb
+
+from dataset.triplet_data import TripletCOCODatasetFast as TripletCOCODataset
+from models.models import TripletNet
+from models.models import ObjectEmbeddingNetV2 as ObjectEmbeddingNet
 from utils import losses
 from utils import trainer
-from utils import metrics
+# from utils import metrics
 from utils.early_stopper import EarlyStopper
 
 import copy
 
 
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
+def task_e(args):   
+    
+    
+    wandb.init(project="m5-w4", entity="grup7")
+    print(wandb.config)
+    
+    
+    args.margin = wandb.config.margin
+    
+    name = 'task_e' + '_fc_' + str(args.fc) + '_margin_' + str(args.margin)
 
-def triplet_collate_fn(batch):
-    anchor_images = []
-    positive_images = []
-    negative_images = []
-    anchor_boxes = []
-    anchor_labels = []
-    positive_boxes = []
-    positive_labels = []
-    negative_boxes = []
-    negative_labels = []
-
-    for item in batch:
-        # Unpack data and target from item
-        (anchor_img, positive_img, negative_img), target = item
-
-        # Append images to lists
-        anchor_images.append(anchor_img)
-        positive_images.append(positive_img)
-        negative_images.append(negative_img)
-
-        # Unpack target
-        anchor_boxes_, anchor_labels_, positive_boxes_, positive_labels_, negative_boxes_, negative_labels_ = target
-
-        # Append bounding boxes and labels to lists
-        anchor_boxes.append(anchor_boxes_)
-        anchor_labels.append(anchor_labels_)
-        positive_boxes.append(positive_boxes_)
-        positive_labels.append(positive_labels_)
-        negative_boxes.append(negative_boxes_)
-        negative_labels.append(negative_labels_)
-
-    # Stack images into tensors
-    anchor_images = torch.stack(anchor_images)
-    positive_images = torch.stack(positive_images)
-    negative_images = torch.stack(negative_images)
-
-    # Return tuple of tensors
-    return (anchor_images, positive_images, negative_images), (
-    anchor_boxes, anchor_labels, positive_boxes, positive_labels, negative_boxes, negative_labels)
-
-
-if __name__ == '__main__':
-    # ------------------------------- ARGUMENTS --------------------------------
-    parser = argparse.ArgumentParser(description='Task E')
-    parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
-    parser.add_argument('--weights', type=str,
-                        default='/ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5',
-                        help='Path to weights')
-    parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
-    parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs')
-    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
-    parser.add_argument('--margin', type=float, default=1.0, help='Margin for triplet loss')
-    parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
-    args = parser.parse_args()
-
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    
+    # name = 'batch_size_' + str(args.batch_size) + '_lr_' + str(args.learning_rate) + '_margin_' + str(args.margin) + '_weighted_' + str(args.weighted)
+    # wandb
+    
+    
     # ------------------------------- PATHS --------------------------------
     env_path = os.path.dirname(os.path.abspath(__file__))
     # get path of current file
     dataset_path = '/ghome/group03/mcv/datasets/COCO'
     # dataset_path = '../../datasets/COCO'
 
-    output_path = os.path.join(env_path, 'Results/Task_e')
+    output_path = os.path.join(env_path, 'Results/Task_e', name)
 
     # Create output path if it does not exist
     if not os.path.exists(output_path):
@@ -104,14 +70,11 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     # ------------------------------- DATASET --------------------------------
-    mean = (0.485, 0.456, 0.406)
-    std = (0.229, 0.224, 0.225)
-
     train_path = os.path.join(dataset_path, 'train2014')
     val_path = os.path.join(dataset_path, 'val2014')
 
-    train_annot_path = os.path.join(dataset_path, 'instances_train2014.json')
-    val_annot_path = os.path.join(dataset_path, 'instances_val2014.json')
+    # train_annot_path = os.path.join(dataset_path, 'instances_train2014.json')
+    # val_annot_path = os.path.join(dataset_path, 'instances_val2014.json')
 
     object_image_dict = json.load(open(os.path.join(dataset_path, 'mcv_image_retrieval_annotations.json')))
     
@@ -119,33 +82,39 @@ if __name__ == '__main__':
         print('Loading train negative image dict')
         path = os.path.join(dataset_path, 'train_dict_negative_img_low.json')
         with open(path, 'r') as f:
-            train_negative_image_dict = json.load(f)
+            train_negative_image_dict = ujson.load(f)
         print('Done!')
         
-        print('Loading val negative image dict')
-        path = os.path.join(dataset_path, 'val_dict_negative_img_low.json')
-        with open(path, 'r') as f:
-            val_negative_image_dict = json.load(f)
-        print('Done!')
+        # print('Loading val negative image dict')
+        # path = os.path.join(dataset_path, 'val_dict_negative_img_low.json')
+        # with open(path, 'r') as f:
+        #     val_negative_image_dict = ujson.load(f)
+        # print('Done!')
     except:
         train_negative_image_dict = None
         val_negative_image_dict = None
 
     
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Resize((800, 800), antialias=True),
-        transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),  # scale to range [0,1]
-    ])
+    # transform = transforms.Compose([
+    #     # transforms.ToTensor(),
+    #     FasterRCNN_ResNet50_FPN_Weights.COCO_V1.transforms(),
+    #     transforms.Resize((256, 256), antialias=True),
+    #     transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),  # scale to range [0,1]
+    # ])
+    
+    transform = torch.nn.Sequential(
+                MaskRCNN_ResNet50_FPN_V2_Weights.COCO_V1.transforms(),
+                transforms.Resize((240, 320)),
+            )
 
-    train_dataset = CocoDetection(root=train_path, annFile=train_annot_path)
-    val_dataset = CocoDetection(root=val_path, annFile=val_annot_path)
+    # train_dataset = CocoDetection(root=train_path, annFile=train_annot_path)
+    # val_dataset = CocoDetection(root=val_path, annFile=val_annot_path)
     
     
-    triplet_train_dataset = TripletCOCODataset(train_dataset, object_image_dict, train_path, split_name='train',
-                                               dict_negative_img=train_negative_image_dict, transform=transform)
-    triplet_test_dataset = TripletCOCODataset(val_dataset, object_image_dict, val_path, split_name='val',
-                                              dict_negative_img=val_negative_image_dict, transform=transform)
+    triplet_train_dataset = TripletCOCODataset(None, object_image_dict, train_path, split_name='train',
+                                            dict_negative_img=train_negative_image_dict, transform=transform)
+    # triplet_test_dataset = TripletCOCODataset(None, object_image_dict, val_path, split_name='val',
+    #                                           dict_negative_img=val_negative_image_dict, transform=transform)
 
     # ------------------------------- DATALOADER --------------------------------
     # train_dataset_retrieval = copy.deepcopy(train_dataset)
@@ -158,20 +127,39 @@ if __name__ == '__main__':
     # train_loader = DataLoader(train_dataset_retrieval, batch_size=256, shuffle=True, **kwargs)
     # val_loader = DataLoader(val_dataset_retrieval, batch_size=256, shuffle=False, **kwargs)
     
+    # triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=args.batch_size, shuffle=True,
+    #                                   collate_fn=triplet_collate_fn, pin_memory=True, num_workers=10)
+    # triplet_test_loader = DataLoader(triplet_test_dataset, batch_size=args.batch_size, shuffle=False,
+    #                                  collate_fn=triplet_collate_fn, pin_memory=True, num_workers=10)
+    
     triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=args.batch_size, shuffle=True,
-                                      collate_fn=triplet_collate_fn, pin_memory=True, num_workers=10)
-    triplet_test_loader = DataLoader(triplet_test_dataset, batch_size=args.batch_size, shuffle=False,
-                                     collate_fn=triplet_collate_fn, pin_memory=True, num_workers=10)
-
+                                    pin_memory=True, num_workers=10)
+    # triplet_test_loader = DataLoader(triplet_test_dataset, batch_size=args.batch_size, shuffle=False,
+    #                                  pin_memory=True, num_workers=10)
+    triplet_test_loader = None
+    
     # ------------------------------- MODEL --------------------------------
-    margin = 1.
-
+    margin = args.margin
+    
+    if args.resnet_type == 'V1':
+        weights = FasterRCNN_ResNet50_FPN_Weights.COCO_V1
+    elif args.resnet_type == 'V2':
+        weights = FasterRCNN_ResNet50_FPN_V2_Weights.COCO_V1
+        
+        
     # Pretrained model from torchvision or from checkpoint
     if args.pretrained:
-        embedding_net = ObjectEmbeddingNet(weights=FasterRCNN_ResNet50_FPN_Weights.COCO_V1,
-                                           num_classes=len(train_dataset.coco.cats)+1).to(device)
+        embedding_net = ObjectEmbeddingNet(weights=weights,
+                                        resnet_type=args.resnet_type, weighted = args.weighted, with_fc = args.fc).to(device)
 
-    model = TripletNet_fasterRCNN(embedding_net).to(device)
+    model = TripletNet(embedding_net).to(device)
+    
+    # Set all parameters to be trainable
+    for param in model.parameters():
+        param.requires_grad = True
+        
+    # Print the number of trainable parameters
+    print('Number of trainable parameters: {}'.format(sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
     # --------------------------------- TRAINING --------------------------------
 
@@ -186,12 +174,13 @@ if __name__ == '__main__':
 
     # Learning rate scheduler
     # lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.1, last_epoch=-1)
+    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.1, last_epoch=-1)
+    lr_scheduler = None
 
     log_interval = 1
 
     trainer.fit(triplet_train_loader, triplet_test_loader, model, loss_func, optimizer, lr_scheduler, args.num_epochs,
-                device, log_interval, output_path, name='task_e')
+                device, log_interval, output_path, wandb = wandb, name='task_e')
 
     # # Plot emmbedings
     # train_embeddings_cl, train_labels_cl = metrics.extract_embeddings(train_loader, model, device)
@@ -203,3 +192,39 @@ if __name__ == '__main__':
 
     # metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=val_dataset.classes, output_dir="Results/Task_e")
     # metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=val_dataset.classes, output_dir="Results/Task_e")
+
+
+
+if __name__ == '__main__':
+    
+    # ------------------------------- ARGUMENTS --------------------------------
+    parser = argparse.ArgumentParser(description='Task E')
+    parser.add_argument('--resnet_type', type=str, default='V1', help='Resnet version (V1 or V2)')
+    parser.add_argument('--weighted', type=bool, default=True, help='Weighted features')
+    parser.add_argument('--fc', type=bool, default=False, help='Use fully connected layer')
+    parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
+    parser.add_argument('--weights', type=str,
+                        default='/ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5',
+                        help='Path to weights')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
+    parser.add_argument('--num_epochs', type=int, default=2, help='Number of epochs')
+    parser.add_argument('--learning_rate', type=float, default=1e-5, help='Learning rate')
+    parser.add_argument('--margin', type=float, default=0.1, help='Margin for triplet loss')
+    parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
+    parser.add_argument('--gpu', type=int, default=7, help='GPU device id')
+    args = parser.parse_args()
+    
+    sweep_config = {
+        'name': 'task_e_sweep_fc_False_gpu_7',
+        'method': 'grid',
+        'parameters':{
+            'margin': {
+                'values': [1, 10, 50]
+            }
+        }
+    }
+    
+    
+    sweep_id = wandb.sweep(sweep=sweep_config, project="m5-w4", entity="grup7")
+    
+    wandb.agent(sweep_id, function=functools.partial(task_e, args))

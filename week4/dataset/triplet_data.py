@@ -16,6 +16,8 @@ import sys
 
 import joblib
 
+from pycocotools.coco import COCO
+
 
 class TripletMITDataset(Dataset):
     """
@@ -107,6 +109,7 @@ class TripletCOCODataset(Dataset):
 
         # Get ID's of all images
         self.imgs_ids = self.coco.getImgIds()
+            
 
         # Create a list of all image IDs that contain at least one object from obj_img_dict
         self.obj_img_ids = []
@@ -116,8 +119,8 @@ class TripletCOCODataset(Dataset):
             self.obj_img_ids.extend(img_ids)
         self.obj_img_ids = list(set(self.obj_img_ids))
 
-        # # Create a list of all image IDs that do not contain any object from obj_img_dict
-        # self.non_obj_img_ids = list(set(self.imgs_ids) - set(self.obj_img_ids))
+        # Create a list of all image IDs that do not contain any object from obj_img_dict
+        self.non_obj_img_ids = list(set(self.imgs_ids) - set(self.obj_img_ids))
         
         
         # If dict_negative_img is None, create a dictionary with all id images as keys and for each key a list of all images that do not contain any object of the same category
@@ -137,6 +140,7 @@ class TripletCOCODataset(Dataset):
                 json.dump(self.dict_negative_img, fp)
             
             print("dict_negative_img is created and saved to {}".format(path))
+        
                 
                 
     def process_img_id(self, img_id):
@@ -200,14 +204,14 @@ class TripletCOCODataset(Dataset):
             else:
                 break
             
-        rand_cat = random.choice(anchor_cat_ids_str)
         # Choose positive image that contains at least one object from the same class as the anchor
         positive_img_id = anchor_img_id
         while positive_img_id == anchor_img_id:
+            rand_cat = random.choice(anchor_cat_ids_str)
             possible_positive_imgs = self.intersection(self.obj_img_dict[rand_cat], self.obj_img_ids)
             if possible_positive_imgs == []:
                 continue
-            positive_img_id = random.choice(possible_positive_imgs)
+            positive_img_id = random.choice(self.obj_img_dict[rand_cat])
 
         positive_img = self.coco.loadImgs(positive_img_id)[0]
         positive_ann_ids = self.coco.getAnnIds(imgIds=positive_img_id)  # Get the id of the instances
@@ -231,44 +235,6 @@ class TripletCOCODataset(Dataset):
         positive_img = Image.open(positive_img_path).convert('RGB')
         negative_img = Image.open(negative_img_path).convert('RGB')
 
-        # Get bounding box coordinates and class labels for anchor and positive images
-        anchor_boxes = []
-        anchor_labels = []
-        positive_boxes = []
-        positive_labels = []
-        negative_boxes = []
-        negative_labels = []
-
-        for ann in anchor_anns:
-            anchor_boxes.append(ann['bbox'])
-            anchor_labels.append(ann['category_id'])
-
-        for ann in positive_anns:
-            # if ann['category_id'] in anchor_cat_ids:
-            positive_boxes.append(ann['bbox'])
-            positive_labels.append(ann['category_id'])
-            
-        for ann in negative_anns:
-            negative_boxes.append(ann['bbox'])
-            negative_labels.append(ann['category_id'])
-
-        if negative_boxes == []:
-            print("negative_boxes is empty")
-        if positive_boxes == []:
-            print("positive_boxes is empty")
-        if anchor_boxes == []:
-            print("anchor_boxes is empty")
-        
-        # # AssertionError: Expected target boxes to be a tensor of shape [N, 4], got torch.Size([0]).
-        # negative_boxes = torch.zeros((0, 4), dtype=torch.float32)
-        # # Expected target boxes to be a tensor of shape [N, 4], got torch.Size([0])
-        # negative_labels = torch.zeros((1, 1), dtype=torch.int64)
-
-        target_size = [800, 800]
-        anchor_boxes = torch.Tensor(self.resize_bounding_boxes(anchor_boxes, anchor_img.size, target_size))
-        positive_boxes = torch.Tensor(self.resize_bounding_boxes(positive_boxes, positive_img.size, target_size))
-        negative_boxes = torch.Tensor(self.resize_bounding_boxes(negative_boxes, negative_img.size, target_size))
-        
 
         # Apply transformations to images, if provided
         if self.transform is not None:
@@ -276,22 +242,231 @@ class TripletCOCODataset(Dataset):
             positive_img = self.transform(positive_img)
             negative_img = self.transform(negative_img)
         
-        # Draw bounding boxes on images
-        # anchor_img_bbox = anchor_img.clone().numpy()
-        # positive_img_bbox = positive_img.clone().numpy()
-        # negative_img_bbox = negative_img.clone().numpy()
-        
-        # cv2.rectangle(anchor_img_bbox, (anchor_boxes[0][0], anchor_boxes[0][1]), (anchor_boxes[0][2], anchor_boxes[0][3]), (0, 255, 0), 2)
-        # cv2.rectangle(positive_img_bbox, (positive_boxes[0][0], positive_boxes[0][1]), (positive_boxes[0][2], positive_boxes[0][3]), (0, 255, 0), 2)
-        # cv2.rectangle(negative_img_bbox, (negative_boxes[0][0], negative_boxes[0][1]), (negative_boxes[0][2], negative_boxes[0][3]), (0, 255, 0), 2)
-        
-        
 
-        target = [anchor_boxes, torch.LongTensor(anchor_labels), positive_boxes, torch.LongTensor(positive_labels),
-                  negative_boxes, torch.LongTensor(negative_labels)]
-        
-
-        return (anchor_img, positive_img, negative_img), target
+        return (anchor_img, positive_img, negative_img), []
 
     def __len__(self):
         return len(self.obj_img_ids)
+    
+    
+       
+
+class TripletCOCODatasetFast(Dataset):
+
+    """
+    Train: For each sample (anchor) randomly chooses a positive and negative samples
+    """
+
+    # def __init__(self, trainImagesFolder, trainImages, trainImageLabels, transform):
+    def __init__(self, coco_dataset, obj_img_dict, dataset_path, split_name='train', dict_negative_img=None, transform=None):
+        self.dict_negative_img = dict_negative_img
+        self.labelTrain = obj_img_dict[split_name]
+        self.transform = transform
+        self.trainImagesFolder = dataset_path
+        self.trainImages = os.listdir(dataset_path)
+        
+        # Obtain labels
+        self.objs = {}
+        
+        # Get objects per image
+        for obj in self.labelTrain.keys():
+            for image in self.labelTrain[obj]:
+                if image in self.objs.keys():
+                    self.objs[image].append(obj)
+                else:
+                    self.objs[image] = [obj]
+        
+        # Rem images without images
+        i1 = 0
+        while i1 < len(self.trainImages):
+            image1 = self.trainImages[i1]
+            image1Num = int(image1[:-4].split("_")[2])
+            
+            if not(image1Num in self.objs.keys()):
+                del self.trainImages[i1]
+            else:
+                i1 += 1
+        
+        # If dict_negative_img is None, create a dictionary with all id images as keys and for each key a list of all images that do not contain any object of the same category
+        if self.dict_negative_img is None:
+            print("dict_negative_img is not found")
+            print("Creating dict_negative_img")
+            self.dict_negative_img = {}
+            for img_id in tqdm(self.obj_img_ids):
+                self.dict_negative_img[img_id] = self.process_img_id(img_id)
+            
+            size = sys.getsizeof(self.dict_negative_img)
+            print("The size of the dictionary is {} bytes".format(size))
+            
+            path = f'/ghome/group03/mcv/datasets/COCO/{split_name}_dict_negative_img_low.json'
+            
+            with open(path, 'w') as fp:
+                json.dump(self.dict_negative_img, fp)
+            
+            print("dict_negative_img is created and saved to {}".format(path))
+
+    
+    def firstStrategy(self, objs1, objs2):
+        """
+        This function implements the condition that have to be ensured
+        to know if a retrieval is correct (have at least one shared objects)
+
+        Parameters
+        ----------
+        objs1 : list of ints
+            Objects in image1.
+        objs2 : list of ints
+            Objects in image2.
+
+        Returns
+        -------
+        bool
+            True if they share any object, False otherwise.
+
+        """
+        
+        for obj in objs1:
+            if obj in objs2:
+                return True
+        return False
+    
+    def __getitem__(self, index):
+        # Get anchor image
+        img1name = self.trainImages[index]
+        img1 = cv2.imread(self.trainImagesFolder +'/' + img1name)
+        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+
+        # Get random positive image
+        img1value = int(img1name[:-4].split("_")[2])
+        img1objs = self.objs[img1value]
+        
+        positiveImgValue = img1value
+        while positiveImgValue == img1value:
+            # Get random obj
+            sharingObj = np.random.choice(img1objs)
+            # Get random image 
+            positiveImgValue = np.random.choice(self.labelTrain[sharingObj])
+        img2name = "COCO_train2014_{:012d}.jpg".format(positiveImgValue)
+        img2 = cv2.imread(self.trainImagesFolder + '/' + img2name)
+        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+        
+        # # Get random negative image
+        # while True:
+        #     # Get random image
+        #     img3value = np.random.choice(self.dict_negative_img[str(img1value)])
+        #     # img3value = int(img3name[:-4].split("_")[2])
+        #     img3name = "COCO_train2014_{:012d}.jpg".format(img3value)
+            
+        #     try:
+        #         img3 = cv2.imread(self.trainImagesFolder + '/' + img3name)
+        #         break
+        #     except:
+        #         continue
+        
+        # Get random negative image
+        while True:
+            # Get random image
+            img3name = np.random.choice(self.trainImages)
+            img3value = int(img3name[:-4].split("_")[2])
+            img3objs = self.objs[img3value] 
+            
+            if not self.firstStrategy(img3objs, img1objs):
+                break
+                  
+        img3 = cv2.imread(self.trainImagesFolder + '/' + img3name)
+        img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGB)
+        
+        # Transform
+        img1 = Image.fromarray(img1)
+        img2 = Image.fromarray(img2)
+        img3 = Image.fromarray(img3)
+        
+        if self.transform is not None:
+            img1 = self.transform(img1)
+            img2 = self.transform(img2)
+            img3 = self.transform(img3)
+            
+        return (img1, img2, img3), []
+
+    def __len__(self):
+        return len(self.trainImages)
+    
+
+    
+class TripletCOCORetrieval(Dataset):
+    """
+    Dataset for retrieval
+    """
+
+    def __init__(self, databaseImagesFolder, obj_img_dict, 
+                 transform, split_name, allLabels  = None):
+        
+        self.labelDatabase = obj_img_dict[split_name]
+        self.transform = transform
+        self.databaseImagesFolder = databaseImagesFolder + '/'
+        self.databaseImages = os.listdir(databaseImagesFolder)
+        
+        # Obtain labels
+        self.objs = {}
+        
+        # Get objects per image
+        for obj in self.labelDatabase.keys():
+            for image in self.labelDatabase[obj]:
+                if image in self.objs.keys():
+                    self.objs[image].append(obj)
+                else:
+                    self.objs[image] = [obj]
+        
+        # Remove images that do not have any object
+        i1 = 0
+        while i1 < len(self.databaseImages):
+            image1 = self.databaseImages[i1]
+            image1Num = int(image1[:-4].split("_")[2])
+            
+            if not(image1Num in self.objs.keys()):
+                del self.databaseImages[i1]
+            else:
+                i1 += 1
+        
+        if not(allLabels is None):
+            # Get every object in the image
+            coco=COCO(allLabels)
+            
+            # Obtain labels
+            self.objs = {}
+            for image in self.databaseImages:
+                imageId = int(image[:-4].split('_')[-1])
+                ann_ids = coco.getAnnIds(imgIds=[imageId])
+                anns = coco.loadAnns(ann_ids)
+                annId = []
+                for ann in anns:
+                    annId.append(str(ann["category_id"]))
+                if len(annId)>0:
+                    self.objs[imageId]=annId
+
+    def __getitem__(self, index):
+        # Get image
+        img1name = self.databaseImages[index]
+        img1 = cv2.imread(self.databaseImagesFolder + img1name)
+        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+
+        
+        # Transform
+        img1 = Image.fromarray(img1)
+        if self.transform is not None:
+            img1 = self.transform(img1)
+        return img1, []
+
+    def getObjs(self, index):
+        # Get image name
+        img1name = self.databaseImages[index]
+
+        # Get objs
+        img1value = int(img1name[:-4].split("_")[2])
+        
+        img1objs = self.objs[img1value]
+        
+        return img1objs
+        
+    def __len__(self):
+        return len(self.databaseImages)

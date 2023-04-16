@@ -1,7 +1,8 @@
 import argparse
 import os
 import numpy as np
-from sklearn.calibration import label_binarize
+from sklearn.metrics import accuracy_score
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 import torch
 import torchvision.transforms as transforms
@@ -9,20 +10,15 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision.models import ResNet50_Weights
 import matplotlib.pyplot as plt
-import tqdm
+
 from dataset.siamese_data import SiameseMITDataset
 from models.models import SiameseNet, EmbeddingNet
 from utils import metrics, trainer, losses
 from utils.early_stopper import EarlyStopper
-from sklearn.metrics import (
-    PrecisionRecallDisplay,
-    accuracy_score,
-    average_precision_score,
-)
 import umap
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image
+
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "4"
@@ -126,14 +122,14 @@ if __name__ == '__main__':
     # Plot emmbeddings
     train_embeddings_cl, train_labels_cl = metrics.extract_embeddings(train_loader, model, device)
     path = os.path.join(output_path, 'train_embeddings.png')
-    metrics.plot_embeddings(train_embeddings_cl, train_labels_cl, path)
+    metrics.plot_embeddings(train_embeddings_cl, train_labels_cl, train_dataset.classes, "Train embeddings", path)
 
     val_embeddings_cl, val_labels_cl = metrics.extract_embeddings(test_loader, model, device)
     path = os.path.join(output_path, 'val_embeddings.png')
-    metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, path)
+    metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, train_dataset.classes,  "Test embeddings" , path)
 
 
-    # ------------------------------- METRICS and retrieval --------------------------------
+    # ------------------------------- METRICS  and retrieval --------------------------------
     # extract number of classes
     num_classes = len(train_dataset.classes)
     
@@ -145,7 +141,6 @@ if __name__ == '__main__':
     knn = KNeighborsClassifier(n_neighbors=5)  # You can adjust the number of neighbors as needed
 
     # Fit the KNN classifier to the train embeddings and labels
-
     knn.fit(train_embeddings_cl, train_labels_cl)
 
     # Predict the labels of the validation  embeddings
@@ -160,86 +155,59 @@ if __name__ == '__main__':
     print("Train accuracy: ", train_accuracy)
     print("Validation accuracy: ", val_accuracy)
 
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10), dpi=200)
-    ax.set_title("Precision-Recall curve", size=16)
-    print("num_classes: ", num_classes)
-    for class_id in range(0, num_classes):
-        PrecisionRecallDisplay.from_predictions(
-            np.where(val_labels_cl == class_id, 1, 0),
-            np.where(val_labels_cl== class_id, val_preds, 1 - val_preds),
-            ax=ax,
-            name="Class " + str(test_dataset.classes[class_id]),
-        )
-    plt.savefig("Results/Task_b/PrecisionRecallCurve.png")
-    plt.close()
+
+    # Calculate the Precision recall curve
+    clf = OneVsRestClassifier(KNeighborsClassifier(n_neighbors=5, metric = "manhattan"))
+    clf.fit(train_embeddings_cl, train_labels_cl)
+
+    y_score_knn = clf.predict_proba(val_embeddings_cl)
+    
+    metrics.plot_PR_multiclass(train_dataset.classes, val_labels_cl, y_score_knn,"Results/Task_b")
 
 
     #get test images from the test dataloader
-    test_images = []
-    for i, (data, target) in enumerate(test_loader): 
-        for j in data:    
-            test_images.append(j.permute(1, 2, 0))
-        """test_images = torch.cat(test_images, dim=0)
-        test_images = test_images.cpu().numpy()
-        test_images = np.transpose(test_images, (0, 2, 3, 1))
-        test_images = test_images * 255
-        test_images = test_images.astype(np.uint8)"""
+    test_images = np.zeros((0, 3, 224, 224))
+    y_true_test = []
+    for i, (data, target) in enumerate(test_loader):
+        test_images = np.concatenate((test_images, data.to("cpu").detach().numpy()), axis=0)
+       
 
     #get train images from the train dataloader
-    train_images = []
+    train_images = np.zeros((0, 3, 224, 224))
+    y_true_train = []
     for i, (data, target) in enumerate(train_loader):
-        for j in data:    
-            test_images.append(j.permute(1, 2, 0))
-
-        """train_images = torch.cat(train_images, dim=0)
-        train_images = train_images.cpu().numpy()
-        train_images = np.transpose(train_images, (0, 2, 3, 1))
-        train_images = train_images * 255
-        train_images = train_images.astype(np.uint8)"""
-
-    neigh_dist, neigh_ind = knn.kneighbors(val_embeddings_cl, n_neighbors=5, return_distance=True)
+        train_images = np.concatenate((train_images, data.to("cpu").detach().numpy()), axis=0)
+        
+  
+    neigh_dist, neigh_ind = knn.kneighbors(val_embeddings_cl, n_neighbors=train_images.shape[0], return_distance=True)
 
     metrics.plot_retrieval(
-    test_images, train_images,val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_a", p=""
+    test_images,train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_b", p="CLASS"
     )
     metrics.plot_retrieval(
-        test_images, train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_a", p="BEST"
+        test_images, train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_b", p="BEST"
     )
     metrics.plot_retrieval(
-        test_images, train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_a", p="WORST"
+        test_images, train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_b", p="WORST"
     )
+    
+    y_true_test = np.asarray(val_labels_cl).flatten()
+    y_true_train = np.asarray(train_labels_cl).flatten()
+    y_true_test_repeated = np.repeat(np.expand_dims(y_true_test, axis=1), train_images.shape[0], axis=1)
+    neigh_labels = y_true_train[neigh_ind]
+
+    metrics.calculate_APs(y_true_test, y_true_test_repeated, neigh_labels, neigh_dist)
 
     # TSNE
-
-    metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=test_dataset.classes,
-                          output_dir="Results/Task_b")
-    metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=test_dataset.classes,
-                          output_dir="Results/Task_b")
-    
-    """# UMAP
-
-    # Load the 2D embeddings and image filenames
-
-    # Fit UMAP to the embeddings
-    umap_emb = umap.UMAP(n_neighbors=10, min_dist=0.1, metric='euclidean').fit_transform(val_embeddings_cl)
-
-    # Plot the UMAP embeddings
-    plt.scatter(umap_emb[:, 0], umap_emb[:, 1], alpha=0.5)
-    j = 0
-    # Retrieve and plot some images based on their UMAP embeddings
-    for batch_idx, (data, target) in enumerate(train_loader):
-        for i in data:
-
-            plt.imshow(i.permute(1, 2, 0))
-            j += 1
-            if j == 10:
-                break
-
-    # Save the plot
-    plt.savefig("Results/Task_b/UMAP.png")"""
-
-
+    metrics.tsne_features(train_embeddings_cl, train_labels_cl, labels=test_dataset.classes, title = "TSNE Train", output_path="Results/Task_b/tsne_train_embeddings.png")
+    metrics.tsne_features(val_embeddings_cl, val_labels_cl, labels=test_dataset.classes, title= "TSNE test", output_path="Results/Task_b/tsne_test_embeddings.png")
             
+    #umap
+    
+    reducer = umap.UMAP(random_state=42)
+    reducer.fit(train_embeddings_cl)
+    umap_train_embeddings = reducer.transform(train_embeddings_cl)
+    umap_val_embeddings = reducer.transform(val_embeddings_cl)
 
-
-
+    metrics.plot_embeddings(umap_train_embeddings, train_labels_cl,train_dataset.classes, "UMAP Train", "Results/Task_b/umap_train_embeddings.png")
+    metrics.plot_embeddings(umap_val_embeddings, val_labels_cl, train_dataset.classes, "UMAP test", "Results/Task_b/umap_val_embeddings.png")
