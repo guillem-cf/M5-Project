@@ -16,7 +16,7 @@ import wandb
 
 from dataset.triplet_data import TripletCOCODatasetFast, TripletCOCORetrieval
 from models.models import TripletNet
-from models.models import ObjectEmbeddingNetV2 as ObjectEmbeddingNet
+from models.models import ObjectEmbeddingNet
 from utils import losses
 from utils import trainer
 from utils import metrics

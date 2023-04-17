@@ -1,9 +1,7 @@
 import os
 import random
-import multiprocessing
 
 import numpy as np
-import torch
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -14,7 +12,6 @@ import json
 import random
 import sys
 
-import joblib
 
 from pycocotools.coco import COCO
 
@@ -78,9 +75,6 @@ class TripletMITDataset(Dataset):
         img2 = Image.open(img2[0])
         img3 = Image.open(img3[0])
 
-        # img1 = Image.fromarray(img1.numpy(), mode='L')
-        # img2 = Image.fromarray(img2.numpy(), mode='L')
-        # img3 = Image.fromarray(img3.numpy(), mode='L')
         if self.transform is not None:
             img1 = self.transform(img1)
             img2 = self.transform(img2)
@@ -249,24 +243,21 @@ class TripletCOCODataset(Dataset):
         return len(self.obj_img_ids)
     
     
-       
 
 class TripletCOCODatasetFast(Dataset):
-
     """
     Train: For each sample (anchor) randomly chooses a positive and negative samples
     """
 
-    # def __init__(self, trainImagesFolder, trainImages, trainImageLabels, transform):
     def __init__(self, coco_dataset, obj_img_dict, dataset_path, split_name='train', dict_negative_img=None, transform=None):
         self.dict_negative_img = dict_negative_img
-        self.labelTrain = obj_img_dict[split_name]
+        self.obj_img_dict = obj_img_dict
         self.transform = transform
-        self.trainImagesFolder = dataset_path
-        self.trainImages = os.listdir(dataset_path)
+        self.dataset_path = dataset_path
         
         # Obtain labels
         self.objs = {}
+        self.labelTrain = self.obj_img_dict[split_name]
         
         # Get objects per image
         for obj in self.labelTrain.keys():
@@ -276,37 +267,19 @@ class TripletCOCODatasetFast(Dataset):
                 else:
                     self.objs[image] = [obj]
         
-        # Rem images without images
-        i1 = 0
-        while i1 < len(self.trainImages):
-            image1 = self.trainImages[i1]
+        # Remove images that do not have any object
+        aux = 0
+        while aux < len(self.trainImages):
+            image1 = self.trainImages[aux]
             image1Num = int(image1[:-4].split("_")[2])
             
             if not(image1Num in self.objs.keys()):
-                del self.trainImages[i1]
+                del self.trainImages[aux]
             else:
-                i1 += 1
+                aux += 1
         
-        # If dict_negative_img is None, create a dictionary with all id images as keys and for each key a list of all images that do not contain any object of the same category
-        if self.dict_negative_img is None:
-            print("dict_negative_img is not found")
-            print("Creating dict_negative_img")
-            self.dict_negative_img = {}
-            for img_id in tqdm(self.obj_img_ids):
-                self.dict_negative_img[img_id] = self.process_img_id(img_id)
-            
-            size = sys.getsizeof(self.dict_negative_img)
-            print("The size of the dictionary is {} bytes".format(size))
-            
-            path = f'/ghome/group03/mcv/datasets/COCO/{split_name}_dict_negative_img_low.json'
-            
-            with open(path, 'w') as fp:
-                json.dump(self.dict_negative_img, fp)
-            
-            print("dict_negative_img is created and saved to {}".format(path))
-
     
-    def positive_image(self, objs1, objs2):
+    def has_common_object(self, objs1, objs2):
         
         for obj in objs1:
             if obj in objs2:
@@ -316,9 +289,7 @@ class TripletCOCODatasetFast(Dataset):
     def __getitem__(self, index):
         # Get anchor image
         img1name = self.trainImages[index]
-        img1 = cv2.imread(self.trainImagesFolder +'/' + img1name)
-        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
-
+        
         # Get random positive image
         img1value = int(img1name[:-4].split("_")[2])
         img1objs = self.objs[img1value]
@@ -330,21 +301,7 @@ class TripletCOCODatasetFast(Dataset):
             # Get random image 
             positiveImgValue = np.random.choice(self.labelTrain[sharingObj])
         img2name = "COCO_train2014_{:012d}.jpg".format(positiveImgValue)
-        img2 = cv2.imread(self.trainImagesFolder + '/' + img2name)
-        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
         
-        # # Get random negative image
-        # while True:
-        #     # Get random image
-        #     img3value = np.random.choice(self.dict_negative_img[str(img1value)])
-        #     # img3value = int(img3name[:-4].split("_")[2])
-        #     img3name = "COCO_train2014_{:012d}.jpg".format(img3value)
-            
-        #     try:
-        #         img3 = cv2.imread(self.trainImagesFolder + '/' + img3name)
-        #         break
-        #     except:
-        #         continue
         
         # Get random negative image
         while True:
@@ -353,9 +310,14 @@ class TripletCOCODatasetFast(Dataset):
             img3value = int(img3name[:-4].split("_")[2])
             img3objs = self.objs[img3value] 
             
-            if not self.positive_image(img3objs, img1objs):
+            if not self.has_common_object(img3objs, img1objs):
                 break
                   
+        # Read images
+        img1 = cv2.imread(self.trainImagesFolder +'/' + img1name)
+        img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+        img2 = cv2.imread(self.trainImagesFolder + '/' + img2name)
+        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
         img3 = cv2.imread(self.trainImagesFolder + '/' + img3name)
         img3 = cv2.cvtColor(img3, cv2.COLOR_BGR2RGB)
         
@@ -401,15 +363,15 @@ class TripletCOCORetrieval(Dataset):
                     self.objs[image] = [obj]
         
         # Remove images that do not have any object
-        i1 = 0
-        while i1 < len(self.databaseImages):
-            image1 = self.databaseImages[i1]
+        aux = 0
+        while aux < len(self.databaseImages):
+            image1 = self.databaseImages[aux]
             image1Num = int(image1[:-4].split("_")[2])
             
             if not(image1Num in self.objs.keys()):
-                del self.databaseImages[i1]
+                del self.databaseImages[aux]
             else:
-                i1 += 1
+                aux += 1
         
         if not(allLabels is None):
             # Get every object in the image
@@ -433,7 +395,6 @@ class TripletCOCORetrieval(Dataset):
         img1 = cv2.imread(self.databaseImagesFolder + img1name)
         img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
 
-        
         # Transform
         img1 = Image.fromarray(img1)
         if self.transform is not None:

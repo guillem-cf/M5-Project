@@ -11,22 +11,18 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import CocoDetection
 from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, FasterRCNN_ResNet50_FPN_V2_Weights, MaskRCNN_ResNet50_FPN_V2_Weights
 
-# Import tensorboard from pytorch
 import wandb
 
 from dataset.triplet_data import TripletCOCODatasetFast as TripletCOCODataset
 from models.models import TripletNet
-from models.models import ObjectEmbeddingNetV2 as ObjectEmbeddingNet
+from models.models import ObjectEmbeddingNet
 from utils import losses
 from utils import trainer
-# from utils import metrics
 from utils.early_stopper import EarlyStopper
 
 
 
-def task_e(args):   
-    
-    
+def train(args):   
     wandb.init(project="m5-w4", entity="grup7")
     print(wandb.config)
     
@@ -189,4 +185,4 @@ if __name__ == '__main__':
     
     sweep_id = wandb.sweep(sweep=sweep_config, project="m5-w4", entity="grup7")
     
-    wandb.agent(sweep_id, function=functools.partial(task_e, args))
+    wandb.agent(sweep_id, function=functools.partial(train, args))
