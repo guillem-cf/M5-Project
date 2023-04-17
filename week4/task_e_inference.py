@@ -84,8 +84,8 @@ if __name__ == '__main__':
     
     
     transform = torch.nn.Sequential(
-                MaskRCNN_ResNet50_FPN_V2_Weights.COCO_V1.transforms(),
-                transforms.Resize((240, 320)),
+                FasterRCNN_ResNet50_FPN_Weights.COCO_V1.transforms(),
+                transforms.Resize((256, 256)),
             )
 
     

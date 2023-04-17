@@ -88,22 +88,14 @@ def task_e(args):
         train_negative_image_dict = None
         # val_negative_image_dict = None
 
-    
-    # transform = transforms.Compose([
-    #     # transforms.ToTensor(),
-    #     FasterRCNN_ResNet50_FPN_Weights.COCO_V1.transforms(),
-    #     transforms.Resize((256, 256), antialias=True),
-    #     transforms.Normalize((0.0, 0.0, 0.0), (1.0, 1.0, 1.0)),  # scale to range [0,1]
-    # ])
+
     
     transform = torch.nn.Sequential(
                 FasterRCNN_ResNet50_FPN_Weights.COCO_V1.transforms(),
                 transforms.Resize((256, 256)),
             )
 
-    # train_dataset = CocoDetection(root=train_path, annFile=train_annot_path)
-    # val_dataset = CocoDetection(root=val_path, annFile=val_annot_path)
-    
+
     
     triplet_train_dataset = TripletCOCODataset(None, object_image_dict, train_path, split_name='train',
                                             dict_negative_img=train_negative_image_dict, transform=transform)

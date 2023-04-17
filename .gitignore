@@ -25,7 +25,8 @@ kitti*
 ./week2/dataset.py
 ./week2/utils
 
-./week4/coco_auxiliar 
+./week4/coco_auxiliar
+./week4/Results/*
 
 *.err
 *.out
