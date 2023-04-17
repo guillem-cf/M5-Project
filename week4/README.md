@@ -1,4 +1,4 @@
-# Week 1: Introduction to Pytorch
+# Week 4: Cross-modal Retrieval
 
 # Presentation
 
