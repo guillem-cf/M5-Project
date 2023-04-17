@@ -2,6 +2,8 @@ import argparse
 import json
 import os
 import time
+import numpy as np
+import matplotlib.pyplot as plt
 
 import torch
 import torchvision.transforms as transforms
@@ -18,6 +20,7 @@ from models.models import ObjectEmbeddingNetV2 as ObjectEmbeddingNet
 from utils import losses
 from utils import trainer
 from utils import metrics
+from utils import retrieval
 from utils.early_stopper import EarlyStopper
 
 from sklearn.neighbors import KNeighborsClassifier
@@ -25,19 +28,16 @@ from sklearn.neighbors import KNeighborsClassifier
 import copy
 
 
- 
-    
-    
 if __name__ == '__main__':
     
     # ------------------------------- ARGUMENTS --------------------------------
     parser = argparse.ArgumentParser(description='Task E')
     parser.add_argument('--resnet_type', type=str, default='V1', help='Resnet version (V1 or V2)')
     parser.add_argument('--weighted', type=bool, default=True, help='Weighted features')
-    parser.add_argument('--fc', type=bool, default=True, help='Use fully connected layer')
+    parser.add_argument('--fc', type=bool, default=False, help='Use fully connected layer')
     parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
     parser.add_argument('--weights', type=str,
-                        default='/ghome/group03/M5-Project/week4/Results/Task_e/task_e_fc_True_margin_1/task_e_triplet_2.pth',
+                        default='/ghome/group03/M5-Project/week4/Results/Task_e/task_e_fc_False_margin_1/task_e_triplet_2.pth',
                         help='Path to weights')
     parser.add_argument('--batch_size', type=int, default=1, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=2, help='Number of epochs')
@@ -104,7 +104,6 @@ if __name__ == '__main__':
     
     
     # ------------------------------- MODEL --------------------------------
-    margin = args.margin
     
     if args.resnet_type == 'V1':
         weights = FasterRCNN_ResNet50_FPN_Weights.COCO_V1
@@ -135,16 +134,18 @@ if __name__ == '__main__':
     train_embeddings = metrics.extract_embeddings_coco(db_train_loader, model, device)
     end = time.time()
     print("Time to calculate train database embeddings: ", end - start)
-    path = os.path.join(output_path, 'train_embeddings.png')
-    metrics.plot_embeddings_coco(train_embeddings, None, None, 'Database Embeddings', path)
+    if train_embeddings.shape[1] == 2:
+        path = os.path.join(output_path, 'train_embeddings.png')
+        metrics.plot_embeddings_coco(train_embeddings, None, None, 'Database Embeddings', path)
     
     print("Calculating val database embeddings...")
     start = time.time()
     val_embeddings = metrics.extract_embeddings_coco(db_val_loader, model, device)
     end = time.time()
     print("Time to calculate val database embeddings: ", end - start)
-    path = os.path.join(output_path, 'val_embeddings.png')
-    metrics.plot_embeddings_coco(val_embeddings, None, None, 'Validation Embeddings', path)
+    if val_embeddings.shape[1] == 2:
+        path = os.path.join(output_path, 'val_embeddings.png')
+        metrics.plot_embeddings_coco(val_embeddings, None, None, 'Validation Embeddings', path)
 
     
     # --------------------------------- RETRIEVAL ---------------------------------
@@ -167,15 +168,21 @@ if __name__ == '__main__':
     end = time.time()
     print("Time to calculate KNN: ", end - start)
     
+    
     # Compute positive and negative values
     evaluation = metrics.positives_coco(neighbors, db_dataset_train, db_dataset_val)
 
     
     # --------------------------------- METRICS ---------------------------------
-    # Calculate accuracy for train and validation data
+    metrics.calculate_APs_coco(evaluation, output_path)
     
-
-
-
+    metrics.plot_PR_binary(evaluation, output_path)
+    
+    
+    # --------------------------------- SHOW EXAMPLES ---------------------------------
+    
+    query_list = [0, 1, 2, 3, 4]
+    
+    retrieval.extract_retrieval_examples(db_dataset_val, neighbors, query_list, output_path) 
     
 

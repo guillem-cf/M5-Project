@@ -22,9 +22,6 @@ from utils import trainer
 # from utils import metrics
 from utils.early_stopper import EarlyStopper
 
-import copy
-
-
 
 
 def task_e(args):   
@@ -40,9 +37,6 @@ def task_e(args):
 
     os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
-    
-    # name = 'batch_size_' + str(args.batch_size) + '_lr_' + str(args.learning_rate) + '_margin_' + str(args.margin) + '_weighted_' + str(args.weighted)
-    # wandb
     
     
     # ------------------------------- PATHS --------------------------------
@@ -92,7 +86,7 @@ def task_e(args):
         # print('Done!')
     except:
         train_negative_image_dict = None
-        val_negative_image_dict = None
+        # val_negative_image_dict = None
 
     
     # transform = transforms.Compose([
@@ -103,8 +97,8 @@ def task_e(args):
     # ])
     
     transform = torch.nn.Sequential(
-                MaskRCNN_ResNet50_FPN_V2_Weights.COCO_V1.transforms(),
-                transforms.Resize((240, 320)),
+                FasterRCNN_ResNet50_FPN_Weights.COCO_V1.transforms(),
+                transforms.Resize((256, 256)),
             )
 
     # train_dataset = CocoDetection(root=train_path, annFile=train_annot_path)
@@ -117,25 +111,11 @@ def task_e(args):
     #                                           dict_negative_img=val_negative_image_dict, transform=transform)
 
     # ------------------------------- DATALOADER --------------------------------
-    # train_dataset_retrieval = copy.deepcopy(train_dataset)
-    # val_dataset_retrieval = copy.deepcopy(val_dataset)
-    
-    # train_dataset_retrieval.ids = train_dataset.ids[:2000]
-    # val_dataset_retrieval.ids = val_dataset.ids[:2000]
-    
-    # kwargs = {'num_workers': 10, 'pin_memory': True} if torch.cuda.is_available() else {}
-    # train_loader = DataLoader(train_dataset_retrieval, batch_size=256, shuffle=True, **kwargs)
-    # val_loader = DataLoader(val_dataset_retrieval, batch_size=256, shuffle=False, **kwargs)
-    
-    # triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=args.batch_size, shuffle=True,
-    #                                   collate_fn=triplet_collate_fn, pin_memory=True, num_workers=10)
-    # triplet_test_loader = DataLoader(triplet_test_dataset, batch_size=args.batch_size, shuffle=False,
-    #                                  collate_fn=triplet_collate_fn, pin_memory=True, num_workers=10)
+
     
     triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=args.batch_size, shuffle=True,
                                     pin_memory=True, num_workers=10)
-    # triplet_test_loader = DataLoader(triplet_test_dataset, batch_size=args.batch_size, shuffle=False,
-    #                                  pin_memory=True, num_workers=10)
+
     triplet_test_loader = None
     
     # ------------------------------- MODEL --------------------------------
@@ -182,16 +162,6 @@ def task_e(args):
     trainer.fit(triplet_train_loader, triplet_test_loader, model, loss_func, optimizer, lr_scheduler, args.num_epochs,
                 device, log_interval, output_path, wandb = wandb, name='task_e')
 
-    # # Plot emmbedings
-    # train_embeddings_cl, train_labels_cl = metrics.extract_embeddings(train_loader, model, device)
-    # path = os.path.join(output_path, 'train_embeddings.png')
-    # metrics.plot_embeddings(train_embeddings_cl, train_labels_cl, path)
-    # val_embeddings_cl, val_labels_cl = metrics.extract_embeddings(val_loader, model, device)
-    # path = os.path.join(output_path, 'val_embeddings.png')
-    # metrics.plot_embeddings(val_embeddings_cl, val_labels_cl, path)
-
-    # metrics.tsne_features(train_embeddings_cl, train_labels_cl, "train", labels=val_dataset.classes, output_dir="Results/Task_e")
-    # metrics.tsne_features(val_embeddings_cl, val_labels_cl, "test", labels=val_dataset.classes, output_dir="Results/Task_e")
 
 
 

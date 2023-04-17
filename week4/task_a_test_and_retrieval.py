@@ -180,7 +180,7 @@ print("mAP@all:", mAP_all)
 print("mAP@5:", mAP_5)
 
 plot_retrieval(
-    test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir="Results/Task_a", p="CLASS"
+    test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir="Results/Task_a", p="CLASSd"
 )
 plot_retrieval(
     test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir="Results/Task_a", p="BEST"
@@ -210,9 +210,13 @@ for class_id in range(0, 8):
                                             ax=ax, name="Class " + str([class_id]))
 plt.savefig("PR2.png")
 
+
+test_probas = knn.predict_proba(image_features_test)
+
 fig, ax = plt.subplots(1, 1, figsize=(10,10), dpi=150)
 ax.set_title("Precision-Recall", size=14)
 for i in range(0, 8):
-    PrecisionRecallDisplay.from_predictions((y_true_train[neigh_ind][i] == y_true_test[i]).astype(int), -neigh_dist[i],
+    PrecisionRecallDisplay.from_predictions(np.where(y_true_test==i, 1, 0),
+                                            test_probas[:, i],
                                             ax=ax, name="Class " + str([i]))
 plt.savefig("PR3.png")

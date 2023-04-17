@@ -143,28 +143,32 @@ if __name__ == '__main__':
     knn = KNeighborsClassifier(n_neighbors=5)  # You can adjust the number of neighbors as needed
 
     # Fit the KNN classifier to the train embeddings and labels
-    knn.fit(train_embeddings_cl, train_labels_cl)
+    knn.fit(train_embeddings_cl, list(range(train_embeddings_cl.shape[0])))
 
-    # Predict the labels of the validation  embeddings
-    train_preds = knn.predict(train_embeddings_cl)
-    val_preds = knn.predict(val_embeddings_cl)
-    
+    neighbors = knn.kneighbors(val_embeddings_cl)[1]
 
-    # Calculate accuracy for train and validation data
-    train_accuracy = accuracy_score(train_labels_cl, train_preds)
-    val_accuracy = accuracy_score(val_labels_cl, val_preds)
+    def getMostSimilar(queryFeatures, k=None):
 
-    print("Train accuracy: ", train_accuracy)
-    print("Validation accuracy: ", val_accuracy)
+        # Inference every query
+        (dis, neighbors) = knn.kneighbors(queryFeatures, return_distance=True)
 
+        return dis, neighbors
 
-    # Calculate the Precision recall curve
+    (dis, neighbors) = getMostSimilar(val_embeddings_cl, train_embeddings_cl.shape[0])
+    results = []
+    for i, label in enumerate(val_labels_cl):
+        results.append((train_labels_cl[neighbors[i]] == label))
+    results = np.array(results)
+    print("P@1: ", metrics.mPrecisionK(results, 1))
+    print("P@5: ", metrics.mPrecisionK(results, 5))
+    print("MAP: ", metrics.MAP(results))
+
     clf = OneVsRestClassifier(KNeighborsClassifier(n_neighbors=5, metric = "manhattan"))
     clf.fit(train_embeddings_cl, train_labels_cl)
 
     y_score_knn = clf.predict_proba(val_embeddings_cl)
-    
-    metrics.plot_PR_multiclass(train_dataset.classes, val_labels_cl, y_score_knn,"Results/Task_c")
+
+    metrics.plot_PR_multiclass(train_dataset.classes, val_labels_cl,y_score_knn,"Results/Task_c")
 
 
     #get test images from the test dataloader
@@ -172,35 +176,27 @@ if __name__ == '__main__':
     y_true_test = []
     for i, (data, target) in enumerate(test_loader):
         test_images = np.concatenate((test_images, data.to("cpu").detach().numpy()), axis=0)
-       
 
     #get train images from the train dataloader
     train_images = np.zeros((0, 3, 224, 224))
     y_true_train = []
     for i, (data, target) in enumerate(train_loader):
         train_images = np.concatenate((train_images, data.to("cpu").detach().numpy()), axis=0)
-        
-  
-    neigh_dist, neigh_ind = knn.kneighbors(val_embeddings_cl, n_neighbors=train_images.shape[0], return_distance=True)
 
-    metrics.plot_retrieval(
-    test_images,train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_c", p="CLASS"
-    )
-    metrics.plot_retrieval(
-        test_images, train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_c", p="BEST"
-    )
-    metrics.plot_retrieval(
-        test_images, train_images, val_labels_cl, train_labels_cl, neigh_ind, neigh_dist, output_dir="Results/Task_c", p="WORST"
-    )
     
-    y_true_test = np.asarray(val_labels_cl).flatten()
-    y_true_train = np.asarray(train_labels_cl).flatten()
-    y_true_test_repeated = np.repeat(np.expand_dims(y_true_test, axis=1), train_images.shape[0], axis=1)
-    neigh_labels = y_true_train[neigh_ind]
 
-    metrics.calculate_APs(y_true_test, y_true_test_repeated, neigh_labels, neigh_dist)
+    metrics.plot_retrieval(
+    test_images,train_images, val_labels_cl, train_labels_cl, neighbors, dis, output_dir="Results/Task_c", p="CLASS"
+    )
+    metrics.plot_retrieval(
+        test_images, train_images, val_labels_cl, train_labels_cl, neighbors, dis, output_dir="Results/Task_c", p="BEST"
+    )
+    metrics.plot_retrieval(
+        test_images, train_images, val_labels_cl, train_labels_cl, neighbors, dis, output_dir="Results/Task_c", p="WORST"
+    )
 
-    # TSNE
+    #tsne
+
     metrics.tsne_features(train_embeddings_cl, train_labels_cl, labels=test_dataset.classes, title = "TSNE Train", output_path="Results/Task_c/tsne_train_embeddings.png")
     metrics.tsne_features(val_embeddings_cl, val_labels_cl, labels=test_dataset.classes, title= "TSNE test", output_path="Results/Task_c/tsne_test_embeddings.png")
             

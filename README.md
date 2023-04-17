@@ -31,7 +31,7 @@ autonomous driving technology.
 [Slides](https://docs.google.com/presentation/d/1KpR6sYabwwIBnfnVXtZLX_c1p9nYROwg/edit?usp=sharing&ouid=113215793601171523843&rtpof=true&sd=true)
 
 ### [Week 4:](https://github.com/guillem-cf/M5-Project/tree/main/week4)
-
+[Slides](https://docs.google.com/presentation/d/1DZklzLOfCrwQC4cYEvULWXTvU-eQXaao/edit?usp=sharing&ouid=112170236769613642804&rtpof=true&sd=true)
 ### [Week 5:](https://github.com/guillem-cf/M5-Project/tree/main/week5)
 
 # Presentation
