@@ -1,4 +1,4 @@
-# Week 4: Cross-modal Retrieval
+# Week 4: Image Retrieval
 
 # Presentation
 
