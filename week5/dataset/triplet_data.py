@@ -17,14 +17,14 @@ from pycocotools.coco import COCO
 
 
 
-class CocoDatasetWeek5(Dataset):
+class TripletIm2Text(Dataset):
     def __init__(self, ann_file, img_dir, transform=None):
         self.img_dir = img_dir
         self.transform = transform
 
         with open(ann_file, 'r') as f:
             self.annotations = json.load(f)
-        
+            
         self.images = self.annotations['images']
         self.annotations = self.annotations['annotations']
 
@@ -33,11 +33,23 @@ class CocoDatasetWeek5(Dataset):
 
     def __getitem__(self, index):
         img_path = self.img_dir + '/' + self.images[index]['file_name']
+        img_id = self.images[index]['id']
         image = Image.open(img_path).convert('RGB')
         if self.transform is not None:
             image = self.transform(image)
         
-        annotation = self.annotations[index]
+        # Search for the annotation of the image
+        # self.annotations is a list of dictionaries
+        for annotation in self.annotations:
+            if annotation['image_id'] == img_id:
+                break
+         
+        
+        
+        
+        # caption = self.annotations[index]
+        
+        # id_image = annotation['image_id']
         
         return image, annotation
     

@@ -28,6 +28,8 @@ kitti*
 ./week4/coco_auxiliar
 ./week4/Results/*
 
+fasttext_wiki.en.bin
+
 *.err
 *.out
 *.jpg
