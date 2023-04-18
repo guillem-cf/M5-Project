@@ -39,6 +39,38 @@ from utils import losses
 from utils import trainer
 from utils.early_stopper import EarlyStopper
 
+# ------------------------------- ARGS ---------------------------------
+parser = argparse.ArgumentParser(description='Task E')
+parser.add_argument('--resnet_type', type=str, default='V1', help='Resnet version (V1 or V2)')
+parser.add_argument('--weighted', type=bool, default=True, help='Weighted features')
+parser.add_argument('--fc', type=bool, default=False, help='Use fully connected layer')
+parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
+parser.add_argument('--weights', type=str,
+                    default='/ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5',
+                    help='Path to weights')
+parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
+parser.add_argument('--num_epochs', type=int, default=2, help='Number of epochs')
+parser.add_argument('--learning_rate', type=float, default=1e-5, help='Learning rate')
+parser.add_argument('--margin', type=float, default=0.1, help='Margin for triplet loss')
+parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
+parser.add_argument('--gpu', type=int, default=7, help='GPU device id')
+args = parser.parse_args()
+
+# -------------------------------- GPU --------------------------------
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+
+if torch.cuda.is_available():
+    print("CUDA is available")
+    device = torch.device("cuda")
+    torch.cuda.amp.GradScaler()
+elif torch.backends.mps.is_available():
+    print("MPS is available")
+    device = torch.device("cpu")
+else:
+    print("CPU is available")
+    device = torch.device("cpu")
+    
 # ------------------------------- PATHS --------------------------------
 env_path = os.path.dirname(os.path.abspath(__file__))
 # get path of current file
@@ -51,17 +83,6 @@ output_path = os.path.join(env_path, 'Results/task_a')
 if not os.path.exists(output_path):
     os.makedirs(output_path)
 
-# -------------------------------- DEVICE --------------------------------
-if torch.cuda.is_available():
-    print("CUDA is available")
-    device = torch.device("cuda")
-    torch.cuda.amp.GradScaler()
-elif torch.backends.mps.is_available():
-    print("MPS is available")
-    device = torch.device("cpu")
-else:
-    print("CPU is available")
-    device = torch.device("cpu")
 
 # ------------------------------- DATASET --------------------------------
 train_path = os.path.join(dataset_path, 'train2014')
@@ -110,12 +131,10 @@ triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=128, shuffle
 triplet_test_loader = None
 
 # ------------------------------- MODEL --------------------------------
-num_epochs = 1
-learning_rate = 1e-5
-margin = 0.1
-pretrained = False
-
-weights = ResNet50_Weights
+num_epochs = args.num_epochs
+learning_rate = args.learning_rate
+margin = args.margin
+weights = FasterRCNN_ResNet50_FPN_Weights
     
 # Pretrained model from torchvision or from checkpoint
 embedding_net = EmbeddingNet(weights=weights).to(device)

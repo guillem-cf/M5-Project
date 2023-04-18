@@ -48,10 +48,10 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             message += '\t{}: {}'.format(metric.name(), metric.value())
             
             
-        if name == 'task_e':
+        if name == 'task_a':
             # Save the model checkpoint
             print("Saving model at epoch: ", epoch)
-            path=output_path + f"/task_e_triplet_{epoch + 1}.pth"
+            path=output_path + f"/task_a_triplet_{epoch + 1}.pth"
             torch.save(model.state_dict(), path)
         else:
             val_loss, metrics = test_epoch(val_loader, model, loss_fn, device, metrics)
@@ -100,8 +100,11 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
     
     for batch_idx, (data, target) in enumerate(train_loader):
         target = target if len(target) > 0 else None
-        if not type(data) in (tuple, list):
-            data = (data,)
+        for batch_idx2, (data2, target2) in enumerate(train_loader):
+            for batch_idx3, (data3, target3) in enumerate(train_loader):
+                if not type(data) in (tuple, list):
+                    data = (data,data2,data3)
+
         if device:
             data = tuple(d.to(device) for d in data)
             if target is not None:
@@ -112,7 +115,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
 
         optimizer.zero_grad()
 
-        # if name == 'task_e':
+        # if name == 'task_a':
         #     target1 = []
         #     target2 = []
         #     target3 = []
@@ -132,6 +135,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
         #     target_in = (target1, target2, target3)
         #     outputs = model(*data, *target_in)
         # else:
+        print('data:', len(data))
         outputs = model(*data)
 
         if type(outputs) not in (tuple, list):
