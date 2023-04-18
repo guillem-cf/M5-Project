@@ -1,45 +1,36 @@
 import json
-import pandas as pd
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-# Load the COCO annotations JSON file
-with open('instances_train2014.json', 'r') as f:
-    data = json.load(f)
+import numpy as np
+import torch
+from transformers import BertTokenizer, BertModel
 
-# Extract the categories and annotations
-categories = data['categories']
-annotations = data['annotations']
+def preprocess_caption(caption):
+    # Replace special characters and convert to lowercase
+    return caption.lower().replace(".", "").replace(",", "").replace("!", "").replace("?", "")
 
-# Create a DataFrame for annotations
-annotations_df = pd.DataFrame(annotations)
+def encode_caption(tokenizer, model, caption):
+    inputs = tokenizer(caption, return_tensors="pt", padding=True, truncation=True)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    return outputs.last_hidden_state.mean(dim=1).squeeze().numpy()
 
-# Create a DataFrame for categories
-categories_df = pd.DataFrame(categories)
+# Install the transformers library if not installed
+# !pip install transformers
 
-# Merge the DataFrames based on category id
-merged_df = annotations_df.merge(categories_df, left_on='category_id', right_on='id')
+# Load the BERT tokenizer and model
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+model = BertModel.from_pretrained("bert-base-uncased").eval()
 
-# Define BERT model and tokenizer
-model_name = 'bert-base-uncased'
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+# Load the JSON data
+with open("captions_train2014.json", "r") as file:
+    data = json.load(file)
 
-# Function to generate code using BERT
-def generate_code(text):
-    inputs = tokenizer.encode(text, return_tensors='pt', add_special_tokens=True)
-    outputs = model.generate(inputs, max_length=100, num_return_sequences=1)
-    generated_code = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return generated_code
+# Extract the captions
+captions = [entry["caption"] for entry in data["annotations"]]
 
-# Generate code for each annotation using BERT and store in a new DataFrame column
-merged_df['generated_code'] = merged_df['caption'].apply(generate_code)
+# Preprocess and encode the captions
+encoded_captions = [encode_caption(tokenizer, model, preprocess_caption(caption)) for caption in captions]
 
-# Drop unnecessary columns
-merged_df.drop(['id_x', 'category_id', 'id_y', 'name', 'supercategory'], axis=1, inplace=True)
-
-# Convert the DataFrame to a JSON format and save it to a file
-generated_code_json = merged_df.to_json(orient='records')
-with open('generated_code_coco_annotations.json', 'w') as f:
-    f.write(generated_code_json)
-
-print("Generated code using BERT for COCO 2014 annotations saved in 'generated_code_coco_annotations.json'")
+# Save the encoded captions to a new file
+with open("encoded_captions_train2014_bert.npy", "wb") as file:
+    np.save(file, np.array(encoded_captions))
