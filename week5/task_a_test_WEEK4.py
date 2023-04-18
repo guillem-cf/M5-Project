@@ -42,8 +42,8 @@ class CocoDatasetWeek5(Dataset):
         with open(ann_file, 'r') as f:
             self.annotations = json.load(f)
         
-        self.images = self.annotations['images']
-        self.annotations = self.annotations['annotations']
+        self.images = self.annotations['images'][0:100]
+        self.annotations = self.annotations['annotations'][0:100]
 
     def __len__(self):
         return len(self.images)
@@ -64,7 +64,7 @@ dataset_path = '/ghome/group03/mcv/datasets/COCO'
 
 finetuned = False
 num_classes = 80
-batch_size = 256
+batch_size = 32
 
 if torch.cuda.is_available():
     print("CUDA is available")

@@ -12,7 +12,7 @@ from torchvision.datasets import ImageFolder
 from torchvision.models import ResNet18_Weights, ResNet50_Weights
 
 from dataset.triplet_data import TripletMITDataset
-from models.models import TripletNet, EmbeddingNet
+from models.models import TripletNetIm2Text, EmbeddingNetImage, EmbeddingNetText
 from utils import losses
 from utils import metrics
 from utils import trainer
@@ -42,12 +42,14 @@ from utils.early_stopper import EarlyStopper
 # ------------------------------- ARGS ---------------------------------
 parser = argparse.ArgumentParser(description='Task E')
 parser.add_argument('--resnet_type', type=str, default='V1', help='Resnet version (V1 or V2)')
-parser.add_argument('--weighted', type=bool, default=True, help='Weighted features')
-parser.add_argument('--fc', type=bool, default=False, help='Use fully connected layer')
-parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained weights')
-parser.add_argument('--weights', type=str,
+parser.add_argument('--dim_out_fc', type=str, default='as_image', help='Dimension of the output of the fully connected layer (as_image or as_text)')
+parser.add_argument('--train', type=bool, default=True, help='Train or test')
+parser.add_argument('--weights_model', type=str,
                     default='/ghome/group03/M5-Project/week4/checkpoints/best_loss_task_a_finetunning.h5',
                     help='Path to weights')
+parser.add_argument('--weights_text', type=str,
+                    default='/ghome/group03/M5-Project/week5/utils/text/fasttext_wiki.en.bin',
+                    help='Path to weights of text model')
 parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
 parser.add_argument('--num_epochs', type=int, default=2, help='Number of epochs')
 parser.add_argument('--learning_rate', type=float, default=1e-5, help='Learning rate')
@@ -72,12 +74,15 @@ else:
     device = torch.device("cpu")
     
 # ------------------------------- PATHS --------------------------------
+name = 'task_a' + '_dim_out_fc_' + args.dim_out_fc
+
 env_path = os.path.dirname(os.path.abspath(__file__))
 # get path of current file
 dataset_path = '/ghome/group03/mcv/datasets/COCO'
 # dataset_path = '../../datasets/COCO'
 
-output_path = os.path.join(env_path, 'Results/task_a')
+output_path = os.path.join(env_path, 'Results/task_a', name)
+
 
 # Create output path if it does not exist
 if not os.path.exists(output_path):
@@ -105,7 +110,7 @@ triplet_train_dataset = TripletIm2Text(os.path.join(dataset_path, train_annot_pa
 # ------------------------------- DATALOADER --------------------------------
 
 
-triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=128, shuffle=True,
+triplet_train_loader = DataLoader(triplet_train_dataset, batch_size=args.batch_size, shuffle=True,
                                   pin_memory=True, num_workers=10)
 
 triplet_test_loader = None
@@ -114,12 +119,14 @@ triplet_test_loader = None
 num_epochs = args.num_epochs
 learning_rate = args.learning_rate
 margin = args.margin
-weights = FasterRCNN_ResNet50_FPN_Weights
+weights_image = FasterRCNN_ResNet50_FPN_Weights
+weights_text = args.weights_text
     
 # Pretrained model from torchvision or from checkpoint
-embedding_net = EmbeddingNet(weights=weights).to(device)
+embedding_net_image = EmbeddingNetImage(weights=weights_image).to(device)
+embedding_net_text = EmbeddingNetText(weights=weights_text).to(device)
 
-model = TripletNet(embedding_net).to(device)
+model = TripletNetIm2Text(embedding_net_image, embedding_net_text).to(device)
 
 # Set all parameters to be trainable
 for param in model.parameters():
