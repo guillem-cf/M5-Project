@@ -60,7 +60,7 @@ def train(args):
         device = torch.device("cpu")
 
     # ------------------------------- DATASET --------------------------------
-    train_path = os.path.join(dataset_path, 'train2014')
+    4
     val_path = os.path.join(dataset_path, 'val2014')
 
     # train_annot_path = os.path.join(dataset_path, 'instances_train2014.json')

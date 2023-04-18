@@ -227,6 +227,3 @@ class TextEncoder(Module):
         x = self.linear1(x)
         x = x / x.pow(2).sum(1, keepdim=True).sqrt()
         return x
-
-
-    
