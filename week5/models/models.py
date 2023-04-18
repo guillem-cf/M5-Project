@@ -58,7 +58,51 @@ def is_target_empty(target):
 
 
 class EmbeddingNetImage(nn.Module):
-    
+    def __init__(self, weights, resnet_type='V1', with_fc = True):
+        super(EmbeddingNetImage, self).__init__()
+        self.with_fc = with_fc
+
+        if resnet_type == 'V1':
+            # Load the Faster R-CNN model with ResNet-50 backbone
+            self.faster_rcnn = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
+        elif resnet_type == 'V2':
+            self.faster_rcnn = models.detection.fasterrcnn_resnet50_fpn_v2(weights=weights)
+
+        self.backbone = nn.Sequential(*list(self.faster_rcnn.backbone.children())[:-1])
+
+        for name, param in self.backbone.named_parameters():
+            if 'fc' not in name:
+                param.requires_grad = False
+            print(name, param.requires_grad)
+
+        # Replace the box predictor with a custom Fast R-CNN predictor
+        in_features = self.faster_rcnn.roi_heads.box_head.fc7.in_features
+
+
+        # Define the fully connected layers for embedding
+        self.fc = nn.Sequential(nn.Sequential(nn.Linear(in_features, 256),
+                                              nn.PReLU(),
+                                              nn.Linear(256, 256),
+                                              nn.PReLU(),
+                                              nn.Linear(256, 2)
+                                              ))
+
+
+    def forward(self, x, targets=None):
+        targets = {}
+        targets['boxes'] = torch.zeros((0,4)).to(x.device)
+        targets['labels'] = torch.zeros((0), dtype = torch.int64).to(x.device)
+        targets['image_id'] = torch.zeros((0), dtype = torch.int64).to(x.device)
+        
+        targets = [targets]*x.shape[0]
+        
+        output = self.faster_rcnn(x, targets)
+        
+        if self.with_fc:
+            output = self.fc(output) # [images, 2]
+        
+        return output
+
 
 
 # No updates in faster RCNN

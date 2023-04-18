@@ -16,6 +16,34 @@ import sys
 from pycocotools.coco import COCO
 
 
+
+class CocoDatasetWeek5(Dataset):
+    def __init__(self, ann_file, img_dir, transform=None):
+        self.img_dir = img_dir
+        self.transform = transform
+
+        with open(ann_file, 'r') as f:
+            self.annotations = json.load(f)
+        
+        self.images = self.annotations['images']
+        self.annotations = self.annotations['annotations']
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, index):
+        img_path = self.img_dir + '/' + self.images[index]['file_name']
+        image = Image.open(img_path).convert('RGB')
+        if self.transform is not None:
+            image = self.transform(image)
+        
+        annotation = self.annotations[index]
+        
+        return image, annotation
+    
+    
+    
+
 class TripletMITDataset(Dataset):
     """
     Train: For each sample creates randomly a positive or a negative pair

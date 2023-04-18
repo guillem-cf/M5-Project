@@ -32,7 +32,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import CocoDetection
 from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, FasterRCNN_ResNet50_FPN_V2_Weights, MaskRCNN_ResNet50_FPN_V2_Weights
 
-from dataset.triplet_data import CocoDatasetWeek5 as TripletCOCODataset
+from dataset.triplet_data import TripletIm2Text
 from models.models import TripletNet
 from models.models import ObjectEmbeddingNet
 from utils import losses
@@ -98,7 +98,7 @@ transform = torch.nn.Sequential(
         )
 
 
-triplet_train_dataset = TripletCOCODataset(os.path.join(dataset_path, train_annot_path), train_path, transform=transform)
+triplet_train_dataset = TripletIm2Text(os.path.join(dataset_path, train_annot_path), train_path, transform=transform)
 # triplet_test_dataset = TripletCOCODataset(None, object_image_dict, val_path, split_name='val',
 #                                           dict_negative_img=val_negative_image_dict, transform=transform)
 
