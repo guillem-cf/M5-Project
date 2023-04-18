@@ -46,15 +46,14 @@ def top_k_acc(output, target, k=3):
     return correct / len(target)
 
 
-def tsne_features(image_features, y_true, labels, title, output_path):
+def tsne_features(image_features, y_true, title, output_path):
     tsne = TSNE(n_components=2)
     X_tsne = tsne.fit_transform(image_features, y_true)
 
     fig, ax = plt.subplots(figsize=(10, 10), dpi=200)
-    colors = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink']
     for i, c in enumerate(set(y_true)):
         mask = y_true == c
-        ax.scatter(X_tsne[mask, 0], X_tsne[mask, 1], label=labels[i], c=colors[i], alpha=0.7)
+        ax.scatter(X_tsne[mask, 0], X_tsne[mask, 1])
     ax.legend()
     ax.set_title(title)
     fig.savefig(output_path)

@@ -8,4 +8,4 @@
 eval "$(conda shell.bash hook)"
 conda activate m5
 # commanda terminal --> sbatch --gres gpu:1 -n 10 job
-python task_a_finetune_WEEK4.py
+python task_a_test_WEEK4.py

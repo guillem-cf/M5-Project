@@ -26,8 +26,18 @@ class TripletIm2Text(Dataset):
             self.annotations = json.load(f)
             
         self.images = self.annotations['images']
-        self.annotations = self.annotations['annotations']
+        self.annotations_an = self.annotations['annotations']
 
+        # Create a dictionary with the image id as key and the annotation index
+        # Each image can have multiple annotations
+        self.img2ann = {}
+        for i in range(len(self.annotations_an)):
+            img_id = self.annotations_an[i]['image_id']
+            if img_id not in self.img2ann:
+                self.img2ann[img_id] = [i]
+            else:
+                self.img2ann[img_id].append(i)       
+        
     def __len__(self):
         return len(self.images)
 
@@ -38,20 +48,30 @@ class TripletIm2Text(Dataset):
         if self.transform is not None:
             image = self.transform(image)
         
-        # Search for the annotation of the image
-        # self.annotations is a list of dictionaries
-        for annotation in self.annotations:
-            if annotation['image_id'] == img_id:
-                break
-         
+        # Choose randomly one captions for the image
+        idx_pos = random.choice(self.img2ann[img_id])
+        assert self.annotations_an[idx_pos]['image_id'] == img_id
+        positive_caption_id = self.annotations_an[idx_pos]['id']
+        positive_caption = self.annotations_an[idx_pos]['caption']
         
+        # Choose randomly one caption that is not the same as the positive caption
+        negative_caption_id = positive_caption_id
+        while negative_caption_id == positive_caption_id:
+            neg_ann = random.choice(self.annotations_an)
+            if neg_ann['image_id'] == img_id:
+                continue
+            else:
+                negative_caption_id = neg_ann['id']
         
+        negative_caption = neg_ann['caption']
         
-        # caption = self.annotations[index]
+        # Lower case 
+        positive_caption = positive_caption.lower()
+        negative_caption = negative_caption.lower()
         
-        # id_image = annotation['image_id']
-        
-        return image, annotation
+        return image, positive_caption, negative_caption
+    
+    
     
     
     

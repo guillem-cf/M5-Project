@@ -11,13 +11,59 @@ from torch.utils.data import DataLoader
 from torchvision.models import ResNet50_Weights, resnet50
 from tqdm import tqdm
 
-from dataset.mit import MITDataset
 from utils.metrics import accuracy, plot_retrieval, tsne_features, plot_embeddings
-import umap
 
-finetuned = True
-dataset_path = '../../mcv/datasets/MIT_split'
-num_classes = 8
+import os
+import random
+
+import numpy as np
+from PIL import Image
+from torch.utils.data import Dataset
+
+import cv2
+from tqdm import tqdm
+
+import json
+import random
+
+import torch
+import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
+from torchvision.datasets import CocoDetection
+from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, FasterRCNN_ResNet50_FPN_V2_Weights, MaskRCNN_ResNet50_FPN_V2_Weights
+
+from models.models import *
+
+class CocoDatasetWeek5(Dataset):
+    def __init__(self, ann_file, img_dir, transform=None):
+        self.img_dir = img_dir
+        self.transform = transform
+
+        with open(ann_file, 'r') as f:
+            self.annotations = json.load(f)
+        
+        self.images = self.annotations['images']
+        self.annotations = self.annotations['annotations']
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, index):
+        img_path = self.img_dir + '/' + self.images[index]['file_name']
+        image = Image.open(img_path).convert('RGB')
+        if self.transform is not None:
+            image = self.transform(image)
+        else:
+            image = np.array(image)
+        
+        annotation = self.annotations[index]['category_id']
+        
+        return image, annotation
+
+dataset_path = '/ghome/group03/mcv/datasets/COCO'
+
+finetuned = False
+num_classes = 80
 batch_size = 256
 
 if torch.cuda.is_available():
@@ -36,15 +82,15 @@ if finetuned:
 
     # Replace the last fully-connected layer with a new one that outputs 8 classes
     fc_in_features = model.fc.in_features
-    model.fc = torch.nn.Linear(fc_in_features, 8)
+    model.fc = torch.nn.Linear(fc_in_features, num_classes)
 
     model.load_state_dict(torch.load("Results/Task_a/Task_a_Resnet50_finetuned.pth"))
 else:
-    model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
+    model = EmbeddingNetImage(FasterRCNN_ResNet50_FPN_Weights.COCO_V1) #resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
 
     # Replace the last fully-connected layer with a new one that outputs 8 classes
-    fc_in_features = model.fc.in_features
-    model.fc = torch.nn.Linear(fc_in_features, 8)
+    # fc_in_features = model.fc.in_features
+    # model.fc = torch.nn.Linear(fc_in_features, num_classes)
 
 model = model.to(device)
 
@@ -52,13 +98,20 @@ transform = ResNet50_Weights.IMAGENET1K_V2.transforms()
 # transform to tensor
 # transform = transforms.Compose( [transforms.ToTensor()] )
 
-test_dataset = MITDataset(data_dir=dataset_path, split_name='test', transform=transform)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+transform = torch.nn.Sequential(
+            FasterRCNN_ResNet50_FPN_Weights.COCO_V1.transforms(),
+            transforms.Resize((256, 256)),
+        )
 
-train_dataset = MITDataset(data_dir=dataset_path, split_name='train', transform=transform)
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+train_path = os.path.join(dataset_path, 'train2014')
+val_path = os.path.join(dataset_path, 'val2014')
 
-loss_fn = torch.nn.CrossEntropyLoss()
+train_dataset = CocoDatasetWeek5(os.path.join(dataset_path, "instances_train2014.json"), train_path, transform=transform)
+train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=4, pin_memory=True)
+
+test_dataset = CocoDatasetWeek5(os.path.join(dataset_path, "instances_val2014.json"), val_path, transform=transform)
+test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False, num_workers=4, pin_memory=True)
+
 softmax1 = torch.nn.Softmax(dim=1)
 
 y_true_test = []
@@ -73,34 +126,14 @@ with torch.no_grad():
         images = images.to(device)
         labels = labels.to(device)
         outputs = model(images)
-        test_loss += loss_fn(outputs, labels)
-        test_acc += accuracy(outputs, labels)
 
         outputs = softmax1(outputs)
 
         y_true_test.extend(labels.to("cpu").detach().numpy().flatten().tolist())
         y_pred.extend(np.max(outputs.to("cpu").detach().numpy(), axis=1).flatten().tolist())
 
-    test_loss = float(test_loss / (idx + 1))
-    test_acc = float(test_acc / (idx + 1))
-
-    print('Test accuracy:', round(test_acc, 4))
-    print('Test loss:', round(test_loss, 4))
-
 y_true_test = np.asarray(y_true_test).flatten()
 y_pred = np.asarray(y_pred).flatten()
-
-fig, ax = plt.subplots(1, 1, figsize=(10, 10), dpi=200)
-ax.set_title("Precision-Recall curve", size=16)
-for class_id in range(0, num_classes):
-    PrecisionRecallDisplay.from_predictions(
-        np.where(y_true_test == class_id, 1, 0),
-        np.where(y_true_test == class_id, y_pred, 1 - y_pred),
-        ax=ax,
-        name="Class " + str(test_dataset.classes[class_id]),
-    )
-plt.savefig("Results/Task_a/PrecisionRecallCurve.png")
-plt.close()
 
 # Image retrieval:
 
@@ -124,7 +157,7 @@ with torch.no_grad():
         y_true_train.extend(labels.to("cpu").detach().numpy().flatten().tolist())
 
         print(train_images.shape, images.to("cpu").detach().numpy().shape)
-        train_images = np.concatenate((train_images, images.to("cpu").detach().numpy()), axis=0)
+        #train_images = np.concatenate((train_images, images.to("cpu").detach().numpy()), axis=0)
 
 y_true_train = np.asarray(y_true_train).flatten()
 
@@ -145,9 +178,12 @@ with torch.no_grad():
 
         image_features_test = np.concatenate((image_features_test, outputs), axis=0)
 
-        test_images = np.concatenate((test_images, images.to("cpu").detach().numpy()), axis=0)
+        #test_images = np.concatenate((test_images, images.to("cpu").detach().numpy()), axis=0)
 
 y_true_test = np.asarray(y_true_test).flatten()
+
+tsne_features(image_features_train, y_true_train, labels=test_dataset.classes, title = "TSNE Train", output_path="Results/Task_a")
+tsne_features(image_features_test, y_true_test, labels=test_dataset.classes, title = "TSNE Test",output_path="Results/Task_a")
 
 compute_neighbors = image_features_train.shape[0]
 neigh_dist, neigh_ind = knn.kneighbors(image_features_test, n_neighbors=compute_neighbors, return_distance=True)
@@ -188,35 +224,3 @@ plot_retrieval(
 plot_retrieval(
     test_images, train_images, y_true_test, y_true_train, neigh_ind, neigh_dist, output_dir="Results/Task_a", p="WORST"
 )
-
-
-tsne_features(image_features_train, y_true_train, labels=test_dataset.classes, title = "TSNE Train", output_path="Results/Task_a")
-tsne_features(image_features_test, y_true_test, labels=test_dataset.classes, title = "TSNE Test",output_path="Results/Task_a")
-
-
-reducer = umap.UMAP(random_state=42)
-reducer.fit(image_features_train)
-umap_train_embeddings = reducer.transform(image_features_train)
-umap_val_embeddings = reducer.transform(image_features_test)
-
-plot_embeddings(umap_train_embeddings, y_true_train, train_dataset.classes, "UMAP Train", "Results/Task_a/umap_train_embeddings.png")
-plot_embeddings(umap_val_embeddings, y_true_test, train_dataset.classes, "UMAP test", "Results/Task_a/umap_val_embeddings.png")
-
-fig, ax = plt.subplots(1, 1, figsize=(10,10), dpi=150)
-ax.set_title("Precision-Recall", size=14)
-for class_id in range(0, 8):
-    PrecisionRecallDisplay.from_predictions(np.where(y_true_test==class_id, 1, 0),
-                                            np.where(y_true_train[neigh_ind][:, 0]==class_id, 1, 0),
-                                            ax=ax, name="Class " + str([class_id]))
-plt.savefig("PR2.png")
-
-
-test_probas = knn.predict_proba(image_features_test)
-
-fig, ax = plt.subplots(1, 1, figsize=(10,10), dpi=150)
-ax.set_title("Precision-Recall", size=14)
-for i in range(0, 8):
-    PrecisionRecallDisplay.from_predictions(np.where(y_true_test==i, 1, 0),
-                                            test_probas[:, i],
-                                            ax=ax, name="Class " + str([i]))
-plt.savefig("PR3.png")

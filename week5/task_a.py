@@ -88,7 +88,7 @@ if not os.path.exists(output_path):
 train_path = os.path.join(dataset_path, 'train2014')
 val_path = os.path.join(dataset_path, 'val2014')
 
-train_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
+train_annot_path = os.path.join(dataset_path, 'captions_train2014.json')
 val_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
 
 
