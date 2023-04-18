@@ -88,27 +88,8 @@ if not os.path.exists(output_path):
 train_path = os.path.join(dataset_path, 'train2014')
 val_path = os.path.join(dataset_path, 'val2014')
 
-# train_annot_path = os.path.join(dataset_path, 'instances_train2014.json')
-# val_annot_path = os.path.join(dataset_path, 'instances_val2014.json')
-
-object_image_dict = json.load(open(os.path.join(dataset_path, 'mcv_image_retrieval_annotations.json')))
-
-try:
-    print('Loading train negative image dict')
-    path = os.path.join(dataset_path, 'train_dict_negative_img_low.json')
-    with open(path, 'r') as f:
-        train_negative_image_dict = ujson.load(f)
-    print('Done!')
-    
-    # print('Loading val negative image dict')
-    # path = os.path.join(dataset_path, 'val_dict_negative_img_low.json')
-    # with open(path, 'r') as f:
-    #     val_negative_image_dict = ujson.load(f)
-    # print('Done!')
-except:
-    train_negative_image_dict = None
-    # val_negative_image_dict = None
-
+train_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
+val_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
 
 
 transform = torch.nn.Sequential(
@@ -116,9 +97,8 @@ transform = torch.nn.Sequential(
             transforms.Resize((256, 256)),
         )
 
-print(object_image_dict.keys())
 
-triplet_train_dataset = TripletCOCODataset(os.path.join(dataset_path, "captions_train2014.json"), train_path, transform=transform)
+triplet_train_dataset = TripletCOCODataset(os.path.join(dataset_path, train_annot_path), train_path, transform=transform)
 # triplet_test_dataset = TripletCOCODataset(None, object_image_dict, val_path, split_name='val',
 #                                           dict_negative_img=val_negative_image_dict, transform=transform)
 
