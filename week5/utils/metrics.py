@@ -15,174 +15,7 @@ from sklearn.multiclass import OneVsRestClassifier
 import seaborn as sns
 import cv2
 
-# if torch.cuda.is_available():
-#     print("CUDA is available")
-#     device = torch.device("cuda")
-#     torch.cuda.amp.GradScaler()
-# elif torch.backends.mps.is_available():
-#     print("MPS is available")
-#     device = torch.device("mps")
-# else:
-#     print("CPU is available")
-#     device = torch.device("cpu")
-
-
-def accuracy(output, target):
-    with torch.no_grad():
-        pred = torch.argmax(output, dim=1)
-        assert pred.shape[0] == len(target)
-        correct = 0
-        correct += torch.sum(pred == target).item()
-    return correct / len(target)
-
-
-def top_k_acc(output, target, k=3):
-    with torch.no_grad():
-        pred = torch.topk(output, k, dim=1)[1]
-        assert pred.shape[0] == len(target)
-        correct = 0
-        for i in range(k):
-            correct += torch.sum(pred[:, i] == target).item()
-    return correct / len(target)
-
-
-def tsne_features(image_features, y_true, title, output_path):
-    tsne = TSNE(n_components=2)
-    X_tsne = tsne.fit_transform(image_features, y_true)
-
-    fig, ax = plt.subplots(figsize=(10, 10), dpi=200)
-    for i, c in enumerate(set(y_true)):
-        mask = y_true == c
-        ax.scatter(X_tsne[mask, 0], X_tsne[mask, 1])
-    ax.legend()
-    ax.set_title(title)
-    fig.savefig(output_path)
-
     
-def plot_retrieval(
-        test_images,
-        train_images,
-        y_true_test,
-        y_true_train,
-        neigh_ind,
-        neigh_dist,
-        output_dir,
-        p="BEST",
-        num_queries=8,
-        num_retrievals=5,
-):
-    if p == "BEST":
-        ind = np.argsort(np.sum(neigh_dist[:, 0:5], axis=1), axis=0)
-        title = "Test query images that obtained retrieved images \nwith the lowest distance among the dataset\n"
-    elif p == "WORST":
-        ind = np.argsort(-np.sum(neigh_dist[:, 0:5], axis=1), axis=0)
-        title = "Test query images that obtained retrieved images \nwith the highest distance among the dataset\n"
-    else:
-        # get one image from each class
-        ind = []
-        for i in range(0, 8):
-            ind.append(np.where(y_true_test == i)[0][0])
-
-        title = "One test query image fom each class and their retrieved train images\n"
-
-  
-    test_images = test_images[ind]
-    y_true_test = y_true_test[ind]
-    neigh_ind = neigh_ind[ind]
-    neigh_dist = neigh_dist[ind]
-
-    fig, ax = plt.subplots(num_queries, num_retrievals, figsize=(10, 15), dpi=200)
-    fig.suptitle(title)
-    for i in range(0, num_queries):
-        #normalize the images so that they can be plotted in RGB
-        # find the min and max values of the image
-        min_val = np.min(test_images[i])
-        max_val = np.max(test_images[i])
-        # normalize the image
-        test_images[i] = (test_images[i] - min_val) / (max_val - min_val)
-
-        ax[i][0].imshow(np.moveaxis(test_images[i], 0, -1))
-        ax[i][0].set_title("Query image \nClass: " + str(y_true_test[i]))
-        ax[i][0].set_xticks([])
-        ax[i][0].set_yticks([])
-        for j in range(1, num_retrievals):
-            # find the min and max values of the image
-            min_val = np.min(train_images[neigh_ind[i][j]])
-            max_val = np.max(train_images[neigh_ind[i][j]])
-            # normalize the image
-            train_images[neigh_ind[i][j]] = (train_images[neigh_ind[i][j]] - min_val) / (max_val - min_val)
-
-            ax[i][j].imshow(np.moveaxis(train_images[neigh_ind[i][j]], 0, -1))
-            ax[i][j].set_title("Retrived image " + str(j))
-            ax[i][j].set_xticks([])
-            ax[i][j].set_yticks([])
-    fig.tight_layout()
-    plt.savefig(output_dir + "/ImageRetrievalQualitativeResults_" + p + ".png")
-    plt.close()
-
-def plot_retrieval_2(
-        test_images,
-        train_images,
-        y_true_test,
-        y_true_train,
-        neigh_ind,
-        neigh_dist,
-        output_dir,
-        p="BEST",
-        num_queries=8,
-        num_retrievals=5,
-):
-    labelsName = np.array(
-        ['Opencountry', 'coast', 'forest', 'highway', 'inside_city', 'mountain', 'street', 'tallbuilding'])
-    labelsDict = {index: label for index, label in enumerate(labelsName)}
-    if p == "BEST":
-        ind = np.argsort(np.sum(neigh_dist[:, 0:5], axis=1), axis=0)
-        title = "Test query images that obtained retrieved images \nwith the lowest distance among the dataset\n"
-    elif p == "WORST":
-        ind = np.argsort(-np.sum(neigh_dist[:, 0:5], axis=1), axis=0)
-        title = "Test query images that obtained retrieved images \nwith the highest distance among the dataset\n"
-    else:
-        # get one image from each class
-        ind = []
-        for i in range(0, 8):
-            ind.append(np.where(y_true_test == i)[0][0])
-        ind = np.array(ind)
-
-        title = "One test query image fom each class and their retrieved train images\n"
-
-    test_images = test_images[ind]
-    y_true_test = y_true_test[ind]
-    neigh_ind = neigh_ind[ind]
-    neigh_dist = neigh_dist[ind]
-
-    fig, ax = plt.subplots(num_queries, num_retrievals, figsize=(10, 15), dpi=200)
-    fig.suptitle(title)
-    for i in range(0, num_queries):
-        # normalize the images so that they can be plotted in RGB
-        # find the min and max values of the image
-        min_val = np.min(test_images[i])
-        max_val = np.max(test_images[i])
-        # normalize the image
-        test_images[i] = (test_images[i] - min_val) / (max_val - min_val)
-
-        ax[i][0].imshow(np.moveaxis(test_images[i], 0, -1))
-        ax[i][0].set_title("Query image \nClass: " + labelsDict[i])
-        ax[i][0].set_xticks([])
-        ax[i][0].set_yticks([])
-        for j in range(0, num_retrievals):
-            # find the min and max values of the image
-            min_val = np.min(train_images[neigh_ind[i][j]])
-            max_val = np.max(train_images[neigh_ind[i][j]])
-            # normalize the image
-            train_images[neigh_ind[i][j]] = (train_images[neigh_ind[i][j]] - min_val) / (max_val - min_val)
-
-            ax[i][j].imshow(np.moveaxis(train_images[neigh_ind[i][j]], 0, -1))
-            ax[i][j].set_title("Retrived image " + str(j) + "\nClass: " + labelsDict[y_true_train[neigh_ind[i][j]]])
-            ax[i][j].set_xticks([])
-            ax[i][j].set_yticks([])
-    fig.tight_layout()
-    plt.savefig(output_dir + "/ImageRetrievalQualitativeResults_" + p + ".png")
-    plt.close()
 
 def plot_embeddings(embeddings, targets, classes, title, output_path, xlim=None, ylim=None):
     colors = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink']
@@ -219,33 +52,36 @@ def plot_embeddings_coco(embeddings, target, classes, title, output_path, xlim=N
     plt.close()
 
 
-def extract_embeddings(dataloader, model, device):
+def extract_embeddings_image(dataloader, model, device, dim_features):
     with torch.no_grad():
         model.eval()
-        embeddings = np.zeros((len(dataloader.dataset), 2))
+        embeddings = np.zeros((len(dataloader.dataset), dim_features))
         labels = np.zeros(len(dataloader.dataset))
         k = 0
         for images, target in dataloader:
             if torch.cuda.is_available():
                 images = images.to(device)
-            embeddings[k:k + len(images)] = model.get_embedding(images).data.cpu().numpy()
-            labels[k:k + len(images)] = target.numpy()
-            k += len(images)
+            embeddings[k:k + images.shape[0]] = model.get_embedding_image(images).data.cpu().numpy()
+            labels[k:k + images.shape[0]] = target.numpy()
+            k += len(images.shape[0])
     return embeddings, labels
 
-def extract_embeddings_coco(dataloader, model, device):
+
+def extract_embeddings_text(dataloader, model, device, dim_features):
     with torch.no_grad():
         model.eval()
-        embeddings = np.zeros((len(dataloader.dataset), 1024))
+        embeddings = np.zeros((len(dataloader.dataset), dim_features))
         labels = np.zeros(len(dataloader.dataset))
         k = 0
-        for images, target in dataloader:
-            if torch.cuda.is_available():
-                images = images.to(device)
-            embeddings[k:k + images.shape[0]] = model.get_embedding(images).data.cpu().numpy()
-            # labels[k:k + len(images)] = target.numpy()
-            k += images.shape[0]
-    return embeddings
+        for captions, target in dataloader:
+            # if torch.cuda.is_available():
+            #     NO PODEM PASSAR CAPTIONS A GPU PERQUE NO ES UN TENSOR
+            embeddings[k:k + len(captions)] = model.get_embedding_text(captions).data.cpu().numpy()
+            labels[k:k + len(captions)] = target.numpy()
+            k += len(captions)
+    return embeddings, labels
+
+
 
 
 
@@ -266,6 +102,8 @@ def plot_PR_multiclass (classes, labels, y_score_knn,path):
 
     plt.savefig(path + "/PrecisionRecallCurve.png")
     plt.close()
+    
+    
     
 def plot_PR_binary(results, path):
     precision, recall = precisionRecall(results) 
