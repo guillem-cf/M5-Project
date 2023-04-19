@@ -11,8 +11,8 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision.models import ResNet18_Weights, ResNet50_Weights
 
-from dataset.triplet_data import TripletIm2Text
-from models.models import TripletNetIm2Text, EmbeddingNetImage, EmbeddingNetText
+from dataset.triplet_data import TripletText2Im
+from models.models import TripletNetText2Img, EmbeddingNetImage, EmbeddingNetText
 from utils import losses
 from utils import metrics
 from utils import trainer
@@ -108,7 +108,7 @@ def train(args):
 
     # triplet_test_loader = DataLoader(triplet_test_dataset, batch_size=args.batch_size, shuffle=True,
     #                                 pin_memory=True, num_workers=10)
-    triplet_test_loader = None
+    triplet_test_loader= None
 
     # ------------------------------- MODEL --------------------------------
     num_epochs = args.num_epochs
@@ -149,7 +149,7 @@ def train(args):
     log_interval = 10
 
     trainer.fit(triplet_train_loader, triplet_test_loader, model, loss_func, optimizer, lr_scheduler, num_epochs,
-                device, log_interval, output_path, name='img2txt', wandb = wandb)
+                device, log_interval, output_path, name='txt2img', wandb = wandb)
 
 
 
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     parser.add_argument('--weights_text', type=str,
                         default='/ghome/group03/M5-Project/week5/utils/text/fasttext_wiki.en.bin',
                         help='Path to weights of text model')
-    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
+    parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=10, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1, help='Margin for triplet loss')
@@ -183,11 +183,9 @@ if __name__ == '__main__':
         'parameters':{
             'margin': {
                 'values': [1, 10, 50, 100]
-                # 'value': 1
             },
             'dim_out_fc': {
                 'values': ['as_image', 'as_text']
-                # 'value': 'as_image'
             }
         }
     }

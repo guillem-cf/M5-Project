@@ -81,7 +81,7 @@ if finetuned:
     model = resnet50()
 
     # Replace the last fully-connected layer with a new one that outputs 8 classes
-    fc_in_features = model.fc.in_features
+    fc_in_features = 3840
     model.fc = torch.nn.Linear(fc_in_features, num_classes)
 
     model.load_state_dict(torch.load("Results/Task_a/Task_a_Resnet50_finetuned.pth"))
@@ -89,7 +89,7 @@ else:
     model = EmbeddingNetImage(FasterRCNN_ResNet50_FPN_Weights.COCO_V1) #resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
 
     # Replace the last fully-connected layer with a new one that outputs 8 classes
-    # fc_in_features = model.fc.in_features
+    fc_in_features = 3840
     # model.fc = torch.nn.Linear(fc_in_features, num_classes)
 
 model = model.to(device)
@@ -107,10 +107,10 @@ train_path = os.path.join(dataset_path, 'train2014')
 val_path = os.path.join(dataset_path, 'val2014')
 
 train_dataset = CocoDatasetWeek5(os.path.join(dataset_path, "instances_train2014.json"), train_path, transform=transform)
-train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=4, pin_memory=True)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 
 test_dataset = CocoDatasetWeek5(os.path.join(dataset_path, "instances_val2014.json"), val_path, transform=transform)
-test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False, num_workers=4, pin_memory=True)
+test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
 softmax1 = torch.nn.Softmax(dim=1)
 
@@ -137,7 +137,7 @@ y_pred = np.asarray(y_pred).flatten()
 
 # Image retrieval:
 
-model_retrieval = torch.nn.Sequential(*(list(model.children())[:-1]))
+model_retrieval = model #torch.nn.Sequential(*(list(model.children())[:-1]))
 
 y_true_test = []
 y_true_train = []
@@ -182,8 +182,8 @@ with torch.no_grad():
 
 y_true_test = np.asarray(y_true_test).flatten()
 
-tsne_features(image_features_train, y_true_train, labels=test_dataset.classes, title = "TSNE Train", output_path="Results/Task_a")
-tsne_features(image_features_test, y_true_test, labels=test_dataset.classes, title = "TSNE Test",output_path="Results/Task_a")
+tsne_features(image_features_train, y_true_train, title = "TSNE Train", output_path="Results/Task_a")
+tsne_features(image_features_test, y_true_test, title = "TSNE Test",output_path="Results/Task_a")
 
 compute_neighbors = image_features_train.shape[0]
 neigh_dist, neigh_ind = knn.kneighbors(image_features_test, n_neighbors=compute_neighbors, return_distance=True)

@@ -48,13 +48,15 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
             message += '\t{}: {}'.format(metric.name(), metric.value())
             
             
-        if name == 'task_a':
-            # Save the model checkpoint
-            print("Saving model at epoch: ", epoch)
-            path=output_path + f"/task_a_triplet_{epoch + 1}.pth"
-            torch.save(model.state_dict(), path)
-        else:
-            val_loss, metrics = test_epoch(val_loader, model, loss_fn, device, metrics)
+        # if name == 'task_a':
+        #     # Save the model checkpoint
+        #     print("Saving model at epoch: ", epoch)
+        #     path=output_path + f"/task_a_triplet_{epoch + 1}.pth"
+        #     torch.save(model.state_dict(), path)
+        # else:
+        
+        if val_loader is not None:
+            val_loss, metrics = test_epoch(val_loader, model, loss_fn, device, metrics, name)
             val_loss /= len(val_loader)
             val_loss_list.append(val_loss)
 
@@ -84,6 +86,11 @@ def fit(train_loader, val_loader, model, loss_fn, optimizer, scheduler, n_epochs
                     is_best_val_loss,
                     path=output_path + "/task_b_siamese.pth"
                 )
+        else:
+            # Save the model checkpoint
+            print("Saving model at epoch: ", epoch+1)
+            path=output_path + f"/task_a_triplet_{epoch + 1}.pth"
+            torch.save(model.state_dict(), path)
 
     path = output_path + "/loss.png"
     plot_loss(train_loss_list, val_loss_list, path)
@@ -100,42 +107,22 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
     
     for batch_idx, (data, target) in enumerate(train_loader):
         target = target if len(target) > 0 else None
-        for batch_idx2, (data2, target2) in enumerate(train_loader):
-            for batch_idx3, (data3, target3) in enumerate(train_loader):
-                if not type(data) in (tuple, list):
-                    data = (data,data2,data3)
+        # for batch_idx2, (data2, target2) in enumerate(train_loader):
+        #     for batch_idx3, (data3, target3) in enumerate(train_loader):
+        #         if not type(data) in (tuple, list):
+        #             data = (data,data2,data3)
 
-        if device:
-            data = tuple(d.to(device) for d in data)
-            if target is not None:
-                try:
-                    target = target.to(device)
-                except:
-                    a = 1
-
+        if not type(data) in (tuple, list):
+            data = (data,)
+        if name=='img2txt':
+            data[0] = data[0].to(device) 
+        elif name == 'txt2img':
+            data[1] = data[1].to(device)
+            data[2] = data[2].to(device)
+            
         optimizer.zero_grad()
 
-        # if name == 'task_a':
-        #     target1 = []
-        #     target2 = []
-        #     target3 = []
-        #     for i in range(data[0].shape[0]):
-        #         d1 = {}
-        #         d1['boxes'] = target[0][i].to(device)
-        #         d1['labels'] = target[1][i].to(device)
-        #         target1.append(d1)
-        #         d2 = {}
-        #         d2['boxes'] = target[2][i].to(device)
-        #         d2['labels'] = target[3][i].to(device)
-        #         target2.append(d2)
-        #         d3 = {}
-        #         d3['boxes'] = target[4][i].to(device)
-        #         d3['labels'] = target[5][i].to(device)
-        #         target3.append(d3)
-        #     target_in = (target1, target2, target3)
-        #     outputs = model(*data, *target_in)
-        # else:
-        print('data:', len(data))
+        # print('data:', len(data))
         outputs = model(*data)
 
         if type(outputs) not in (tuple, list):
@@ -146,18 +133,16 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
             target = (target,)
             loss_inputs += target
 
-        loss_outputs = loss_fn(*loss_inputs)
+        loss_outputs = loss_fn(*loss_inputs, batch_idx % log_interval)
         loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
         
         if torch.isnan(loss).any():
-            print("NAN loss")
+            print("NAN loss at epoch: ", epoch, " batch: ", batch_idx)
         else:
             total_loss += loss.item()
             losses.append(loss.item())
             count += 1
         
-        
-        wandb.log({'epoch': epoch, 'batch': batch_idx, 'loss': loss.item()})
         
         loss.backward()
         optimizer.step()
@@ -171,6 +156,8 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
                 100. * batch_idx / len(train_loader), np.mean(losses))
             for metric in metrics:
                 message += '\t{}: {}'.format(metric.name(), metric.value())
+                
+            wandb.log({'epoch': epoch, 'batch': batch_idx, 'loss': np.mean(losses)})
 
             print(message)
             losses = []
@@ -181,7 +168,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
     return total_loss, metrics
 
 
-def test_epoch(val_loader, model, loss_fn, device, metrics):
+def test_epoch(val_loader, model, loss_fn, device, metrics, name):
     with torch.no_grad():
         for metric in metrics:
             metric.reset()
@@ -193,10 +180,11 @@ def test_epoch(val_loader, model, loss_fn, device, metrics):
             target = target if len(target) > 0 else None
             if not type(data) in (tuple, list):
                 data = (data,)
-            if device:
-                data = tuple(d.to(device) for d in data)
-                if target is not None:
-                    target = target.to(device)
+            if name=='img2txt':
+                data[0] = data[0].to(device) 
+            elif name == 'txt2img':
+                data[1] = data[1].to(device)
+                data[2] = data[2].to(device)
 
             outputs = model(*data)
 
@@ -207,7 +195,7 @@ def test_epoch(val_loader, model, loss_fn, device, metrics):
                 target = (target,)
                 loss_inputs += target
 
-            loss_outputs = loss_fn(*loss_inputs)
+            loss_outputs = loss_fn(*loss_inputs, 1)
             loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
             val_loss += loss.item()
 
