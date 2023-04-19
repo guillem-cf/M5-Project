@@ -52,34 +52,36 @@ def plot_embeddings_coco(embeddings, target, classes, title, output_path, xlim=N
     plt.close()
 
 
-def extract_embeddings_image(dataloader, model, device, dim_features):
+def extract_embeddings_image(dataloader, model, device, dim_features = 3840):
     with torch.no_grad():
         model.eval()
         embeddings = np.zeros((len(dataloader.dataset), dim_features))
-        labels = np.zeros(len(dataloader.dataset))
+        #labels = np.zeros(len(dataloader.dataset))
         k = 0
-        for images, target in dataloader:
+        for images, target in tqdm(dataloader):
             if torch.cuda.is_available():
                 images = images.to(device)
             embeddings[k:k + images.shape[0]] = model.get_embedding_image(images).data.cpu().numpy()
-            labels[k:k + images.shape[0]] = target.numpy()
-            k += len(images.shape[0])
-    return embeddings, labels
+            #labels[k:k + images.shape[0]] = target.numpy()
+            k += images.shape[0]
+    #return embeddings, labels
+    return embeddings
 
 
-def extract_embeddings_text(dataloader, model, device, dim_features):
+def extract_embeddings_text(dataloader, model, device, dim_features=3840):
     with torch.no_grad():
         model.eval()
         embeddings = np.zeros((len(dataloader.dataset), dim_features))
-        labels = np.zeros(len(dataloader.dataset))
+        #labels = np.zeros(len(dataloader.dataset))
         k = 0
-        for captions, target in dataloader:
+        for captions, target in tqdm(dataloader):
             # if torch.cuda.is_available():
             #     NO PODEM PASSAR CAPTIONS A GPU PERQUE NO ES UN TENSOR
             embeddings[k:k + len(captions)] = model.get_embedding_text(captions).data.cpu().numpy()
-            labels[k:k + len(captions)] = target.numpy()
+            #labels[k:k + len(captions)] = target.numpy()
             k += len(captions)
-    return embeddings, labels
+    #return embeddings, labels
+    return embeddings
 
 
 
@@ -154,31 +156,24 @@ def calculate_APs_coco (results, path):
     with open(path + "/results.txt", "w") as output:
         output.write(str(results_txt))
     
-    
-    
-def positive_image(objs1, objs2):
-        
-        for obj in objs1:
-            if obj in objs2:
-                return True
-        return False
-    
-def positives_coco(neighbors, databaseDataset, queryDataset):
+  
+def positives_ImageToText(neighbors, databaseDataset, queryDataset):
+    #query is the image
     
     resultsQueries = []
     
     for i_query in tqdm(range(neighbors.shape[0])):
         resultQuery = []
         
-        queryObjs = queryDataset.getObjs(i_query)
+        queryCaptions = queryDataset.getCaptions(i_query)
         
         for i_db in range(neighbors.shape[1]):
             
             dbIndex = neighbors[i_query, i_db]
             
-            dbObjs = databaseDataset.getObjs(dbIndex)
+            caption = databaseDataset.getCaptionId(dbIndex)
             
-            if positive_image(dbObjs, queryObjs): 
+            if caption in queryCaptions: 
                 resultQuery.append(1)
             else:
                 resultQuery.append(0)
