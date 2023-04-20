@@ -14,7 +14,7 @@ from torchvision.datasets import ImageFolder
 from torchvision.models import ResNet18_Weights, ResNet50_Weights
 
 from dataset.triplet_data import TripletIm2Text
-from models.models import TripletNetIm2Text, EmbeddingNetImage, EmbeddingNetText
+from models.models import TripletNetIm2Text, EmbeddingNetImage_V2, EmbeddingNetText_V2
 from utils import losses
 from utils import metrics
 from utils import trainer
@@ -30,7 +30,7 @@ import joblib
 import os
 import functools 
 import wandb
-import umap
+
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
@@ -138,8 +138,8 @@ if __name__ == '__main__':
     weights_text = args.weights_text
         
     # Pretrained model from torchvision or from checkpoint
-    embedding_net_image = EmbeddingNetImage(weights=weights_image).to(device)
-    embedding_net_text = EmbeddingNetText(weights=weights_text, device=device).to(device)  
+    embedding_net_image = EmbeddingNetImage_V2(weights=weights_image).to(device)
+    embedding_net_text = EmbeddingNetText_V2(weights=weights_text, device=device).to(device)  
 
     model = TripletNetIm2Text(embedding_net_image, embedding_net_text).to(device)
 
@@ -171,35 +171,29 @@ if __name__ == '__main__':
 
 
     # --------------------------------- RETRIEVAL ---------------------------------
+
     knn = KNeighborsClassifier(n_neighbors=5, n_jobs=32) 
-    
-    print("Fitting KNN...")
-    start = time.time()
-    knn = knn.fit(val_embeddings_text, range(len(val_embeddings_text)))
-    end = time.time()
 
-    print("Calculating KNN...")
-    start = time.time()
-    neighbors = knn.kneighbors(val_embeddings_image, return_distance=False)
-    end = time.time()
-    print("Time to calculate KNN: ", end - start)
-    # Compute positive and negative values
-    evaluation = metrics.positives_ImageToText(neighbors, text_dataset, image_dataset)
+    all_img_features = np.vstack(val_embeddings_image)
+    all_txt_features = np.vstack(val_embeddings_text)
 
+    all_img_labels = np.arange(len(all_img_features))
+    all_txt_labels = np.arange(len(all_img_features)).repeat(
+        len(all_txt_features) // len(all_img_features)
+    )
 
-    # --------------------------------- METRICS ---------------------------------
-    metrics.calculate_APs_coco(evaluation, output_path)
+    knn = knn.fit(all_txt_features, all_txt_labels)
+    neighbors = knn.kneighbors(all_img_features, return_distance=False)
+    predictions = all_txt_labels[neighbors]
 
-    metrics.plot_PR_binary(evaluation, output_path)
+    p1 = metrics.mpk(all_img_labels, predictions, 1)
+    p5 = metrics.mpk(all_img_labels, predictions, 5)
 
 
-    # --------------------------------- PLOT ---------------------------------
-    
-    #umap
-    
-    reducer = umap.UMAP(random_state=42)
-    reducer.fit(val_embeddings_image)
-    umap_image_embeddings = reducer.transform(val_embeddings_image)
-    umap_text_embeddings = reducer.transform(val_embeddings_text)
+    print("P@1: ", p1)
+    print("P@5: ", p5)
 
-    metrics.plot_embeddings_ImageText(umap_image_embeddings, umap_text_embeddings, "UMAP Train", "Results/umap_embeddings.png")
+
+
+
+

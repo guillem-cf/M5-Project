@@ -30,13 +30,18 @@ class TripletLoss(nn.Module):
         super(TripletLoss, self).__init__()
         self.margin = margin
 
-    def forward(self, anchor, positive, negative, step, size_average=True):
-        distance_positive = (anchor - positive).pow(2).sum(1)  # .pow(.5)
-        
+    def forward(self, anchor, positive, negative, step, size_average=True, wandb=None, epoch=0, batch_idx=0):
+        distance_positive = (anchor - positive).pow(2).sum(1)  # .pow(.5) 
         distance_negative = (anchor - negative).pow(2).sum(1)  # .pow(.5)
-        if step == 0:
-            print("distance_positive =", distance_positive.mean())
-            print("distance_negative =", distance_negative.mean())
             
         losses = F.relu(distance_positive - distance_negative + self.margin)
+        
+        if step == 0 and wandb is not None:
+            distance_positive_print = distance_positive.mean()
+            distance_negative_print = distance_negative.mean()
+            print("distance_positive =", distance_positive_print)
+            print("distance_negative =", distance_negative_print)
+            wandb.log({'epoch': epoch, 'batch': batch_idx, 'positive_distance': distance_positive_print})
+            wandb.log({'epoch': epoch, 'batch': batch_idx, 'negative_distance': distance_negative_print})
+            
         return losses.mean() if size_average else losses.sum()

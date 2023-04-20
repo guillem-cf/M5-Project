@@ -133,7 +133,7 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
             target = (target,)
             loss_inputs += target
 
-        loss_outputs = loss_fn(*loss_inputs, batch_idx % log_interval)
+        loss_outputs = loss_fn(*loss_inputs, step = batch_idx % log_interval, wandb = wandb, epoch = epoch, batch_idx = batch_idx)
         loss = loss_outputs[0] if type(loss_outputs) in (tuple, list) else loss_outputs
         
         if torch.isnan(loss).any():
@@ -156,8 +156,9 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, log_interval, m
                 100. * batch_idx / len(train_loader), np.mean(losses))
             for metric in metrics:
                 message += '\t{}: {}'.format(metric.name(), metric.value())
-                
-            wandb.log({'epoch': epoch, 'batch': batch_idx, 'loss': np.mean(losses)})
+            
+            if wandb is not None: 
+                wandb.log({'epoch': epoch, 'batch': batch_idx, 'loss': np.mean(losses)})
 
             print(message)
             losses = []

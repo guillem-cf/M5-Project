@@ -32,6 +32,20 @@ def plot_embeddings(embeddings, targets, classes, title, output_path, xlim=None,
     plt.title(title)
     plt.savefig(output_path)
     plt.close()
+
+def plot_embeddings_ImageText(image_embeddings, text_embeddinfs, title, output_path, xlim=None, ylim=None):
+
+    plt.figure(figsize=(10, 10))
+    
+    plt.scatter(image_embeddings[:, 0], image_embeddings[:, 1], alpha=0.5, color='blue')
+    plt.scatter(text_embeddinfs[:, 0], text_embeddinfs[:, 1], alpha=0.5, color='pink')
+    if xlim:
+        plt.xlim(xlim[0], xlim[1])
+    if ylim:
+        plt.ylim(ylim[0], ylim[1])
+    plt.title(title)
+    plt.savefig(output_path)
+    plt.close()
     
 def plot_embeddings_coco(embeddings, target, classes, title, output_path, xlim=None, ylim=None):
     plt.figure(figsize=(10, 10))
@@ -329,3 +343,55 @@ def precisionRecall(listResults):
 
     
     return mp, mr
+
+
+def pk(actual, predicted, k=10):
+    """
+    Computes the precision at k.
+    This function computes the precision at k between the query image and a list
+    of database retrieved images.
+    Parameters
+    ----------
+    actual : int
+             The element that has to be predicted
+    predicted : list
+                A list of predicted elements (order does matter)
+    k : int, optional
+        The maximum number of predicted elements
+    Returns
+    -------
+    score : double
+            The precision at k over the input
+    """
+    if len(predicted) > k:
+        predicted = predicted[:k]
+    score = 0
+    for i in range(len(predicted)):
+        if actual == predicted[i]:
+            score += 1
+    
+    return score / len(predicted)
+
+def mpk(actual, predicted, k=10):
+    """
+    Computes the precision at k.
+    This function computes the mean precision at k between a list of query images and a list
+    of database retrieved images.
+    Parameters
+    ----------
+    actual : list
+             The query elements that have to be predicted
+    predicted : list
+                A list of predicted elements (order does matter) for each query element
+    k : int, optional
+        The maximum number of predicted elements
+    Returns
+    -------
+    score : double
+            The precision at k over the input
+    """
+    pk_list = []
+    for i in range(len(actual)):
+        score = pk(actual[i], predicted[i], k)
+        pk_list.append(score)
+    return np.mean(pk_list)
