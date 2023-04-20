@@ -104,7 +104,7 @@ class EmbeddingNetImage(nn.Module):
         for name, param in self.backbone.named_parameters():
             if 'fc' not in name:
                 param.requires_grad = False
-            print(name, param.requires_grad)
+            # print(name, param.requires_grad)
 
         # Replace the box predictor with a custom Fast R-CNN predictor
         in_features = 3840 #self.faster_rcnn.roi_heads.box_head.fc7.in_features  # 2048

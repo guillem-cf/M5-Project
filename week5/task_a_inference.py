@@ -18,6 +18,7 @@ from models.models import TripletNetIm2Text, EmbeddingNetImage, EmbeddingNetText
 from utils import losses
 from utils import metrics
 from utils import trainer
+from utils.retrieval import extract_retrieval_examples_img2text
 from utils.early_stopper import EarlyStopper
 from dataset.database import ImageDatabase, TextDatabase
 from sklearn.metrics import precision_recall_curve
@@ -55,7 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('--dim_out_fc', type=str, default='as_image', help='Dimension of the output of the fully connected layer (as_image or as_text)')
     parser.add_argument('--train', type=bool, default=True, help='Train or test')
     parser.add_argument('--weights_model', type=str,
-                        default='/ghome/group03/M5-Project/week5/Results/task_a_old/task_a_dim_out_fc_as_image_margin_100/task_a_triplet_10.pth',
+                        default='/ghome/group03/M5-Project/week5/Results/task_a_old/task_a_dim_out_fc_as_image_margin_1_lr_0.0001/task_a_triplet_10.pth',
                         help='Path to weights')
     parser.add_argument('--weights_text', type=str,
                         default='/ghome/group03/M5-Project/week5/utils/text/fasttext_wiki.en.bin',
@@ -68,6 +69,7 @@ if __name__ == '__main__':
     parser.add_argument('--gpu', type=int, default=7, help='GPU device id')
     parser.add_argument('--pretrained', type=bool, default=True, help='Use pretrained model')
     args = parser.parse_args()
+    
 
     # -------------------------------- GPU --------------------------------
     os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
@@ -125,10 +127,10 @@ if __name__ == '__main__':
     # ------------------------------- DATALOADER --------------------------------
 
 
-    image_loader = DataLoader(image_dataset, batch_size=args.batch_size, shuffle=False,
+    image_loader = DataLoader(image_dataset, batch_size=128, shuffle=False,
                                     pin_memory=True, num_workers=10)
 
-    text_loader = DataLoader(text_dataset, batch_size=args.batch_size, shuffle=False,
+    text_loader = DataLoader(text_dataset, batch_size=128, shuffle=False,
                                 pin_memory=True, num_workers=10)
 
 
@@ -146,11 +148,17 @@ if __name__ == '__main__':
     model.load_state_dict(torch.load(args.weights_model, map_location=device))
 
 
+
     # --------------------------------- INFERENCE --------------------------------
+    
+    if args.dim_out_fc == 'as_image':
+        dim_features = 3840
+    elif args.dim_out_fc == 'as_text':
+        dim_features = 1000
 
     print("Calculating image val database embeddings...")
     start = time.time()
-    val_embeddings_image = metrics.extract_embeddings_image(image_loader, model, device) # dim_features = 300)
+    val_embeddings_image, labels_image = metrics.extract_embeddings_image(image_loader, model, device, dim_features = dim_features) # dim_features = 300)
     end = time.time()
     print("Time to calculate image val database embeddings: ", end - start)
 
@@ -161,7 +169,7 @@ if __name__ == '__main__':
 
     print("Calculating text val database embeddings...")
     start = time.time()
-    val_embeddings_text = metrics.extract_embeddings_text(text_loader, model, device) # dim_features = 300)
+    val_embeddings_text, labels_text = metrics.extract_embeddings_text(text_loader, model, device, dim_features = dim_features) # dim_features = 300)
     end = time.time()
     print("Time to calculate text val database embeddings: ", end - start)
 
@@ -175,7 +183,8 @@ if __name__ == '__main__':
     
     print("Fitting KNN...")
     start = time.time()
-    knn = knn.fit(val_embeddings_text, range(len(val_embeddings_text)))
+    # knn = knn.fit(val_embeddings_text, range(len(val_embeddings_text)))
+    knn = knn.fit(val_embeddings_text, labels_text)
     end = time.time()
 
     print("Calculating KNN...")
@@ -183,8 +192,12 @@ if __name__ == '__main__':
     neighbors = knn.kneighbors(val_embeddings_image, return_distance=False)
     end = time.time()
     print("Time to calculate KNN: ", end - start)
+    
+    # Map the indices of the neighbors matrix to their corresponding 'id' values
+    id_neighbors_matrix = np.vectorize(lambda i: labels_text[i])(neighbors)
+    
     # Compute positive and negative values
-    evaluation = metrics.positives_ImageToText(neighbors, text_dataset, image_dataset)
+    evaluation = metrics.positives_ImageToText(neighbors, id_neighbors_matrix, text_dataset, image_dataset)
 
 
     # --------------------------------- METRICS ---------------------------------
@@ -195,11 +208,13 @@ if __name__ == '__main__':
 
     # --------------------------------- PLOT ---------------------------------
     
+    extract_retrieval_examples_img2text(neighbors, id_neighbors_matrix, databaseDataset=text_dataset, queryDataset=image_dataset, output_path=output_path)
+    
     #umap
     
-    reducer = umap.UMAP(random_state=42)
-    reducer.fit(val_embeddings_image)
-    umap_image_embeddings = reducer.transform(val_embeddings_image)
-    umap_text_embeddings = reducer.transform(val_embeddings_text)
+    # reducer = umap.UMAP(random_state=42)
+    # reducer.fit(val_embeddings_image)
+    # umap_image_embeddings = reducer.transform(val_embeddings_image)
+    # umap_text_embeddings = reducer.transform(val_embeddings_text)
 
-    metrics.plot_embeddings_ImageText(umap_image_embeddings, umap_text_embeddings, "UMAP Train", "Results/umap_embeddings.png")
+    # metrics.plot_embeddings_ImageText(umap_image_embeddings, umap_text_embeddings, "UMAP Train", "Results/umap_embeddings.png")

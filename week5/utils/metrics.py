@@ -71,32 +71,32 @@ def extract_embeddings_image(dataloader, model, device, dim_features = 3840):
     with torch.no_grad():
         model.eval()
         embeddings = np.zeros((len(dataloader.dataset), dim_features))
-        #labels = np.zeros(len(dataloader.dataset))
+        labels = np.zeros(len(dataloader.dataset))
         k = 0
         for images, target in tqdm(dataloader):
             if torch.cuda.is_available():
                 images = images.to(device)
             embeddings[k:k + images.shape[0]] = model.get_embedding_image(images).data.cpu().numpy()
-            #labels[k:k + images.shape[0]] = target.numpy()
+            labels[k:k + images.shape[0]] = target.numpy()
             k += images.shape[0]
-    #return embeddings, labels
-    return embeddings
+    return embeddings, labels
+    # return embeddings
 
 
 def extract_embeddings_text(dataloader, model, device, dim_features=3840):
     with torch.no_grad():
         model.eval()
         embeddings = np.zeros((len(dataloader.dataset), dim_features))
-        #labels = np.zeros(len(dataloader.dataset))
+        labels = np.zeros(len(dataloader.dataset))
         k = 0
         for captions, target in tqdm(dataloader):
             # if torch.cuda.is_available():
             #     NO PODEM PASSAR CAPTIONS A GPU PERQUE NO ES UN TENSOR
             embeddings[k:k + len(captions)] = model.get_embedding_text(captions).data.cpu().numpy()
-            #labels[k:k + len(captions)] = target.numpy()
+            labels[k:k + len(captions)] = target.numpy()
             k += len(captions)
-    #return embeddings, labels
-    return embeddings
+    return embeddings, labels
+    # return embeddings
 
 
 def plot_PR_multiclass (classes, labels, y_score_knn,path):
@@ -168,8 +168,43 @@ def calculate_APs_coco (results, path):
     with open(path + "/results.txt", "w") as output:
         output.write(str(results_txt))
     
-  
-def positives_ImageToText(neighbors, databaseDataset, queryDataset):
+def positives_ImageToText(neighbors_index, neighbors_id, databaseDataset, queryDataset):
+    #query is the image
+    
+    resultsQueries = []
+    
+    for i_query in tqdm(range(neighbors_id.shape[0])):
+        resultQuery = []
+        
+        # Això esta bé, torna les captions correctament de cada imatge del dataset
+        queryCaptions = queryDataset.getCaptionsId_fromImageIdx(i_query)
+        
+        # image, image_id = queryDataset[i_query]
+        
+        # captions_strings = [databaseDataset[databaseDataset.getCaptionIdx_fromId(capt)] for capt in queryCaptions]
+        
+        for i_db in range(neighbors_id.shape[1]):
+            
+            caption_id = neighbors_id[i_query, i_db]
+            # caption_idx = neighbors_index[i_query, i_db]
+            
+            # caption, caption_id_prova = databaseDataset[caption_idx]
+            
+            # imageDB_id = databaseDataset.getImageId_fromCaptionIdx(caption_idx)[0]
+            # imageDB_idx = queryDataset.getImageIdx_fromId(imageDB_id)
+            
+            # imageDB, imageDB_id = queryDataset[imageDB_idx]
+            
+            if caption_id in queryCaptions: 
+                resultQuery.append(1)
+            else:
+                resultQuery.append(0)
+        
+        resultsQueries.append(resultQuery)
+    
+    return np.array(resultsQueries)
+
+def positives_ImageToText_old(neighbors, databaseDataset, queryDataset):
     #query is the image
     
     resultsQueries = []

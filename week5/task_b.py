@@ -16,6 +16,7 @@ from models.models import TripletNetText2Img, EmbeddingNetImage, EmbeddingNetTex
 from utils import losses
 from utils import metrics
 from utils import trainer
+from utils import test
 from utils.early_stopper import EarlyStopper
 from sklearn.metrics import precision_recall_curve
 
@@ -35,8 +36,8 @@ from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, Faster
 
 
 from utils import losses
-from utils import trainer
 from utils.early_stopper import EarlyStopper
+
 
 
 
@@ -77,7 +78,7 @@ def train(args):
     dataset_path = '/ghome/group03/mcv/datasets/COCO'
     # dataset_path = '../../datasets/COCO'
 
-    output_path = os.path.join(env_path, 'Results/task_b', name)
+    output_path = os.path.join(env_path, 'results/task_b', name)
 
 
     # Create output path if it does not exist
@@ -152,6 +153,10 @@ def train(args):
 
     trainer.fit(triplet_train_loader, triplet_test_loader, model, loss_func, optimizer, lr_scheduler, num_epochs,
                 device, log_interval, output_path, name='txt2img', wandb = wandb)
+    
+    test(args, wandb=wandb)
+    
+    
 
 
 

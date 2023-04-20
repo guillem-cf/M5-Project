@@ -16,6 +16,7 @@ from models.models import TripletNetIm2Text, EmbeddingNetImage, EmbeddingNetText
 from utils import losses
 from utils import metrics
 from utils import trainer
+from utils import test
 from utils.early_stopper import EarlyStopper
 from sklearn.metrics import precision_recall_curve
 
@@ -77,7 +78,7 @@ def train(args):
     dataset_path = '/ghome/group03/mcv/datasets/COCO'
     # dataset_path = '../../datasets/COCO'
 
-    output_path = os.path.join(env_path, 'Results/task_a', name)
+    output_path = os.path.join(env_path, 'results/task_a', name)
 
 
     # Create output path if it does not exist
@@ -154,7 +155,7 @@ def train(args):
                 device, log_interval, output_path, name='img2txt', wandb = wandb)
 
 
-
+    test.test(args, wandb=wandb)
 
 
 
