@@ -56,7 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('--dim_out_fc', type=str, default='as_image', help='Dimension of the output of the fully connected layer (as_image or as_text)')
     parser.add_argument('--train', type=bool, default=True, help='Train or test')
     parser.add_argument('--weights_model', type=str,
-                        default='/ghome/group03/M5-Project/week5/Results/task_a_old/task_a_dim_out_fc_as_image_margin_1_lr_0.0001/task_a_triplet_10.pth',
+                        default='/ghome/group03/M5-Project/week5/Results/task_a/task_a_dim_out_fc_as_image_margin_10_lr_0.0001/task_a_triplet_10.pth',
                         help='Path to weights')
     parser.add_argument('--weights_text', type=str,
                         default='/ghome/group03/M5-Project/week5/utils/text/fasttext_wiki.en.bin',
