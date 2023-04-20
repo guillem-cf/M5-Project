@@ -38,7 +38,7 @@ class EmbeddingNetImage(nn.Module):
             # Define the fully connected layers for embedding
             self.fc = nn.Linear(in_features, in_features)
         elif dim_out_fc == 'as_text':
-            self.fc = nn.Linear(in_features, 300)
+            self.fc = nn.Linear(in_features, 1000)
             
 
     def forward(self, x):
@@ -69,7 +69,7 @@ class EmbeddingNetText(nn.Module):
         if dim_out_fc == 'as_image':
             self.fc = nn.Linear(300, 3840)
         elif dim_out_fc == 'as_text':
-            self.fc = nn.Linear(300, 300)
+            self.fc = nn.Linear(300, 1000)
 
     def forward(self, x):
         if self.type_textnet == 'FastText':

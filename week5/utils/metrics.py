@@ -14,6 +14,7 @@ from sklearn.metrics import RocCurveDisplay, PrecisionRecallDisplay
 from sklearn.multiclass import OneVsRestClassifier
 import seaborn as sns
 import cv2
+from joblib import Parallel, delayed
 
     
 
@@ -82,9 +83,6 @@ def extract_embeddings_text(dataloader, model, device, dim_features=3840):
             k += len(captions)
     #return embeddings, labels
     return embeddings
-
-
-
 
 
 def plot_PR_multiclass (classes, labels, y_score_knn,path):

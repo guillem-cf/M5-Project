@@ -51,11 +51,13 @@ def train(args):
     print('Margin: ', args.margin)
     print('Dim out fc: ', args.dim_out_fc)
 
-    name = 'task_a' + '_dim_out_fc_' + args.dim_out_fc + '_margin_' + str(args.margin)
+    name = 'task_b' + '_dim_out_fc_' + args.dim_out_fc + '_margin_' + str(args.margin)
+    
+    
     
     # -------------------------------- GPU --------------------------------
-    #os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-    #os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 
     if torch.cuda.is_available():
         print("CUDA is available")
@@ -75,7 +77,7 @@ def train(args):
     dataset_path = '/ghome/group03/mcv/datasets/COCO'
     # dataset_path = '../../datasets/COCO'
 
-    output_path = os.path.join(env_path, 'Results/task_a', name)
+    output_path = os.path.join(env_path, 'Results/task_b', name)
 
 
     # Create output path if it does not exist
@@ -85,10 +87,10 @@ def train(args):
 
     # ------------------------------- DATASET --------------------------------
     train_path = os.path.join(dataset_path, 'train2014')
-    val_path = os.path.join(dataset_path, 'val2014')
+    # val_path = os.path.join(dataset_path, 'val2014')
 
     train_annot_path = os.path.join(dataset_path, 'captions_train2014.json')
-    val_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
+    # val_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
 
 
     transform = torch.nn.Sequential(
@@ -97,7 +99,7 @@ def train(args):
             )
 
 
-    triplet_train_dataset = TripletIm2Text(train_annot_path, train_path, transform=transform)
+    triplet_train_dataset = TripletText2Im(train_annot_path, train_path, transform=transform)
     # triplet_test_dataset = TripletIm2Text(val_annot_path, val_path, transform=transform)
 
     # ------------------------------- DATALOADER --------------------------------
@@ -108,7 +110,7 @@ def train(args):
 
     # triplet_test_loader = DataLoader(triplet_test_dataset, batch_size=args.batch_size, shuffle=True,
     #                                 pin_memory=True, num_workers=10)
-    triplet_test_loader= None
+    triplet_test_loader = None
 
     # ------------------------------- MODEL --------------------------------
     num_epochs = args.num_epochs
@@ -118,10 +120,10 @@ def train(args):
     weights_text = args.weights_text
         
     # Pretrained model from torchvision or from checkpoint
-    embedding_net_image = EmbeddingNetImage(weights=weights_image).to(device)
-    embedding_net_text = EmbeddingNetText(weights=weights_text, device=device).to(device)
+    embedding_net_image = EmbeddingNetImage(weights=weights_image,  dim_out_fc = args.dim_out_fc).to(device)
+    embedding_net_text = EmbeddingNetText(weights=weights_text, device=device,  dim_out_fc = args.dim_out_fc).to(device)
 
-    model = TripletNetIm2Text(embedding_net_image, embedding_net_text).to(device)
+    model = TripletNetText2Img(embedding_net_image, embedding_net_text).to(device)
 
     # Set all parameters to be trainable
     for param in model.parameters():
@@ -143,8 +145,8 @@ def train(args):
 
     # Learning rate scheduler
     # lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
-    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=8, gamma=0.1, last_epoch=-1)
-    lr_scheduler = None
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1, last_epoch=-1)
+    # lr_scheduler = None
 
     log_interval = 10
 
@@ -169,23 +171,25 @@ if __name__ == '__main__':
     parser.add_argument('--weights_text', type=str,
                         default='/ghome/group03/M5-Project/week5/utils/text/fasttext_wiki.en.bin',
                         help='Path to weights of text model')
-    parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=10, help='Number of epochs')
     parser.add_argument('--learning_rate', type=float, default=1e-5, help='Learning rate')
     parser.add_argument('--margin', type=float, default=1, help='Margin for triplet loss')
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
-    parser.add_argument('--gpu', type=int, default=7, help='GPU device id')
+    parser.add_argument('--gpu', type=int, default=5, help='GPU device id')
     args = parser.parse_args()
     
     sweep_config = {
-        'name': 'task_a_margin_sweep',
+        'name': 'task_b_margin_sweep',
         'method': 'grid',
         'parameters':{
             'margin': {
-                'values': [1, 10, 50, 100]
+                'values': [10, 50, 100]
+                # 'value': 1
             },
             'dim_out_fc': {
                 'values': ['as_image', 'as_text']
+                # 'value': 'as_image'
             }
         }
     }
@@ -194,3 +198,6 @@ if __name__ == '__main__':
     sweep_id = wandb.sweep(sweep=sweep_config, project="m5-w5", entity="grup7")
     
     wandb.agent(sweep_id, function=functools.partial(train, args))
+    
+    # train(args)
+    

@@ -55,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('--dim_out_fc', type=str, default='as_image', help='Dimension of the output of the fully connected layer (as_image or as_text)')
     parser.add_argument('--train', type=bool, default=True, help='Train or test')
     parser.add_argument('--weights_model', type=str,
-                        default='/ghome/group03/M5-Project/week5/Results/task_a/task_a_dim_out_fc_as_image_margin_100/task_a_triplet_10.pth',
+                        default='/ghome/group03/M5-Project/week5/Results/task_a_old/task_a_dim_out_fc_as_image_margin_100/task_a_triplet_10.pth',
                         help='Path to weights')
     parser.add_argument('--weights_text', type=str,
                         default='/ghome/group03/M5-Project/week5/utils/text/fasttext_wiki.en.bin',
@@ -72,7 +72,12 @@ if __name__ == '__main__':
     # -------------------------------- GPU --------------------------------
     os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
-    os.environ['OPENBLAS_NUM_THREADS'] = '16'
+    """
+    os.environ['OPENBLAS_NUM_THREADS'] = '32'
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["MKL_NUM_THREADS"] = "1"
+    os.environ["NUMEXPR_NUM_THREADS"] = "1
+    """
 
     if torch.cuda.is_available():
         print("CUDA is available")
@@ -145,7 +150,7 @@ if __name__ == '__main__':
 
     print("Calculating image val database embeddings...")
     start = time.time()
-    val_embeddings_image = metrics.extract_embeddings_image(image_loader, model, device)
+    val_embeddings_image = metrics.extract_embeddings_image(image_loader, model, device) # dim_features = 300)
     end = time.time()
     print("Time to calculate image val database embeddings: ", end - start)
 
@@ -156,7 +161,7 @@ if __name__ == '__main__':
 
     print("Calculating text val database embeddings...")
     start = time.time()
-    val_embeddings_text = metrics.extract_embeddings_text(text_loader, model, device)
+    val_embeddings_text = metrics.extract_embeddings_text(text_loader, model, device) # dim_features = 300)
     end = time.time()
     print("Time to calculate text val database embeddings: ", end - start)
 
@@ -166,7 +171,7 @@ if __name__ == '__main__':
 
 
     # --------------------------------- RETRIEVAL ---------------------------------
-    knn = KNeighborsClassifier(n_neighbors=5, n_jobs=16) 
+    knn = KNeighborsClassifier(n_neighbors=5, n_jobs=32) 
     
     print("Fitting KNN...")
     start = time.time()

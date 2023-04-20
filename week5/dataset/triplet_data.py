@@ -90,13 +90,23 @@ class TripletText2Im(Dataset):
         for i in range(len(self.annotations_an)):
             img_id = self.annotations_an[i]['image_id']
             if img_id not in self.img2ann:
-                self.img2ann[img_id] = [self.annotations[i]['caption_id']]
+                self.img2ann[img_id] = [self.annotations_an[i]['id']]
             else:
-                self.img2ann[img_id].append(self.annotations[i]['caption_id']) 
+                self.img2ann[img_id].append(self.annotations_an[i]['id']) 
+        
+        self.img2idx = {}
+        # Also add in this dictionary the index of the image in self.images
+        for i in range(len(self.images)):
+            img_id = self.images[i]['id']
+            if img_id not in self.img2idx:
+                self.img2idx[img_id] = [i]
+            else:
+                print('Image repeated')
+                self.img2idx[img_id].append(i)
            
         
     def __len__(self):
-        return len(self.images)
+        return len(self.annotations_an)
 
     def __getitem__(self, index):
         caption_id = self.annotations_an[index]['id']
@@ -104,7 +114,8 @@ class TripletText2Im(Dataset):
         
         # Positive image
         pos_img_id = self.annotations_an[index]['image_id']
-        img_path = self.img_dir + '/' + self.images[pos_img_id]['file_name']
+        pos_img_idx = self.img2idx[pos_img_id][0]
+        img_path = self.img_dir + '/' + self.images[pos_img_idx]['file_name']
         positive_image = Image.open(img_path).convert('RGB')
         
         # Negative image
@@ -114,8 +125,9 @@ class TripletText2Im(Dataset):
             neg_img_id = neg_img['id']
             if caption_id in self.img2ann[neg_img_id]:
                 continue
-    
-        neg_img_path = self.img_dir + '/' + self.images[neg_img_id]['file_name']
+            
+        neg_img_idx = self.img2idx[neg_img_id][0]
+        neg_img_path = self.img_dir + '/' + self.images[neg_img_idx]['file_name']
         negative_image = Image.open(neg_img_path).convert('RGB')
         
         if self.transform is not None:

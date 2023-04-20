@@ -85,10 +85,10 @@ def train(args):
 
     # ------------------------------- DATASET --------------------------------
     train_path = os.path.join(dataset_path, 'train2014')
-    val_path = os.path.join(dataset_path, 'val2014')
+    # val_path = os.path.join(dataset_path, 'val2014')
 
     train_annot_path = os.path.join(dataset_path, 'captions_train2014.json')
-    val_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
+    # val_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
 
 
     transform = torch.nn.Sequential(
@@ -118,8 +118,8 @@ def train(args):
     weights_text = args.weights_text
         
     # Pretrained model from torchvision or from checkpoint
-    embedding_net_image = EmbeddingNetImage(weights=weights_image).to(device)
-    embedding_net_text = EmbeddingNetText(weights=weights_text, device=device).to(device)
+    embedding_net_image = EmbeddingNetImage(weights=weights_image,  dim_out_fc = args.dim_out_fc).to(device)
+    embedding_net_text = EmbeddingNetText(weights=weights_text, device=device,  dim_out_fc = args.dim_out_fc).to(device)
 
     model = TripletNetIm2Text(embedding_net_image, embedding_net_text).to(device)
 
