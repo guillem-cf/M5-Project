@@ -231,7 +231,7 @@ if __name__ == '__main__':
  
     # Training
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
-    parser.add_argument('--num_epochs', type=int, default=2, help='Number of epochs')  # TORNAR A POSAR 10
+    parser.add_argument('--num_epochs', type=int, default=1, help='Number of epochs')  # TORNAR A POSAR 10
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--margin', type=float, default=0.1, help='Margin for triplet loss')

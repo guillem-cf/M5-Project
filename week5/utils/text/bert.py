@@ -54,7 +54,7 @@ for annotation in tqdm(data["annotations"]):
     inputs = tokenizer(caption, return_tensors='pt').to(device)
     outputs = model(**inputs)
 
-    logits = outputs.last_hidden_state[0, 0, :].to(device).squeeze().detach().numpy()
+    logits = outputs.last_hidden_state[0, 0, :].to("cpu").squeeze().detach().numpy()
 
     output_annotations.append({
         'caption': caption,
