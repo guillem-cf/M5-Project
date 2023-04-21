@@ -174,7 +174,6 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, idx_to_device, 
             print(message)
             losses = []
             
-            break
             
 
     # total_loss /= (batch_idx + 1)

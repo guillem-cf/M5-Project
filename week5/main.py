@@ -30,6 +30,8 @@ def train(args):
         args.margin = wandb.config.margin
         args.dim_out_fc = wandb.config.dim_out_fc
         args.learning_rate = wandb.config.lr
+        args.network_image = wandb.config.network_image
+        args.network_text = wandb.config.network_text
     else:
         print('No wandb sweep...')
         wandb=None
@@ -222,7 +224,7 @@ if __name__ == '__main__':
     # ------------------------------- ARGS ---------------------------------
     parser = argparse.ArgumentParser(description='Week 5 main script')
     parser.add_argument('--task', type=str, default='task_a', help='task_a --> img2txt // task_b --> txt2img') 
-    parser.add_argument('--train', type=bool, default=True, help='Train or test')
+    parser.add_argument('--train', type=bool, default=False, help='Train or test')
     parser.add_argument('--sweep', type=bool, default=False, help='Sweep in wandb or not')
     
     # Device
@@ -245,7 +247,7 @@ if __name__ == '__main__':
  
     # Training
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')       # TORNAR A POSAR 64
-    parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs')  # TORNAR A POSAR 10
+    parser.add_argument('--num_epochs', type=int, default=10, help='Number of epochs')  # TORNAR A POSAR 10
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--margin', type=float, default=0.1, help='Margin for triplet loss')
@@ -259,12 +261,18 @@ if __name__ == '__main__':
             'method': 'grid',
             'parameters':{
                 'margin': {
-                    'values': [0.001, 1, 10]
+                    'values': [0.01, 0.1, 1, 10]
                     # 'value': 1
                 },
                 'dim_out_fc': {
                     # 'values': [2048, 1000]
                     'value': 2048
+                },
+                'network_text': {
+                    'values': ['FastText', 'BERT']
+                },
+                'network_image': {
+                    'values': ['RESNET50', 'fasterRCNN']
                 },
                 'lr': {
                     'value': 1e-4

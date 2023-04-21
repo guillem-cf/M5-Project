@@ -1,6 +1,0 @@
-Query Caption: Office space with office equipment on desk top. 
-neighbor_0 Image: Office space with office equipment on desk top.
-neighbor_1 Image: Office space with office equipment on desk top.
-neighbor_2 Image: Office space with office equipment on desk top.
-neighbor_3 Image: Office space with office equipment on desk top.
-neighbor_4 Image: Office space with office equipment on desk top.

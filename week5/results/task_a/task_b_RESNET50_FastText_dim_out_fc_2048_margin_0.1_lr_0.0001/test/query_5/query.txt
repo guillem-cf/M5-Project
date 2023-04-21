@@ -1,6 +1,0 @@
-Query Caption: A close-up picture of a toilet with a fountain. 
-neighbor_0 Image: A close-up picture of a toilet with a fountain.
-neighbor_1 Image: A close-up picture of a toilet with a fountain.
-neighbor_2 Image: A close-up picture of a toilet with a fountain.
-neighbor_3 Image: A close-up picture of a toilet with a fountain.
-neighbor_4 Image: A close-up picture of a toilet with a fountain.

@@ -1,6 +1,0 @@
-Query Caption: A tan toilet and sink combination in a small room. 
-neighbor_0 Image: A tan toilet and sink combination in a small room.
-neighbor_1 Image: A tan toilet and sink combination in a small room.
-neighbor_2 Image: A tan toilet and sink combination in a small room.
-neighbor_3 Image: A tan toilet and sink combination in a small room.
-neighbor_4 Image: A tan toilet and sink combination in a small room.

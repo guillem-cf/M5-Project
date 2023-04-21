@@ -1,6 +1,0 @@
-Query Caption: This is an advanced toilet with a sink and control panel. 
-neighbor_0 Image: This is an advanced toilet with a sink and control panel.
-neighbor_1 Image: This is an advanced toilet with a sink and control panel.
-neighbor_2 Image: This is an advanced toilet with a sink and control panel.
-neighbor_3 Image: This is an advanced toilet with a sink and control panel.
-neighbor_4 Image: This is an advanced toilet with a sink and control panel.
