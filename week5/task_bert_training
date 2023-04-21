@@ -7,5 +7,5 @@
 #SBATCH -e %x_%u_%j.err # File to which STDERR will be written
 eval "$(conda shell.bash hook)"
 conda activate m5
-# commanda terminal --> sbatch --gres gpu:1 -n 10 task_c
-python -u task_a.py
+# commanda terminal --> sbatch --gres gpu:1 -n 10 task_bert_training
+python -u main.py --network_text BERT
