@@ -121,7 +121,7 @@ class TextDatabase(Dataset):
         caption_id = self.annotations_an[index]['id']
         
         if self.network_text == 'BERT':
-            embedding = torch.tensor(self.embeddings[index]['embedding'])
+            embedding = torch.tensor(self.embeddings[index]['caption'])
             assert self.embeddings[index]['id'] == caption_id
             
             return embedding, caption_id
