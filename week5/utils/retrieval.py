@@ -3,9 +3,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def extract_retrieval_examples_img2text(neighbors_index, neighbors_id, databaseDataset, queryDataset, output_path):
+def extract_retrieval_examples_img2text(neighbors_index, neighbors_id, databaseDataset, queryDataset, output_path, distances):
     
     query_list = [0, 1, 2, 3, 4, 5]
+
+    images = []
+    captions = []
     
     for query in query_list:
         path = os.path.join(output_path, f'query_{query}')
@@ -19,6 +22,8 @@ def extract_retrieval_examples_img2text(neighbors_index, neighbors_id, databaseD
         img = np.array(img).transpose(1,2,0)
         plt.imshow(img)
         plt.savefig(os.path.join(path, 'query.png'))
+
+        images.append(img)
         
         # Get Captions
         captionIds = queryDataset.getCaptionsId_fromImageIdx(query)
@@ -32,6 +37,8 @@ def extract_retrieval_examples_img2text(neighbors_index, neighbors_id, databaseD
                 f.write(capt[0])
                 f.write(" \n")
         
+        img_captions = []
+
         # Get 5 most close strings
         for i in range(5):
             print(i, ". closest caption:")
@@ -43,7 +50,9 @@ def extract_retrieval_examples_img2text(neighbors_index, neighbors_id, databaseD
             caption, caption_id = databaseDataset[neighbor_idx]
             assert caption_id == neighbor_id
             
-            print("Caption: ", caption)
+            print("Caption (at distance " + str(round(distances[query, i], 4)) + "):", caption)
+
+            img_captions.append(caption)
             
             imageDB_id = databaseDataset.getImageId_fromCaptionIdx(neighbor_idx)[0]
             imageDB_idx = queryDataset.getImageIdx_fromId(imageDB_id)
@@ -53,7 +62,33 @@ def extract_retrieval_examples_img2text(neighbors_index, neighbors_id, databaseD
             plt.savefig(os.path.join(path, f'neighbor_{i}.png'))
             
             with open(os.path.join(path, 'query.txt'), 'a') as f:
-                f.write(f'neighbor_{i} Caption: {caption}\n')
+                f.write(f'neighbor_{i} Caption (at distance {str(round(distances[query, i], 4))}): {caption}\n')
+
+        captions.append(img_captions)
+
+    plot_retrieval(images, captions, output_path)
+
+
+def plot_retrieval(images, captions, output_path, num_queries=3, num_retrievals=5):
+
+    title = "First test query images and their retrieved captions\n"
+
+    fig, ax = plt.subplots(num_queries, 2, figsize=(20, 10), dpi=200)
+    fig.suptitle(title)
+    for i in range(0, num_queries):
+        ax[i][0].imshow(images[i])
+        ax[i][0].set_xticks([])
+        ax[i][0].set_yticks([])
+        ax[i][0].set_title("Query image")
+        ax[i][1].set_title("Retrieved captions")
+        for j in range(0, num_retrievals):
+            ax[i][1].text(0.05, 0.9-j*0.2, "- " + captions[i][j], horizontalalignment='left',
+                         verticalalignment='center', fontsize=7, transform=ax[i][1].transAxes)
+            ax[i][1].set_xticks([])
+            ax[i][1].set_yticks([])
+    fig.tight_layout()
+    plt.savefig(output_path + "/RetrievalQualitativeResults.png")
+    plt.close()
                
 
 

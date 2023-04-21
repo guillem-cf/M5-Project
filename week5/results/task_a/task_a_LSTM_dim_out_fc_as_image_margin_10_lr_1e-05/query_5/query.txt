@@ -1,0 +1,10 @@
+Query Captions: A black and white image of a man in a suit wearing glasses walking through a door. 
+A nicely dressed man in a door way. 
+A man in glasses walks through an open door.  
+ A man smiling and walking through a doorway. 
+A black and white photo of a man in suit and tie. 
+neighbor_0 Caption (at distance 129.617): a man wearing a colorful suit smiling at the camera
+neighbor_1 Caption (at distance 129.6182): A man in underwear using a bathroom mirror.
+neighbor_2 Caption (at distance 129.6197): A guy wearing a paper tie takes a selfie. 
+neighbor_3 Caption (at distance 129.6219): A man wearing a purple hoodie urinating in a dirty restroom. 
+neighbor_4 Caption (at distance 129.6257): A man standing in a bathroom in his underwear.

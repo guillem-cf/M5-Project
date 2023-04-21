@@ -14,7 +14,8 @@ from torchvision.datasets import ImageFolder
 from torchvision.models import ResNet18_Weights, ResNet50_Weights
 
 from dataset.triplet_data import TripletIm2Text
-from models.models import TripletNetIm2Text, EmbeddingNetImage, EmbeddingNetText
+from models.models import TripletNetIm2Text #, EmbeddingNetImage, EmbeddingNetText
+from models.resnet import EmbeddingNetImage, EmbeddingNetText
 from utils import losses
 from utils import metrics
 from utils import trainer
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--dim_out_fc', type=str, default='as_image', help='Dimension of the output of the fully connected layer (as_image or as_text)')
     parser.add_argument('--train', type=bool, default=True, help='Train or test')
     parser.add_argument('--weights_model', type=str,
-                        default='/ghome/group03/M5-Project/week5/Results/task_a/task_a_dim_out_fc_as_image_margin_10_lr_0.0001/task_a_triplet_10.pth',
+                        default='/ghome/group03/M5-Project/week5/results/task_a/task_aRESNET_dim_out_fc_as_image_margin_0.1_lr_0.0001/task_a_triplet_10.pth',
                         help='Path to weights')
     parser.add_argument('--weights_text', type=str,
                         default='/ghome/group03/M5-Project/week5/utils/text/fasttext_wiki.en.bin',
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     dataset_path = '/ghome/group03/mcv/datasets/COCO'
     # dataset_path = '../../datasets/COCO'
 
-    output_path = os.path.dirname(args.weights_model)
+    output_path = os.path.join(os.path.dirname(args.weights_model),'test')
 
 
     # Create output path if it does not exist
@@ -121,8 +122,10 @@ if __name__ == '__main__':
             )
 
 
-    image_dataset = ImageDatabase(val_annot_path, val_path, transform=transform)
-    text_dataset = TextDatabase(val_annot_path, val_path, transform=transform)
+    # image_dataset = ImageDatabase(val_annot_path, val_path, transform=transform)
+    # text_dataset = TextDatabase(val_annot_path, val_path, transform=transform)
+    image_dataset = ImageDatabase(train_annot_path, train_path, num_samples=1000, transform=transform)
+    text_dataset = TextDatabase(train_annot_path, train_path, num_samples = 1000, transform=transform)
 
     # ------------------------------- DATALOADER --------------------------------
 
@@ -152,7 +155,7 @@ if __name__ == '__main__':
     # --------------------------------- INFERENCE --------------------------------
     
     if args.dim_out_fc == 'as_image':
-        dim_features = 3840
+        dim_features = 2048
     elif args.dim_out_fc == 'as_text':
         dim_features = 1000
 
@@ -189,7 +192,7 @@ if __name__ == '__main__':
 
     print("Calculating KNN...")
     start = time.time()
-    neighbors = knn.kneighbors(val_embeddings_image, return_distance=False)
+    distances, neighbors = knn.kneighbors(val_embeddings_image, return_distance=True)
     end = time.time()
     print("Time to calculate KNN: ", end - start)
     
@@ -200,6 +203,7 @@ if __name__ == '__main__':
     evaluation = metrics.positives_ImageToText(neighbors, id_neighbors_matrix, text_dataset, image_dataset)
 
 
+    output_path = os.path.join(output_path, 'test')
     # --------------------------------- METRICS ---------------------------------
     metrics.calculate_APs_coco(evaluation, output_path)
 
@@ -208,13 +212,13 @@ if __name__ == '__main__':
 
     # --------------------------------- PLOT ---------------------------------
     
-    extract_retrieval_examples_img2text(neighbors, id_neighbors_matrix, databaseDataset=text_dataset, queryDataset=image_dataset, output_path=output_path)
+    extract_retrieval_examples_img2text(neighbors, id_neighbors_matrix, databaseDataset=text_dataset, queryDataset=image_dataset, output_path=output_path, distances=distances)
     
     #umap
     
-    # reducer = umap.UMAP(random_state=42)
-    # reducer.fit(val_embeddings_image)
-    # umap_image_embeddings = reducer.transform(val_embeddings_image)
-    # umap_text_embeddings = reducer.transform(val_embeddings_text)
+    reducer = umap.UMAP(random_state=42)
+    reducer.fit(val_embeddings_image)
+    umap_image_embeddings = reducer.transform(val_embeddings_image)
+    umap_text_embeddings = reducer.transform(val_embeddings_text)
 
-    # metrics.plot_embeddings_ImageText(umap_image_embeddings, umap_text_embeddings, "UMAP Train", "Results/umap_embeddings.png")
+    metrics.plot_embeddings_ImageText(umap_image_embeddings, umap_text_embeddings, "UMAP Train", "Results/umap_embeddings.png")

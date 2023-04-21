@@ -36,12 +36,14 @@ class TripletLoss(nn.Module):
             
         losses = F.relu(distance_positive - distance_negative + self.margin)
         
-        if step == 0 and wandb is not None:
+        if step == 0:
             distance_positive_print = distance_positive.mean()
             distance_negative_print = distance_negative.mean()
-            print("distance_positive =", distance_positive_print)
-            print("distance_negative =", distance_negative_print)
-            wandb.log({'epoch': epoch, 'batch': batch_idx, 'positive_distance': distance_positive_print})
-            wandb.log({'epoch': epoch, 'batch': batch_idx, 'negative_distance': distance_negative_print})
+            print("distance_positive =", distance_positive_print.item())
+            print("distance_negative =", distance_negative_print.item())
+            print("distance pos-neg  =", (positive-negative).pow(2).sum(1).mean().item())
+            if wandb is not None:
+                wandb.log({'epoch': epoch, 'batch': batch_idx, 'positive_distance': distance_positive_print})
+                wandb.log({'epoch': epoch, 'batch': batch_idx, 'negative_distance': distance_negative_print})
             
         return losses.mean() if size_average else losses.sum()

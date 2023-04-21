@@ -1,37 +1,13 @@
 import os
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import average_precision_score, precision_recall_curve,accuracy_score
 import torch
-from sklearn.manifold import TSNE
 from tqdm import tqdm
 import numpy as np
-from sklearn.preprocessing import LabelBinarizer
-from itertools import cycle
 import matplotlib.pyplot as plt
-from sklearn.metrics import RocCurveDisplay, PrecisionRecallDisplay
-from sklearn.multiclass import OneVsRestClassifier
-import seaborn as sns
-import cv2
-from joblib import Parallel, delayed
 
-    
 
-def plot_embeddings(embeddings, targets, classes, title, output_path, xlim=None, ylim=None):
-    colors = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink']
-    plt.figure(figsize=(10, 10))
-    for i in range(len(classes)):
-        inds = np.where(targets == i)[0]
-        plt.scatter(embeddings[inds, 0], embeddings[inds, 1], alpha=0.5, color=colors[i])
-    if xlim:
-        plt.xlim(xlim[0], xlim[1])
-    if ylim:
-        plt.ylim(ylim[0], ylim[1])
-    plt.legend(classes)
-    plt.title(title)
-    plt.savefig(output_path)
-    plt.close()
 
 def plot_embeddings_ImageText(image_embeddings, text_embeddinfs, title, output_path, xlim=None, ylim=None):
 
@@ -44,30 +20,14 @@ def plot_embeddings_ImageText(image_embeddings, text_embeddinfs, title, output_p
     if ylim:
         plt.ylim(ylim[0], ylim[1])
     plt.title(title)
-    plt.savefig(output_path)
+    
+    path = os.path.join(output_path, title)
+    plt.savefig(path)
     plt.close()
     
-def plot_embeddings_coco(embeddings, target, classes, title, output_path, xlim=None, ylim=None):
-    plt.figure(figsize=(10, 10))
- 
-    for i in range(len(embeddings)):
-        plt.scatter(embeddings[i,0], embeddings[i,1], alpha=0.5)
-
-    plt.scatter(embeddings[:,0], embeddings[:,1], alpha=0.5)
-    # Adjust the plot limits (just to make sure the point cloud is fully visible)
-    
-    x_min, x_max = embeddings[:,0].min(), embeddings[:,0].max()
-    y_min, y_max = embeddings[:,1].min(), embeddings[:,1].max()
-    
-    plt.xlim(x_min, x_max)
-    plt.ylim(y_min, y_max)
-    # plt.legend(classes)
-    plt.title(title)
-    plt.savefig(output_path)
-    plt.close()
 
 
-def extract_embeddings_image(dataloader, model, device, dim_features = 3840):
+def extract_embeddings_image(dataloader, model, device, dim_features = 2048):
     with torch.no_grad():
         model.eval()
         embeddings = np.zeros((len(dataloader.dataset), dim_features))
@@ -80,23 +40,22 @@ def extract_embeddings_image(dataloader, model, device, dim_features = 3840):
             labels[k:k + images.shape[0]] = target.numpy()
             k += images.shape[0]
     return embeddings, labels
-    # return embeddings
 
 
-def extract_embeddings_text(dataloader, model, device, dim_features=3840):
+def extract_embeddings_text(dataloader, model, device, network_text, dim_features=2048):
     with torch.no_grad():
         model.eval()
         embeddings = np.zeros((len(dataloader.dataset), dim_features))
         labels = np.zeros(len(dataloader.dataset))
         k = 0
         for captions, target in tqdm(dataloader):
+            if 
             # if torch.cuda.is_available():
             #     NO PODEM PASSAR CAPTIONS A GPU PERQUE NO ES UN TENSOR
             embeddings[k:k + len(captions)] = model.get_embedding_text(captions).data.cpu().numpy()
             labels[k:k + len(captions)] = target.numpy()
             k += len(captions)
     return embeddings, labels
-    # return embeddings
 
 
 def plot_PR_multiclass (classes, labels, y_score_knn,path):
@@ -154,19 +113,29 @@ def calculate_APs (y_true_test, y_true_test_repeated, neigh_labels, neigh_dist):
     print("mAP@5:", mAP_5)
     
     
-def calculate_APs_coco (results, path):
+def calculate_APs_coco (results, path, wandb=None):
     results_txt = []
     for k in [1, 3, 5]:
         prec_at_k = mPrecisionK(results, k)
+        if wandb is not None:
+            wandb.log({"Prec@" + str(k): prec_at_k})
         print("Prec@" + str(k) + ":", prec_at_k)
         results_txt.append("Prec@" + str(k) + ": " + str(prec_at_k))
 
-    print("mAP:", MAP(results))
-    results_txt.append("mAP: " + str(MAP(results)))
+    map_value = MAP(results)
+    print("mAP:", map)
+    results_txt.append("mAP: " + str(map))
+    if wandb is not None:
+        wandb.log({"mAP": map})
     
     # Save results in .txt file
     with open(path + "/results.txt", "w") as output:
         output.write(str(results_txt))
+        
+    return map_value
+    
+    
+    
     
 def positives_ImageToText(neighbors_index, neighbors_id, databaseDataset, queryDataset):
     #query is the image

@@ -1,0 +1,10 @@
+Query Captions: A restaurant has modern wooden tables and chairs. 
+A long restaurant table with rattan rounded back chairs. 
+a long table with a plant on top of it surrounded with wooden chairs  
+A long table with a flower arrangement in the middle for meetings 
+A table is adorned with wooden chairs with blue accents. 
+neighbor_0 Caption (at distance 163.2858): The large colorful vase is displayed behind glass.
+neighbor_1 Caption (at distance 163.3091): A decorated bedroom contains a large bed, paper lanterns, and many picture frames.
+neighbor_2 Caption (at distance 163.3107): a room filled with assorted tables and some decorations 
+neighbor_3 Caption (at distance 163.3129): Artful figurines displayed indoors on shelving in cabinet.
+neighbor_4 Caption (at distance 163.3156): A large, ornate church interior with chairs and pews.

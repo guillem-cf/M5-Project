@@ -18,7 +18,7 @@ from pycocotools.coco import COCO
 
 
 class ImageDatabase(Dataset):
-    def __init__(self, ann_file, img_dir, transform=None):
+    def __init__(self, ann_file, img_dir, num_samples=2000, transform=None):
         self.img_dir = img_dir
         self.transform = transform
         
@@ -27,7 +27,7 @@ class ImageDatabase(Dataset):
             
         self.images = self.annotations['images']
         # Keep only the first 2000 images
-        self.images = self.images[:2000]
+        self.images = self.images[:num_samples]
         # Create a list of 'id' of the self.images
         self.images_list_id = [self.images[i]['id'] for i in range(len(self.images))]
         
@@ -75,7 +75,7 @@ class ImageDatabase(Dataset):
     
     
 class TextDatabase(Dataset):
-    def __init__(self, ann_file, img_dir, transform=None):
+    def __init__(self, ann_file, img_dir, num_samples=2000, transform=None):
         self.img_dir = img_dir
         self.transform = transform
         
@@ -84,7 +84,7 @@ class TextDatabase(Dataset):
             
         self.images = self.annotations['images']
         # Keep only the first 2000 images
-        self.images = self.images[:2000]
+        self.images = self.images[:num_samples]
         # Create a list of 'id' of the self.images
         self.images_list_id = [self.images[i]['id'] for i in range(len(self.images))]
         

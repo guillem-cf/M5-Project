@@ -1,0 +1,10 @@
+Query Captions: a big red telephone booth that a man is standing in 
+a person standing inside of a phone booth  
+this is an image of a man in a phone booth. 
+A man is standing in a red phone booth. 
+A man using a phone in a phone booth. 
+neighbor_0 Caption (at distance 2.4572): A man standing under a street sign that reads, "OBAMA."
+neighbor_1 Caption (at distance 2.4689): A young girl standing next to fire hydrant with an umbrella on the hydrant.
+neighbor_2 Caption (at distance 2.47): a young person standing near an opened fire hydrant
+neighbor_3 Caption (at distance 2.4715): A young girl puts an umbrella on a fire hydrant.
+neighbor_4 Caption (at distance 2.472): A woman posing in front of a street sign called "Obama"

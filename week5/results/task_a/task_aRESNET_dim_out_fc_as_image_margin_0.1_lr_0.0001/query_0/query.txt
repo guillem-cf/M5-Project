@@ -1,0 +1,10 @@
+Query Captions: A restaurant has modern wooden tables and chairs. 
+A long restaurant table with rattan rounded back chairs. 
+a long table with a plant on top of it surrounded with wooden chairs  
+A long table with a flower arrangement in the middle for meetings 
+A table is adorned with wooden chairs with blue accents. 
+neighbor_0 Caption (at distance 3.4756): A series of paintigs of sisscors in different poses. 
+neighbor_1 Caption (at distance 3.4819): A woman surrounded by a beautiful array of colors.
+neighbor_2 Caption (at distance 3.4854): A trio of vases painted in bright floral designs.
+neighbor_3 Caption (at distance 3.486): a table with some colorful vases on it 
+neighbor_4 Caption (at distance 3.4873): A very nicely arranged urn of flowers on a table.

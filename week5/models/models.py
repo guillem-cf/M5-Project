@@ -62,10 +62,8 @@ class EmbeddingNetText_V2(nn.Module):
         self.device = device
         self.type_textnet = type_textnet
         
-        # TODO
         self.model = fasttext.load_model(weights)
         
-
         if dim_out_fc == 'as_image':
             self.fc = nn.Linear(300, 3840)
         elif dim_out_fc == 'as_text':
@@ -140,10 +138,11 @@ class EmbeddingNetText(nn.Module):
         self.device = device
         self.type_textnet = type_textnet
         
-        # TODO
         self.model = fasttext.load_model(weights)
-        
 
+        self.lstm = nn.LSTM(input_size=300, hidden_size=300, num_layers=1, batch_first=True)
+        self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
+        
         if dim_out_fc == 'as_image':
             self.fc = nn.Sequential(nn.Linear(300, 1024), 
                                 nn.PReLU(), 
@@ -163,12 +162,18 @@ class EmbeddingNetText(nn.Module):
         output = []
         for caption in x:
             capt_output = [torch.tensor(self.model[word]).to(self.device) for word in caption]
-            output.append(torch.stack(capt_output).mean(dim=0))
+
+            # output.append(torch.stack(capt_output).mean(dim=0))
+            
+            # lstm_output, _ = self.lstm(torch.stack(capt_output).unsqueeze(0))
+            # output.append(lstm_output[:, -1, :])
+
+            output.append(self.global_avg_pool(torch.stack(capt_output).permute(1, 0)).squeeze(-1))
+
         output = torch.stack(output)
-        
-        
+
         output = self.fc(output) 
-        
+
         return output
     
     

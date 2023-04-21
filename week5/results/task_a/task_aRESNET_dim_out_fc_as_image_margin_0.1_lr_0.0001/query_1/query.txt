@@ -1,0 +1,10 @@
+Query Captions: A man preparing desserts in a kitchen covered in frosting. 
+A chef is preparing and decorating many small pastries. 
+A baker prepares various types of baked goods. 
+a close up of a person grabbing a pastry in a container 
+Close up of a hand touching various pastries. 
+neighbor_0 Caption (at distance 2.1063): A person is filling food containers with hotdogs and bread.
+neighbor_1 Caption (at distance 2.1064): A tray of ingredients used to cook a fine foods recipe.
+neighbor_2 Caption (at distance 2.1076): Cooked items served in various dishes and pots at table.
+neighbor_3 Caption (at distance 2.1096): a cake with candles buring for someones birthday
+neighbor_4 Caption (at distance 2.1096): a dessert tray with dougnuts, cupcakes and muffins

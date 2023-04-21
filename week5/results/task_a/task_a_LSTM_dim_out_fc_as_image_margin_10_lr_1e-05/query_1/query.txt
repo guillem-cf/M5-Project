@@ -1,0 +1,10 @@
+Query Captions: A man preparing desserts in a kitchen covered in frosting. 
+A chef is preparing and decorating many small pastries. 
+A baker prepares various types of baked goods. 
+a close up of a person grabbing a pastry in a container 
+Close up of a hand touching various pastries. 
+neighbor_0 Caption (at distance 149.0821): There are two trays, two doughnuts, and two mugs of tea.
+neighbor_1 Caption (at distance 149.09): A pizza cut into 8 pieces on a pizza pan.
+neighbor_2 Caption (at distance 149.0905): Three pans of pizza in a cart that holds pizzas. 
+neighbor_3 Caption (at distance 149.0911): A small artisan pizza and a mug of liquid.
+neighbor_4 Caption (at distance 149.0925): Three people eating various foods with chopsticks at bar.
