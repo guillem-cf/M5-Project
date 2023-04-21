@@ -18,8 +18,6 @@ from utils import trainer
 from utils import test
 from utils.early_stopper import EarlyStopper
 
-######################## NAME DEL TRAINER ####################### CHANGE THE IF
-
 
 
 def train(args):   
@@ -52,9 +50,24 @@ def train(args):
         device = torch.device("cpu")
         
     # ------------------------------- PATHS --------------------------------
+    dataset_path = '/ghome/group03/mcv/datasets/COCO'
     
+    train_path = os.path.join(dataset_path, 'train2014')
+    val_path = os.path.join(dataset_path, 'val2014')
+
+    train_annot_path = os.path.join(dataset_path, 'captions_train2014.json')
+    val_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
     
+    train_annot_bert_path = os.path.join(dataset_path, 'encoded_captions_train2014_bert.json')
+    val_annot_bert_path = os.path.join(dataset_path, 'encoded_captions_val2014_bert.json')
     
+    env_path = os.path.dirname(os.path.abspath(__file__))
+    # dataset_path = '../../datasets/COCO'
+    
+    name_output = f'{args.task}_{args.network_image}_{args.network_text}_dim_out_fc_{args.dim_out_fc}_margin_{args.margin}_lr_{args.learning_rate}'
+    output_path = os.path.join(env_path, f'results/{args.task}', name_output)  
+    print('Output path: ', output_path)
+
     if args.train:
         print('TRAINING...')
         print('Network image: ', args.network_image)
@@ -63,39 +76,27 @@ def train(args):
         print('Dim out fc: ', args.dim_out_fc)
         print('Learning rate: ', args.learning_rate)
     
-        name_output = f'{args.task}_{args.network_image}_{args.network_text}_dim_out_fc_{args.dim_out_fc}_margin_{args.margin}_lr_{args.learning_rate}'
-        env_path = os.path.dirname(os.path.abspath(__file__))
-        dataset_path = '/ghome/group03/mcv/datasets/COCO'
-        # dataset_path = '../../datasets/COCO'
-
-        output_path = os.path.join(env_path, 'results/task_a', name_output)  
-        print('Output path: ', output_path)
-        
         # Create output path if it does not exist
         if not os.path.exists(output_path):
             os.makedirs(output_path)  
             
         # ------------------------------- DATASET --------------------------------
-        train_path = os.path.join(dataset_path, 'train2014')
-        val_path = os.path.join(dataset_path, 'val2014')
-
-        train_annot_path = os.path.join(dataset_path, 'captions_train2014.json')
-        val_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
-
-
+        
         transform = torch.nn.Sequential(
                     FasterRCNN_ResNet50_FPN_Weights.COCO_V1.transforms(),
                     transforms.Resize((256, 256)),
                 )
 
         if args.task == 'task_a':
-            triplet_train_dataset = TripletIm2Text(train_annot_path, train_path, transform=transform)
+            triplet_train_dataset = TripletIm2Text(train_annot_path, train_path, train_annot_bert_path, args.network_text, transform=transform)
         elif args.task == 'task_b':
-            triplet_train_dataset = TripletText2Im(train_annot_path, train_path, transform=transform)
+            triplet_train_dataset = TripletText2Im(train_annot_path, train_path, train_annot_bert_path, args.network_text, transform=transform)
+        else:
+            raise ValueError('Task not valid')
             
             
         image_val_dataset = ImageDatabase(val_annot_path, val_path, num_samples=100, transform=transform)
-        text_val_dataset = TextDatabase(val_annot_path, val_path, num_samples= 100, transform=transform)
+        text_val_dataset = TextDatabase(val_annot_path, val_path, val_annot_bert_path, args.network_text, num_samples= 100, transform=transform)
     
 
         # ------------------------------- DATALOADER --------------------------------
@@ -176,32 +177,45 @@ def train(args):
         print('LOADING MODEL...')
         model.load_state_dict(torch.load(args.weights_model, map_location=device))
         
-        
-        
-        
     # --------------------------------- TESTING --------------------------------
     output_path_test = os.path.join(output_path, 'test')
     # Create output path if it does not exist
     if not os.path.exists(output_path_test):
         os.makedirs(output_path_test)
     
-    
     image_test_dataset = ImageDatabase(val_annot_path, val_path, num_samples=1000, transform=transform)
-    text_test_dataset = TextDatabase(val_annot_path, val_path, num_samples= 1000, transform=transform)
+    text_test_dataset = TextDatabase(val_annot_path, val_path, val_annot_bert_path, args.network_text, num_samples= 1000, transform=transform)
     
     image_test_loader = DataLoader(image_val_dataset, batch_size=args.batch_size, shuffle=False,
                                     pin_memory=True, num_workers=10)
     text_test_loader = DataLoader(text_val_dataset, batch_size=args.batch_size, shuffle=False,
                                     pin_memory=True, num_workers=10)
 
-    map = test.test(args, model, image_test_dataset, image_test_loader, text_test_dataset, text_test_loader, output_path_test, device=device, wandb=wandb, retrieval=True)
+    map_value = test.test(args, model, image_test_dataset, image_test_loader, text_test_dataset, text_test_loader, output_path_test, device=device, wandb=wandb, retrieval=True)
     
     
+    
+# Run a sweep in wandb: adapt the sweep_config dictionary below and run:
+# python main.py --task_a --train True --sweep True --network_image RESNET50 --network_text FastText --batch_size 64
 
-# Run task_a:
-# python main.py --task task_a --train True --sweep False --network_image RESNET50
+# Run task_a train example:
+# python main.py --task task_a --train True --sweep False --network_image RESNET50 --network_text FastText --batch_size 64 --lr 1e-4 --margin 0.1
+# python main.py --task task_a --train True --sweep False --network_image RESNET101 --network_text FastText --batch_size 64 --lr 1e-4 --margin 0.1
+# python main.py --task task_a --train True --sweep False --network_image fasterRCNN --network_text FastText --batch_size 64 --lr 1e-4 --margin 0.1
+
+# Run task_a test example:
+# python main.py --task task_a --train False --sweep False --network_image RESNET50 --network_text FastText --weights_model /ghome/group03/M5-Project/week5/results/task_a/task_aRESNET_dim_out_fc_as_image_margin_0.1_lr_0.0001/task_a_triplet_10.pth
+
+# Run task_b example:
+# python main.py --task task_b --train True --sweep False --network_image RESNET50 --network_text FastText --batch_size 32 --lr 1e-4 --margin 0.1
+# python main.py --task task_b --train True --sweep False --network_image RESNET101 --network_text FastText --batch_size 32 --lr 1e-4 --margin 0.1
+# python main.py --task task_b --train True --sweep False --network_image fasterRCNN --network_text FastText --batch_size 32 --lr 1e-4 --margin 0.1
+
+# Run task_c_a example
+# Same as task_a but using --network_text BERT
 
 
+######################### ATENCIÓ!!! TASK_B use batch 32 ######################################
 
 if __name__ == '__main__':
     
@@ -230,7 +244,7 @@ if __name__ == '__main__':
                         help='Path to weights')
  
     # Training
-    parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')       # TORNAR A POSAR 64
     parser.add_argument('--num_epochs', type=int, default=1, help='Number of epochs')  # TORNAR A POSAR 10
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')

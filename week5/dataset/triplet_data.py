@@ -4,15 +4,20 @@ from PIL import Image
 from torch.utils.data import Dataset
 import json
 import random
+import torch
 
 
 
 
 class TripletIm2Text(Dataset):
-    def __init__(self, ann_file, img_dir, transform=None, preprocessing='FastText'):
+    def __init__(self, ann_file, img_dir, ann_file_bert, network_text, transform=None):
         self.img_dir = img_dir
         self.transform = transform
-        self.preprocessing = preprocessing
+        self.network_text = network_text
+        
+        if self.network_text == 'BERT':
+            with open(ann_file_bert, 'r') as f:
+                self.embeddings = json.load(f)
 
         with open(ann_file, 'r') as f:
             self.annotations = json.load(f)
@@ -46,6 +51,7 @@ class TripletIm2Text(Dataset):
         positive_caption_id = self.annotations_an[idx_pos]['id']
         positive_caption = self.annotations_an[idx_pos]['caption']
         
+        
         # Choose randomly one caption that is not the same as the positive caption
         negative_caption_id = positive_caption_id
         while negative_caption_id == positive_caption_id:
@@ -56,6 +62,14 @@ class TripletIm2Text(Dataset):
             negative_caption_id = neg_ann['id'] 
             
         negative_caption = neg_ann['caption']
+        
+        if self.network_text == 'BERT':
+            positive_embedding = torch.tensor(self.embeddings[idx_pos]['caption'])
+            assert self.embeddings[idx_pos]['id'] == positive_caption_id
+            negative_embedding = torch.tensor(self.embeddings[neg_ann_idx]['caption'])
+            assert self.embeddings[neg_ann_idx]['id'] == negative_caption_id
+            
+            return (image, positive_embedding, negative_embedding), []
     
         
         return (image, positive_caption, negative_caption), []
@@ -63,10 +77,13 @@ class TripletIm2Text(Dataset):
     
     
 class TripletText2Im(Dataset):
-    def __init__(self, ann_file, img_dir, transform=None, preprocessing='FastText'):
+    def __init__(self, ann_file, img_dir, ann_file_bert, network_text, transform=None):
         self.img_dir = img_dir
         self.transform = transform
-        self.preprocessing = preprocessing
+        
+        if self.network_text == 'BERT':
+            with open(ann_file_bert, 'r') as f:
+                self.embeddings = json.load(f)
 
         with open(ann_file, 'r') as f:
             self.annotations = json.load(f)
@@ -124,6 +141,12 @@ class TripletText2Im(Dataset):
         if self.transform is not None:
             positive_image = self.transform(positive_image)
             negative_image = self.transform(negative_image)
+            
+        if self.network_text == 'BERT':
+            anchor_embedding = torch.tensor(self.embeddings[index]['caption'])
+            assert self.embeddings[index]['id'] == caption_id
+            
+            return (anchor_embedding, positive_image, negative_image), []
         
         return (caption, positive_image, negative_image), []
     

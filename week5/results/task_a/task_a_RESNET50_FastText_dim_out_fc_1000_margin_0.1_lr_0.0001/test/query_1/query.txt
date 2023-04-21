@@ -1,0 +1,10 @@
+Query Captions GT: A 
+A 
+A 
+t 
+A 
+neighbor_0 Caption: A cop standing next to a police bike next to a man sitting on a  curb.
+neighbor_1 Caption: A man standing over several bunches of green bananas.
+neighbor_2 Caption: a kitchen with a sink and many cooking machines and a pot of food
+neighbor_3 Caption: A toilet and mop bucket in a kitchen.
+neighbor_4 Caption: a corner bathroom with two sinks and a bathtub

@@ -1,0 +1,6 @@
+Query Caption: Rows of motor bikes and helmets in a city 
+neighbor_0 Image: Rows of motor bikes and helmets in a city
+neighbor_1 Image: Rows of motor bikes and helmets in a city
+neighbor_2 Image: Rows of motor bikes and helmets in a city
+neighbor_3 Image: Rows of motor bikes and helmets in a city
+neighbor_4 Image: Rows of motor bikes and helmets in a city

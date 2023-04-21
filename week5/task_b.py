@@ -166,7 +166,7 @@ def train(args):
 if __name__ == '__main__':
     
     # ------------------------------- ARGS ---------------------------------
-    parser = argparse.ArgumentParser(description='Task A')
+    parser = argparse.ArgumentParser(description='Task B')
     parser.add_argument('--resnet_type', type=str, default='V1', help='Resnet version (V1 or V2)')
     parser.add_argument('--dim_out_fc', type=str, default='as_image', help='Dimension of the output of the fully connected layer (as_image or as_text)')
     parser.add_argument('--train', type=bool, default=True, help='Train or test')

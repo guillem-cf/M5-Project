@@ -1,0 +1,6 @@
+Query Caption: A small closed toilet in a cramped space. 
+neighbor_0 Image: A small closed toilet in a cramped space.
+neighbor_1 Image: A small closed toilet in a cramped space.
+neighbor_2 Image: A small closed toilet in a cramped space.
+neighbor_3 Image: A small closed toilet in a cramped space.
+neighbor_4 Image: A small closed toilet in a cramped space.

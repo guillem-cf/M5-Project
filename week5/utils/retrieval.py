@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def extract_retrieval_examples_img2text(neighbors_index, neighbors_id, databaseDataset, queryDataset, output_path, distances=None):
+def extract_retrieval_examples_img2text(args,neighbors_index, neighbors_id, databaseDataset, queryDataset, output_path, distances=None):
     
-    query_list = [0, 1, 2, 3, 4, 5]
+    query_list = [0, 1, 2, 3, 4, 5, 6, 7]
 
     images = []
     captions = []
@@ -28,11 +28,11 @@ def extract_retrieval_examples_img2text(neighbors_index, neighbors_id, databaseD
         # Get Captions
         captionIds = queryDataset.getCaptionsId_fromImageIdx(query)
         captionStr = [databaseDataset.getstrCaption_fromCaptionIdx(databaseDataset.getCaptionIdx_fromId(capt)) for capt in captionIds]
-        print("Caption: ", captionStr)
+        print("Query Captions GT: ", captionStr)
         
         # Write text file with objects
         with open(os.path.join(path, 'query.txt'), 'w') as f:
-            f.write("Query Captions: ")
+            f.write("Query Captions GT: ")
             for capt in captionStr:
                 f.write(capt[0])
                 f.write(" \n")
@@ -40,14 +40,13 @@ def extract_retrieval_examples_img2text(neighbors_index, neighbors_id, databaseD
         img_captions = []
 
         # Get 5 most close strings
-        for i in range(5):
-            print(i, ". closest caption:")
-            
+        for i in range(5): 
             neighbor_id = neighbors_id[query, i]
             neighbor_idx = neighbors_index[query, i]
             
             # Get caption and it's correspondent image
             caption = databaseDataset.getstrCaption_fromCaptionIdx(neighbor_idx)
+            print(i, ". Closest caption:", caption)
           
             
             if distances is not None:
@@ -65,14 +64,18 @@ def extract_retrieval_examples_img2text(neighbors_index, neighbors_id, databaseD
             if distances is not None:
                 with open(os.path.join(path, 'query.txt'), 'a') as f:
                     f.write(f'neighbor_{i} Caption (at distance {str(round(distances[query, i], 4))}): {caption}\n')
-
+            else:
+                with open(os.path.join(path, 'query.txt'), 'a') as f:
+                    f.write(f'neighbor_{i} Caption: {caption}\n')
+            
+            
         captions.append(img_captions)
 
     # plot_retrieval(images, captions, output_path)
     
     
     
-def extract_retrieval_examples_txt2img(neighbors_index, neighbors_id, databaseDataset, queryDataset, output_path, distances=None):
+def extract_retrieval_examples_txt2img(args, neighbors_index, neighbors_id, databaseDataset, queryDataset, output_path, distances=None):
     
     query_list = [0, 1, 2, 3, 4, 5]
 
@@ -87,6 +90,7 @@ def extract_retrieval_examples_txt2img(neighbors_index, neighbors_id, databaseDa
         print(query)
         print("Query Caption:")
         # Get Caption
+        _, caption_id = queryDataset[query]
         caption = queryDataset.getstrCaption_fromCaptionIdx(query)
         print(caption)
         # Write text file with objects
@@ -94,7 +98,15 @@ def extract_retrieval_examples_txt2img(neighbors_index, neighbors_id, databaseDa
             f.write("Query Caption: ")
             f.write(caption)
             f.write(" \n")
-
+            
+        # Get GT image
+        image_id = queryDataset.getImageId_fromCaptionId(caption_id)[0]
+        image, image_id = databaseDataset[databaseDataset.getImageIdx_fromId(image_id)]
+        img = np.array(image).transpose(1,2,0)
+        plt.imshow(img)
+        plt.savefig(os.path.join(path, f'GT_image.png'))
+        
+        
         # Get 5 most close strings
         for i in range(5):
             print(i, ". closest image:")
@@ -109,10 +121,14 @@ def extract_retrieval_examples_txt2img(neighbors_index, neighbors_id, databaseDa
             plt.savefig(os.path.join(path, f'neighbor_{i}.png'))
     
             
-            if distances is not None:
-                print("Image (at distance " + str(round(distances[query, i], 4)) + "):", caption)
-                with open(os.path.join(path, 'query.txt'), 'a') as f:
-                    f.write(f'neighbor_{i} Image (at distance {str(round(distances[query, i], 4))}): {caption}\n')
+            # if distances is not None:
+            #     print("Image (at distance " + str(round(distances[query, i], 4)) + "):", caption)
+            #     with open(os.path.join(path, 'query.txt'), 'a') as f:
+            #         f.write(f'neighbor_{i} Image (at distance {str(round(distances[query, i], 4))}): {caption}\n')
+            # else:
+            #     print("Image:", caption)
+            #     with open(os.path.join(path, 'query.txt'), 'a') as f:
+            #         f.write(f'neighbor_{i} Image: {caption}\n')
 
 
     # plot_retrieval(images, captions, output_path)

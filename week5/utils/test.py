@@ -71,7 +71,7 @@ def test(args, model,
         evaluation = metrics.positives_ImageToText(neighbors, id_neighbors_matrix, text_dataset, image_dataset)
     elif args.task == 'task_b':
         print("Metrics for task b PENDING TO BE REVIEWED")
-        evaluation = metrics.positives_ImageToText(neighbors, id_neighbors_matrix, text_dataset, image_dataset)
+        evaluation = metrics.positives_TextToImage(neighbors, id_neighbors_matrix, image_dataset, text_dataset)
     else:
         raise ValueError("Task not recognized")
 
