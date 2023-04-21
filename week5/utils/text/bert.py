@@ -35,18 +35,17 @@ model = BertModel.from_pretrained("bert-base-uncased").to(device).eval()
 
 env_path = os.path.dirname(os.path.abspath(__file__))
 # get path of current file
-# dataset_path = '../../../../mcv/datasets/COCO'
-dataset_path = '/ghome/group03/mcv/datasets/COCO'
+dataset_path = '../../../../datasets/COCO'
+# dataset_path = '/ghome/group03/mcv/datasets/COCO'
 
 train_path = os.path.join(dataset_path, 'captions_train2014.json')
 val_path = os.path.join(dataset_path, 'captions_val2014.json')
 with open(train_path, "r") as file:
     data = json.load(file)
-
 # Extract the captions
 output_annotations = []
 
-for annotation in tqdm(data["annotations"]):
+for annotation in tqdm(data["annotations"][:20]):
     caption = annotation['caption']
     id = annotation['id']
     image_id = annotation['image_id']
@@ -57,7 +56,7 @@ for annotation in tqdm(data["annotations"]):
     logits = outputs.last_hidden_state[0, 0, :].to("cpu").squeeze().detach().numpy()
 
     output_annotations.append({
-        'caption': caption,
+        'caption': str(logits),
         'id': id,
         'image_id': image_id,
     })
@@ -86,7 +85,7 @@ for annotation in tqdm(data["annotations"]):
     logits = outputs.last_hidden_state[0, 0, :].to("cpu").squeeze().detach().numpy()
 
     output_annotations.append({
-        'caption': caption,
+        'caption': str(logits),
         'id': id,
         'image_id': image_id,
     })
