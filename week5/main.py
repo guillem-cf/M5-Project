@@ -2,7 +2,7 @@ import argparse
 import os
 import argparse
 import functools 
-import wandb
+# import wandb
 import time
 
 import torch
@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, FasterRCNN_ResNet50_FPN_V2_Weights, MaskRCNN_ResNet50_FPN_V2_Weights
 
-from dataset.database import ImageDatabase, TextDatabases
+from dataset.database import ImageDatabase, TextDatabase
 from dataset.triplet_data import TripletIm2Text, TripletText2Im
 from models.models import TripletNetIm2Text, TripletNetText2Img, EmbeddingNetImage, EmbeddingNetText
 from utils import losses
@@ -209,7 +209,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Week 5 main script')
     parser.add_argument('--task', type=str, default='task_a', help='task_a --> img2txt // task_b --> txt2img') 
     parser.add_argument('--train', type=bool, default=True, help='Train or test')
-    parser.add_argument('--sweep', type=bool, default=True, help='Sweep in wandb or not')
+    parser.add_argument('--sweep', type=bool, default=False, help='Sweep in wandb or not')
     
     # Device
     # parser.add_argument('--gpu', type=int, default=5, help='GPU device id')
