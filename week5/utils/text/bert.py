@@ -92,4 +92,4 @@ for annotation in tqdm(data["annotations"]):
 
 # json.dumps({'annotations': output_annotations})
 with open("encoded_captions_val2014_bert.json", "w") as file:
-    json.dump(data, file)
+    json.dump(output_annotations, file)

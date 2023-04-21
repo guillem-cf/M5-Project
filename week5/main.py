@@ -2,7 +2,7 @@ import argparse
 import os
 import argparse
 import functools 
-# import wandb
+import wandb
 import time
 
 import torch

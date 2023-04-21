@@ -63,7 +63,6 @@ class EmbeddingNetText(nn.Module):
         super(EmbeddingNetText, self).__init__()
         self.device = device
         self.network_text = network_text
-        self.average = average
         
         if network_text == 'FastText':
             self.model = fasttext.load_model(weights)
@@ -101,7 +100,7 @@ class EmbeddingNetText(nn.Module):
 
             output = self.fc(output) 
         
-        elif:
+        else:
             output = self.fc(x)
 
         return output
