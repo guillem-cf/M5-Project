@@ -6,7 +6,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 
 from utils import metrics
-from utils.retrieval import extract_retrieval_examples_img2text
+from utils.retrieval import extract_retrieval_examples_img2text, extract_retrieval_examples_txt2img
 
 
 
@@ -32,7 +32,7 @@ def test(args, model,
 
     print("Calculating text val database embeddings...")
     start = time.time()
-    val_embeddings_text, labels_text = metrics.extract_embeddings_text(text_loader, model, device, dim_features = dim_features) # dim_features = 300)
+    val_embeddings_text, labels_text = metrics.extract_embeddings_text(text_loader, model, device, network_text = args.network_text, dim_features = dim_features) # dim_features = 300)
     end = time.time()
     print("Time to calculate text val database embeddings: ", end - start)
 
@@ -54,12 +54,12 @@ def test(args, model,
     print("Calculating KNN...")
     start = time.time()
     if args.task == 'task_a':
-        neighbors = knn.kneighbors(val_embeddings_image, return_distance=False)
+        neighbors, distances = knn.kneighbors(val_embeddings_image, return_distance=True)
         # Map the indices of the neighbors matrix to their corresponding 'id' values
         id_neighbors_matrix = np.vectorize(lambda i: labels_text[i])(neighbors)
         
     elif args.task == 'task_b':
-        neighbors = knn.kneighbors(val_embeddings_text, return_distance=False)
+        neighbors = knn.kneighbors(val_embeddings_text, return_distance=True)
         id_neighbors_matrix = np.vectorize(lambda i: labels_image[i])(neighbors)
     end = time.time()
     print("Time to calculate KNN: ", end - start)
@@ -70,8 +70,8 @@ def test(args, model,
     if args.task == 'task_a':
         evaluation = metrics.positives_ImageToText(neighbors, id_neighbors_matrix, text_dataset, image_dataset)
     elif args.task == 'task_b':
-        print("Retrieval for task b not implemented yet")
-        # TODO: Implement retrieval for task b
+        print("Metrics for task b PENDING TO BE REVIEWED")
+        evaluation = metrics.positives_ImageToText(neighbors, id_neighbors_matrix, text_dataset, image_dataset)
     else:
         raise ValueError("Task not recognized")
 
@@ -83,11 +83,10 @@ def test(args, model,
     # --------------------------------- PLOT ---------------------------------
     if retrieval:
         if args.task == 'task_a': 
-            extract_retrieval_examples_img2text(neighbors, id_neighbors_matrix, databaseDataset=text_dataset, queryDataset=image_dataset, output_path=output_path)
+            extract_retrieval_examples_img2text(args, neighbors, id_neighbors_matrix, databaseDataset=text_dataset, queryDataset=image_dataset, output_path=output_path)
         elif args.task == 'task_b':
-            # TODO: Implement retrieval for task b
-            # extract_retrieval_examples_text2img(neighbors, id_neighbors_matrix, databaseDataset=image_dataset, queryDataset=text_dataset, output_path=output_path)
-            print("Retrieval for task b not implemented yet")
+            print("Retrieval for task b PENDING TO BE REVIEWED")
+            extract_retrieval_examples_txt2img(args, neighbors, id_neighbors_matrix, databaseDataset=image_dataset, queryDataset=text_dataset, output_path=output_path)
         else:
             raise ValueError("Task not recognized")
 

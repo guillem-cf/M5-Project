@@ -1,188 +1,112 @@
 import torch
 import torch.nn as nn
-
-from torchvision import models
-from torchvision.models import resnet18, resnet50
-from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, FasterRCNN_ResNet50_FPN_V2_Weights
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from torchvision.ops import boxes as box_ops
-
+import torchvision
 # To avoid error with GLBIC_2.32 version run: pip install fasttext==0.9.2
 import fasttext
 
-
-import cv2
-
-
-class EmbeddingNetImage_V2(nn.Module):
-    def __init__(self, weights, resnet_type='V1', dim_out_fc = 'as_image'):   # dim_out_fc = 'as_image' or 'as_text'
-        super(EmbeddingNetImage_V2, self).__init__()
-        
-        if resnet_type == 'V1':
-            # Load the Faster R-CNN model with ResNet-50 backbone
-            self.faster_rcnn = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
-        elif resnet_type == 'V2':
-            self.faster_rcnn = models.detection.fasterrcnn_resnet50_fpn_v2(weights=weights)
-
-        self.backbone = nn.Sequential(*list(self.faster_rcnn.backbone.children())[:-1])
-
-        for name, param in self.backbone.named_parameters():
-            if 'fc' not in name:
-                param.requires_grad = False
-            print(name, param.requires_grad)
-
-        # Replace the box predictor with a custom Fast R-CNN predictor
-        in_features = 3840 #self.faster_rcnn.roi_heads.box_head.fc7.in_features  # 2048
-
-        if dim_out_fc == 'as_image':
-            # Define the fully connected layers for embedding
-            self.fc = nn.Linear(in_features, in_features)
-        elif dim_out_fc == 'as_text':
-            self.fc = nn.Linear(in_features, 1000)
-            
-
-    def forward(self, x):
-        output = self.backbone(x)
-        
-        tensor_list = []
-        for key, value in output.items():
-            tensor_list.append(value.reshape(value.shape[0], value.shape[1], -1).max(dim=-1)[0])
-
-        output = torch.cat(tensor_list, dim=1)
-
-        output = self.fc(output) 
-        
-        return output
-
-
-
-class EmbeddingNetText_V2(nn.Module):
-    def __init__(self, weights, device, type_textnet='FastText', dim_out_fc = 'as_image'):  # type = 'FastText' or 'BERT'
-        super(EmbeddingNetText_V2, self).__init__()
-        self.device = device
-        self.type_textnet = type_textnet
-        
-        self.model = fasttext.load_model(weights)
-        
-        if dim_out_fc == 'as_image':
-            self.fc = nn.Linear(300, 3840)
-        elif dim_out_fc == 'as_text':
-            self.fc = nn.Linear(300, 1000)
-
-    def forward(self, x):
-        if self.type_textnet == 'FastText':
-            x = [caption.replace('.', '').replace(',','').lower().split() for caption in x]
-            
-        output = []
-        for caption in x:
-            capt_output = [torch.tensor(self.model[word]).to(self.device) for word in caption]
-            output.append(torch.stack(capt_output).mean(dim=0))
-        output = torch.stack(output)
-        
-        
-        output = self.fc(output) 
-        
-        return output
-    
-    
-    
     
 class EmbeddingNetImage(nn.Module):
-    def __init__(self, weights, resnet_type='V1', dim_out_fc = 'as_image'):   # dim_out_fc = 'as_image' or 'as_text'
+    def __init__(self, weights, network_image, dim_out_fc):   # dim_out_fc = 'as_image' or 'as_text'
         super(EmbeddingNetImage, self).__init__()
         
-        if resnet_type == 'V1':
-            # Load the Faster R-CNN model with ResNet-50 backbone
-            self.faster_rcnn = models.detection.fasterrcnn_resnet50_fpn(weights=weights)
-        elif resnet_type == 'V2':
-            self.faster_rcnn = models.detection.fasterrcnn_resnet50_fpn_v2(weights=weights)
-
-        self.backbone = nn.Sequential(*list(self.faster_rcnn.backbone.children())[:-1])
-
-        for name, param in self.backbone.named_parameters():
-            if 'fc' not in name:
-                param.requires_grad = False
-            # print(name, param.requires_grad)
-
-        # Replace the box predictor with a custom Fast R-CNN predictor
-        in_features = 3840 #self.faster_rcnn.roi_heads.box_head.fc7.in_features  # 2048
-
-        if dim_out_fc == 'as_image':
-            # Define the fully connected layers for embedding
-            self.fc = nn.Sequential(nn.Linear(in_features, 2048), 
-                                    nn.PReLU(), 
-                                    nn.Linear(2048, 3840))
-        elif dim_out_fc == 'as_text':
-            self.fc = nn.Sequential(nn.Linear(in_features, 2048), 
-                                    nn.PReLU(), 
-                                    nn.Linear(2048, 1000))
-            
-
-    def forward(self, x):
-        output = self.backbone(x)
+        self.network_image = network_image
         
+        if network_image == 'fasterRCNN':
+            # Load the Faster R-CNN model with ResNet-50 backbone
+            self.faster_rcnn = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights=weights)
+            self.model = nn.Sequential(*list(self.faster_rcnn.backbone.children())[:-1])
+            in_features = 3840
+            
+            for name, param in self.model.named_parameters():
+                if 'fc' not in name:
+                    param.requires_grad = False
+                
+        elif network_image == 'RESNET50':
+            self.model = torchvision.models.resnet50(pretrained=True)
+            in_features = self.model.fc.in_features
+            self.model.fc = nn.Identity()
+            
+        elif network_image == 'RESNET101':
+            self.model = torchvision.models.resnet101(pretrained=True)
+            in_features = self.model.fc.in_features
+            self.model.fc = nn.Identity()
+        
+        self.fc = nn.Linear(in_features, dim_out_fc)
+            
+    def forward_resnet(self, x):
+        output = self.model(x)
+        return output
+        
+    def forward_faster(self, x):
+        output = self.model(x)
         tensor_list = []
         for key, value in output.items():
             tensor_list.append(value.reshape(value.shape[0], value.shape[1], -1).max(dim=-1)[0])
 
         output = torch.cat(tensor_list, dim=1)
-
-        output = self.fc(output) 
-        
         return output   
+    
+    def forward(self, x):
+        if self.network_image == 'fasterRCNN':
+            output = self.forward_faster(x)
+        else:
+            output = self.forward_resnet(x)
+            
+        output = self.fc(output)
+        
+        return output 
+    
 
 
 class EmbeddingNetText(nn.Module):
-    def __init__(self, weights, device, type_textnet='FastText', dim_out_fc = 'as_image'):  # type = 'FastText' or 'BERT'
+    def __init__(self, weights, device, network_text='FastText', dim_out_fc = 'as_image'):  # type = 'FastText' or 'BERT'
         super(EmbeddingNetText, self).__init__()
         self.device = device
-        self.type_textnet = type_textnet
+        self.network_text = network_text
+        self.average = average
         
-        self.model = fasttext.load_model(weights)
-
-        self.lstm = nn.LSTM(input_size=300, hidden_size=300, num_layers=1, batch_first=True)
-        self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
-        
-        if dim_out_fc == 'as_image':
-            self.fc = nn.Sequential(nn.Linear(300, 1024), 
-                                nn.PReLU(), 
-                                nn.Linear(1024, 2048), 
-                                nn.PReLU(), 
-                                nn.Linear(2048, 3840))
-        elif dim_out_fc == 'as_text':
-            self.fc = nn.Sequential(nn.Linear(300, 512), 
-                                nn.PReLU(), 
-                                nn.Linear(512, 1000))
-            
-
+        if network_text == 'FastText':
+            self.model = fasttext.load_model(weights)
+            # self.lstm = nn.LSTM(input_size=300, hidden_size=300, num_layers=1, batch_first=True)
+            self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
+          
+            if dim_out_fc < 1500:
+                self.fc = nn.Sequential(nn.Linear(300, 512), 
+                                    nn.PReLU(), 
+                                    nn.Linear(512, dim_out_fc))
+            else:
+                self.fc = nn.Sequential(nn.Linear(300, 1024), 
+                                    nn.PReLU(), 
+                                    nn.Linear(1024, dim_out_fc))
+                
+        elif network_text == 'BERT':
+            if dim_out_fc < 1500:
+                self.fc = nn.Sequential(nn.Linear(768, dim_out_fc))
+            else:
+                self.fc = nn.Sequential(nn.Linear(768, 1024), 
+                                    nn.PReLU(), 
+                                    nn.Linear(1024, dim_out_fc))
+    
     def forward(self, x):
-        if self.type_textnet == 'FastText':
+        if self.network_text == 'FastText':
             x = [caption.replace('.', '').replace(',','').lower().split() for caption in x]
             
-        output = []
-        for caption in x:
-            capt_output = [torch.tensor(self.model[word]).to(self.device) for word in caption]
+            output = []
+            for caption in x:
+                capt_output = [torch.tensor(self.model[word]).to(self.device) for word in caption]
+                # output.append(torch.stack(capt_output).mean(dim=0))
+                output.append(self.global_avg_pool(torch.stack(capt_output).permute(1, 0)).squeeze(-1))
 
-            # output.append(torch.stack(capt_output).mean(dim=0))
-            
-            # lstm_output, _ = self.lstm(torch.stack(capt_output).unsqueeze(0))
-            # output.append(lstm_output[:, -1, :])
+            output = torch.stack(output)
 
-            output.append(self.global_avg_pool(torch.stack(capt_output).permute(1, 0)).squeeze(-1))
-
-        output = torch.stack(output)
-
-        output = self.fc(output) 
+            output = self.fc(output) 
+        
+        elif:
+            output = self.fc(x)
 
         return output
     
-    
-    
-    
-    
-    
-    
-    
+
     
     
 

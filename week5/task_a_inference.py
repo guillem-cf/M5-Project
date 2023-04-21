@@ -143,7 +143,7 @@ if __name__ == '__main__':
     weights_text = args.weights_text
         
     # Pretrained model from torchvision or from checkpoint
-    embedding_net_image = EmbeddingNetImage(weights=weights_image).to(device)
+    embedding_net_image = EmbeddingNetImage(weights=weights_image, network_image = args.network_image, dim_out_fc = args.dim_out_fc).to(device)
     embedding_net_text = EmbeddingNetText(weights=weights_text, device=device).to(device)  
 
     model = TripletNetIm2Text(embedding_net_image, embedding_net_text).to(device)

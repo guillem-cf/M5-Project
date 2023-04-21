@@ -10,10 +10,9 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights, FasterRCNN_ResNet50_FPN_V2_Weights, MaskRCNN_ResNet50_FPN_V2_Weights
 
-from dataset.database import ImageDatabase, TextDatabase
+from dataset.database import ImageDatabase, TextDatabases
 from dataset.triplet_data import TripletIm2Text, TripletText2Im
-from models.models import TripletNetIm2Text, TripletNetText2Img # , EmbeddingNetImage, EmbeddingNetText
-from models.resnet import EmbeddingNetImage, EmbeddingNetText
+from models.models import TripletNetIm2Text, TripletNetText2Img, EmbeddingNetImage, EmbeddingNetText
 from utils import losses
 from utils import trainer
 from utils import test
@@ -163,8 +162,8 @@ def train(args):
         weights_text = args.weights_text
             
         # Pretrained model from torchvision or from checkpoint
-        embedding_net_image = EmbeddingNetImage(weights=weights_image, dim_out_fc = args.dim_out_fc).to(device)
-        embedding_net_text = EmbeddingNetText(weights=weights_text, dim_out_fc = args.dim_out_fc, device=device).to(device)
+        embedding_net_image = EmbeddingNetImage(weights=weights_image,  dim_out_fc = args.dim_out_fc).to(device)
+        embedding_net_text = EmbeddingNetText(weights=weights_text, device=device,  dim_out_fc = args.dim_out_fc).to(device)
 
         if args.task == 'task_a':
             model = TripletNetIm2Text(embedding_net_image, embedding_net_text).to(device)
@@ -199,6 +198,8 @@ def train(args):
     
     
 
+# Run task_a:
+# python main.py --task task_a --train True --sweep False --network_image RESNET50
 
 
 
@@ -214,7 +215,7 @@ if __name__ == '__main__':
     # parser.add_argument('--gpu', type=int, default=5, help='GPU device id')
     
     # Image
-    parser.add_argument('--network_image', type=str, default='V1', help='fasterRCNN, RESNET50, RESNET101')
+    parser.add_argument('--network_image', type=str, default='RESNET50', help='fasterRCNN, RESNET50, RESNET101')
     parser.add_argument('--dim_out_fc', type=int, default=2048, help='Dimension of the output of the fully connected layer (2048 as image, 1000 as txt)')
     
     # Text
@@ -232,8 +233,8 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--num_epochs', type=int, default=10, help='Number of epochs')
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
-    parser.add_argument('--learning_rate', type=float, default=1e-5, help='Learning rate')
-    parser.add_argument('--margin', type=float, default=1, help='Margin for triplet loss')
+    parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')
+    parser.add_argument('--margin', type=float, default=0.1, help='Margin for triplet loss')
 
     args = parser.parse_args()
     

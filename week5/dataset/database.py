@@ -118,6 +118,11 @@ class TextDatabase(Dataset):
 
     def getCaptionIdx_fromId(self, caption_id):
         return [i for i in range(len(self.annotations_an)) if self.annotations_an[i]['id'] == caption_id][0]
+    
+    def getstrCaption_fromCaptionIdx(self, index): # FOR BERT
+        caption = self.annotations_an[index]['caption']
+        
+        return caption
 
     def __getitem__(self, index):
         

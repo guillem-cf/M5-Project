@@ -7,26 +7,6 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-
-def plot_embeddings_ImageText(image_embeddings, text_embeddinfs, title, output_path, xlim=None, ylim=None):
-
-    plt.figure(figsize=(10, 10))
-    
-    plt.scatter(image_embeddings[:, 0], image_embeddings[:, 1], alpha=0.5, color='blue')
-    plt.scatter(text_embeddinfs[:, 0], text_embeddinfs[:, 1], alpha=0.5, color='pink')
-    if xlim:
-        plt.xlim(xlim[0], xlim[1])
-    if ylim:
-        plt.ylim(ylim[0], ylim[1])
-    plt.title(title)
-    
-    path = os.path.join(output_path, title)
-    plt.savefig(path)
-    plt.close()
-    
-
-
 def extract_embeddings_image(dataloader, model, device, dim_features = 2048):
     with torch.no_grad():
         model.eval()
@@ -49,33 +29,83 @@ def extract_embeddings_text(dataloader, model, device, network_text, dim_feature
         labels = np.zeros(len(dataloader.dataset))
         k = 0
         for captions, target in tqdm(dataloader):
-            if 
-            # if torch.cuda.is_available():
-            #     NO PODEM PASSAR CAPTIONS A GPU PERQUE NO ES UN TENSOR
+            if network_text == 'BERT':
+                captions = captions.to(device)
+        
             embeddings[k:k + len(captions)] = model.get_embedding_text(captions).data.cpu().numpy()
             labels[k:k + len(captions)] = target.numpy()
             k += len(captions)
     return embeddings, labels
 
 
-def plot_PR_multiclass (classes, labels, y_score_knn,path):
-    precision = dict()
-    recall = dict()
-    for i in range(len(classes)):
-        labels_val = np.where(labels == i, 1, 0)
-        ap = round(average_precision_score(labels_val,  y_score_knn[:, i]),2)
-        #append the average precision for each class rounded to 2 decimals
-        precision[i], recall[i], _ = precision_recall_curve(labels_val, y_score_knn[:, i])
-        plt.plot(recall[i], precision[i], lw=2, label='{} {},'.format(classes[i], ap))
+def positives_ImageToText(neighbors_index, neighbors_id, databaseDataset, queryDataset):
+    #query is the image
+    
+    resultsQueries = []
+    
+    for i_query in tqdm(range(neighbors_id.shape[0])):
+        resultQuery = []
         
-    plt.xlabel("recall")
-    plt.ylabel("precision")
-    plt.legend(loc="best")
-    plt.title("precision vs. recall curve")
+        queryCaptions = queryDataset.getCaptionsId_fromImageIdx(i_query)
+        # image, image_id = queryDataset[i_query]
+        # captions_strings = [databaseDataset[databaseDataset.getCaptionIdx_fromId(capt)] for capt in queryCaptions]
+        
+        for i_db in range(neighbors_id.shape[1]):
+            
+            caption_id = neighbors_id[i_query, i_db]
+            # caption_idx = neighbors_index[i_query, i_db]
+            # caption, caption_id_prova = databaseDataset[caption_idx]
+            # imageDB_id = databaseDataset.getImageId_fromCaptionIdx(caption_idx)[0]
+            # imageDB_idx = queryDataset.getImageIdx_fromId(imageDB_id)
+            # imageDB, imageDB_id = queryDataset[imageDB_idx]
+            if caption_id in queryCaptions: 
+                resultQuery.append(1)
+            else:
+                resultQuery.append(0)
+        resultsQueries.append(resultQuery)
+    
+    return np.array(resultsQueries)
 
-    plt.savefig(path + "/PrecisionRecallCurve.png")
+
+def positives_TextToImage(neighbors_index, neighbors_id, databaseDataset, queryDataset):
+    resultsQueries = []
+    
+    for i_query in tqdm(range(neighbors_id.shape[0])):
+        resultQuery = []
+        queryImages = queryDataset.getImageId_fromCaptionIdx(i_query)
+
+        for i_db in range(neighbors_id.shape[1]):
+            
+            image_id = neighbors_id[i_query, i_db]
+    
+            if image_id in queryImages: 
+                resultQuery.append(1)
+            else:
+                resultQuery.append(0)
+        resultsQueries.append(resultQuery)
+    
+    return np.array(resultsQueries)
+
+
+
+def plot_embeddings_ImageText(image_embeddings, text_embeddinfs, title, output_path, xlim=None, ylim=None):
+
+    plt.figure(figsize=(10, 10))
+    
+    plt.scatter(image_embeddings[:, 0], image_embeddings[:, 1], alpha=0.5, color='blue')
+    plt.scatter(text_embeddinfs[:, 0], text_embeddinfs[:, 1], alpha=0.5, color='pink')
+    if xlim:
+        plt.xlim(xlim[0], xlim[1])
+    if ylim:
+        plt.ylim(ylim[0], ylim[1])
+    plt.title(title)
+    
+    path = os.path.join(output_path, title)
+    plt.savefig(path)
     plt.close()
     
+
+
     
     
 def plot_PR_binary(results, path):
@@ -95,22 +125,6 @@ def plot_PR_binary(results, path):
     plt.savefig(path + "/PrecisionRecallCurve.png")
     plt.close()
 
-
-def calculate_APs (y_true_test, y_true_test_repeated, neigh_labels, neigh_dist):
-    for k in [1, 3, 5, 10, 20, 30]:
-        prec_at_k = accuracy_score(y_true_test_repeated[:, 0:k].flatten(), neigh_labels[:, 0:k].flatten())
-        print("Prec@" + str(k) + ":", prec_at_k)
-
-    aps_all = []
-    aps_5 = []
-    for i in range(neigh_labels.shape[0]):
-        aps_all.append(average_precision_score((neigh_labels[i] == y_true_test[i]).astype(int), -neigh_dist[i]))
-        aps_5.append(average_precision_score((neigh_labels[i, 0:5] == y_true_test[i]).astype(int), -neigh_dist[i, 0:5]))
-    mAP_all = np.mean(aps_all)
-    mAP_5 = np.mean(aps_5)
-
-    print("mAP@all:", mAP_all)
-    print("mAP@5:", mAP_5)
     
     
 def calculate_APs_coco (results, path, wandb=None):
@@ -137,66 +151,36 @@ def calculate_APs_coco (results, path, wandb=None):
     
     
     
-def positives_ImageToText(neighbors_index, neighbors_id, databaseDataset, queryDataset):
-    #query is the image
-    
-    resultsQueries = []
-    
-    for i_query in tqdm(range(neighbors_id.shape[0])):
-        resultQuery = []
-        
-        # Això esta bé, torna les captions correctament de cada imatge del dataset
-        queryCaptions = queryDataset.getCaptionsId_fromImageIdx(i_query)
-        
-        # image, image_id = queryDataset[i_query]
-        
-        # captions_strings = [databaseDataset[databaseDataset.getCaptionIdx_fromId(capt)] for capt in queryCaptions]
-        
-        for i_db in range(neighbors_id.shape[1]):
-            
-            caption_id = neighbors_id[i_query, i_db]
-            # caption_idx = neighbors_index[i_query, i_db]
-            
-            # caption, caption_id_prova = databaseDataset[caption_idx]
-            
-            # imageDB_id = databaseDataset.getImageId_fromCaptionIdx(caption_idx)[0]
-            # imageDB_idx = queryDataset.getImageIdx_fromId(imageDB_id)
-            
-            # imageDB, imageDB_id = queryDataset[imageDB_idx]
-            
-            if caption_id in queryCaptions: 
-                resultQuery.append(1)
-            else:
-                resultQuery.append(0)
-        
-        resultsQueries.append(resultQuery)
-    
-    return np.array(resultsQueries)
 
-def positives_ImageToText_old(neighbors, databaseDataset, queryDataset):
-    #query is the image
+
+
+
+
+
+# def positives_ImageToText_old(neighbors, databaseDataset, queryDataset):
+#     #query is the image
     
-    resultsQueries = []
+#     resultsQueries = []
     
-    for i_query in tqdm(range(neighbors.shape[0])):
-        resultQuery = []
+#     for i_query in tqdm(range(neighbors.shape[0])):
+#         resultQuery = []
         
-        queryCaptions = queryDataset.getCaptions(i_query)
+#         queryCaptions = queryDataset.getCaptions(i_query)
         
-        for i_db in range(neighbors.shape[1]):
+#         for i_db in range(neighbors.shape[1]):
             
-            dbIndex = neighbors[i_query, i_db]
+#             dbIndex = neighbors[i_query, i_db]
             
-            caption = databaseDataset.getCaptionId(dbIndex)
+#             caption = databaseDataset.getCaptionId(dbIndex)
             
-            if caption in queryCaptions: 
-                resultQuery.append(1)
-            else:
-                resultQuery.append(0)
+#             if caption in queryCaptions: 
+#                 resultQuery.append(1)
+#             else:
+#                 resultQuery.append(0)
         
-        resultsQueries.append(resultQuery)
+#         resultsQueries.append(resultQuery)
     
-    return np.array(resultsQueries)
+#     return np.array(resultsQueries)
 
 
 def precisionK(results, k):
