@@ -118,8 +118,8 @@ def train(args):
         weights_text = args.weights_text
             
         # Pretrained model from torchvision or from checkpoint
-        embedding_net_image = EmbeddingNetImage(weights=weights_image,  dim_out_fc = args.dim_out_fc).to(device)
-        embedding_net_text = EmbeddingNetText(weights=weights_text, device=device,  dim_out_fc = args.dim_out_fc).to(device)
+        embedding_net_image = EmbeddingNetImage(weights=weights_image, network_image = args.network_image, dim_out_fc = args.dim_out_fc).to(device)
+        embedding_net_text = EmbeddingNetText(weights=weights_text, network_text= args.network_text, device=device,  dim_out_fc = args.dim_out_fc).to(device)
 
         if args.task == 'task_a':
             model = TripletNetIm2Text(embedding_net_image, embedding_net_text).to(device)
@@ -162,8 +162,8 @@ def train(args):
         weights_text = args.weights_text
             
         # Pretrained model from torchvision or from checkpoint
-        embedding_net_image = EmbeddingNetImage(weights=weights_image,  dim_out_fc = args.dim_out_fc).to(device)
-        embedding_net_text = EmbeddingNetText(weights=weights_text, device=device,  dim_out_fc = args.dim_out_fc).to(device)
+        embedding_net_image = EmbeddingNetImage(weights=weights_image, network_image = args.network_image, dim_out_fc = args.dim_out_fc).to(device)
+        embedding_net_text = EmbeddingNetText(weights=weights_text, network_text= args.network_text, device=device,  dim_out_fc = args.dim_out_fc).to(device)
 
         if args.task == 'task_a':
             model = TripletNetIm2Text(embedding_net_image, embedding_net_text).to(device)
@@ -194,7 +194,7 @@ def train(args):
     text_test_loader = DataLoader(text_val_dataset, batch_size=args.batch_size, shuffle=False,
                                     pin_memory=True, num_workers=10)
 
-    map = test.test_resnet(args, model, image_test_dataset, image_test_loader, text_test_dataset, text_test_loader, output_path_test, device=device, wandb=wandb, retrieval=True)
+    map = test.test(args, model, image_test_dataset, image_test_loader, text_test_dataset, text_test_loader, output_path_test, device=device, wandb=wandb, retrieval=True)
     
     
 
@@ -231,7 +231,7 @@ if __name__ == '__main__':
  
     # Training
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
-    parser.add_argument('--num_epochs', type=int, default=10, help='Number of epochs')
+    parser.add_argument('--num_epochs', type=int, default=2, help='Number of epochs')  # TORNAR A POSAR 10
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--margin', type=float, default=0.1, help='Margin for triplet loss')

@@ -1,6 +1,6 @@
 import os
 import time
-import umap
+# import umap
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -54,12 +54,12 @@ def test(args, model,
     print("Calculating KNN...")
     start = time.time()
     if args.task == 'task_a':
-        neighbors, distances = knn.kneighbors(val_embeddings_image, return_distance=True)
+        neighbors = knn.kneighbors(val_embeddings_image, return_distance=False)
         # Map the indices of the neighbors matrix to their corresponding 'id' values
         id_neighbors_matrix = np.vectorize(lambda i: labels_text[i])(neighbors)
         
     elif args.task == 'task_b':
-        neighbors = knn.kneighbors(val_embeddings_text, return_distance=True)
+        neighbors = knn.kneighbors(val_embeddings_text, return_distance=False)
         id_neighbors_matrix = np.vectorize(lambda i: labels_image[i])(neighbors)
     end = time.time()
     print("Time to calculate KNN: ", end - start)

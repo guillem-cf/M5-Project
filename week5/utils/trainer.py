@@ -1,7 +1,6 @@
 import numpy as np
 import torch
-from utils.checkpoint import save_checkpoint_loss
-from utils.test import test_resnet
+from utils.test import test
 
 # if torch.cuda.is_available():
 #     print("CUDA is available")
@@ -101,9 +100,9 @@ def fit(args, train_loader, val_loader,
         path=output_path + f"/{args.task}_triplet_{epoch + 1}.pth"
         torch.save(model.state_dict(), path)
         
-        map = test_resnet(args, model, image_val_dataset, image_val_loader, text_val_dataset, text_val_loader, output_path, device=device, wandb=wandb, retrieval=False)
+        map = test(args, model, image_val_dataset, image_val_loader, text_val_dataset, text_val_loader, output_path, device=device, wandb=wandb, retrieval=False)
         if map > best_val_map:
-            print("Best model saved at epoch: ", epoch, " with val_map: ", map)
+            print("Best model saved at epoch: ", epoch+1, " with val_map: ", map)
             torch.save(model.state_dict(), output_path + f"/{args.task}_triplet_best.pth")
 
     path = output_path + "/loss.png"
@@ -174,6 +173,8 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, idx_to_device, 
 
             print(message)
             losses = []
+            
+            break
             
 
     # total_loss /= (batch_idx + 1)

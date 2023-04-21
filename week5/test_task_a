@@ -1,3 +1,4 @@
+#!/bin/bash
 # Bash script. Read the file test_task_a_as_image.txt and test_task_a_as_text.txt
 # Loop through the file and run the command for each line
 echo "Running test_task_a.sh"

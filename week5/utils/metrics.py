@@ -137,10 +137,10 @@ def calculate_APs_coco (results, path, wandb=None):
         results_txt.append("Prec@" + str(k) + ": " + str(prec_at_k))
 
     map_value = MAP(results)
-    print("mAP:", map)
-    results_txt.append("mAP: " + str(map))
+    print("mAP:", map_value)
+    results_txt.append("mAP: " + str(map_value))
     if wandb is not None:
-        wandb.log({"mAP": map})
+        wandb.log({"mAP": map_value})
     
     # Save results in .txt file
     with open(path + "/results.txt", "w") as output:

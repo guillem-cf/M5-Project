@@ -99,7 +99,6 @@ class EmbeddingNetText(nn.Module):
             output = torch.stack(output)
 
             output = self.fc(output) 
-        
         else:
             output = self.fc(x)
 

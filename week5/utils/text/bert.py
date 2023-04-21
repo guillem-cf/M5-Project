@@ -29,13 +29,14 @@ def encode_caption(tokenizer, model, caption):
 
 # Load the BERT tokenizer and model
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-model = BertModel.from_pretrained("bert-base-uncased").eval()
+model = BertModel.from_pretrained("bert-base-uncased").to(device).eval()
 
 # Load the JSON data
 
 env_path = os.path.dirname(os.path.abspath(__file__))
 # get path of current file
-dataset_path = '../../../../mcv/datasets/COCO'
+# dataset_path = '../../../../mcv/datasets/COCO'
+dataset_path = '/ghome/group03/mcv/datasets/COCO'
 
 train_path = os.path.join(dataset_path, 'captions_train2014.json')
 val_path = os.path.join(dataset_path, 'captions_val2014.json')
@@ -82,7 +83,7 @@ for annotation in tqdm(data["annotations"]):
     inputs = tokenizer(caption, return_tensors='pt').to(device)
     outputs = model(**inputs)
 
-    logits = outputs.last_hidden_state[0, 0, :].to(device).squeeze().detach().numpy()
+    logits = outputs.last_hidden_state[0, 0, :].to("cpu").squeeze().detach().numpy()
 
     output_annotations.append({
         'caption': caption,
