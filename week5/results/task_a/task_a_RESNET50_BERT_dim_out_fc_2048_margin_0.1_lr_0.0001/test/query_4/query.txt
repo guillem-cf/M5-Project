@@ -1,0 +1,10 @@
+Query Captions GT: a 
+A 
+A 
+C 
+A 
+neighbor_0 Caption: Motorcycles driving down a wide city street nearing a white building.
+neighbor_1 Caption: A green bench in front of a window box
+neighbor_2 Caption: White ornate seat in nicely decorated room with television.
+neighbor_3 Caption: a bike sits parked next to a street 
+neighbor_4 Caption: An older silver metro bus in a parking lot.

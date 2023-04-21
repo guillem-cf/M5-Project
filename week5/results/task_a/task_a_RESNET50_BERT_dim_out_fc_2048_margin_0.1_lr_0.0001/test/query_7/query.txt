@@ -1,0 +1,10 @@
+Query Captions GT: A 
+A 
+A 
+G 
+A 
+neighbor_0 Caption: White ornate seat in nicely decorated room with television.
+neighbor_1 Caption: Blue dust pan and brush on floor next to white commode.
+neighbor_2 Caption: Motorcycles driving down a wide city street nearing a white building.
+neighbor_3 Caption: A green bench in front of a window box
+neighbor_4 Caption: A small lightweight airplane flying through the sky.
