@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 import json
 import random
 import torch
-
+import ujson
 
 
 
@@ -17,7 +17,7 @@ class TripletIm2Text(Dataset):
         
         if self.network_text == 'BERT':
             with open(ann_file_bert, 'r') as f:
-                self.embeddings = json.load(f)
+                self.embeddings = ujson.load(f)
 
         with open(ann_file, 'r') as f:
             self.annotations = json.load(f)
@@ -80,10 +80,13 @@ class TripletText2Im(Dataset):
     def __init__(self, ann_file, img_dir, ann_file_bert, network_text, transform=None):
         self.img_dir = img_dir
         self.transform = transform
+        self.network_text = network_text
         
         if self.network_text == 'BERT':
+            print('Loading the embeddings dict...')
             with open(ann_file_bert, 'r') as f:
-                self.embeddings = json.load(f)
+                self.embeddings = ujson.load(f)
+            print('Done!')
 
         with open(ann_file, 'r') as f:
             self.annotations = json.load(f)

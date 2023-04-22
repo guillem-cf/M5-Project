@@ -4,6 +4,7 @@ import argparse
 import functools 
 import wandb
 import time
+import datetime
 
 import torch
 import torchvision.transforms as transforms
@@ -23,18 +24,19 @@ from utils.early_stopper import EarlyStopper
 def train(args):   
     print('Task: ', args.task)
     
-    if args.sweep:
-        print('Wandb sweep...')
-        wandb.init(project="m5-w4", entity="grup7")
-        # IMPORTANT PUT HERE THE NAME OF VARIABLES THAT YOU WANT TO SWEEP
-        args.margin = wandb.config.margin
-        args.dim_out_fc = wandb.config.dim_out_fc
-        args.learning_rate = wandb.config.lr
-        args.network_image = wandb.config.network_image
-        args.network_text = wandb.config.network_text
-    else:
-        print('No wandb sweep...')
-        wandb=None
+    # if args.sweep:
+    print('Wandb sweep...')
+    wandb.init()
+    
+    # IMPORTANT PUT HERE THE NAME OF VARIABLES THAT YOU WANT TO SWEEP
+    args.margin = wandb.config.margin
+    args.dim_out_fc = wandb.config.dim_out_fc
+    args.learning_rate = wandb.config.lr
+    args.network_image = wandb.config.network_image
+    args.network_text = wandb.config.network_text
+    # else:
+    #     print('No wandb sweep...')
+    # wandb=None
         
     # -------------------------------- GPU --------------------------------
     # os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
@@ -154,7 +156,7 @@ def train(args):
         lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1, last_epoch=-1)
         # lr_scheduler = None
 
-        log_interval = 10
+        log_interval = 20
 
         trainer.fit(args, triplet_train_loader, triplet_test_loader, image_val_dataset, image_val_loader, text_val_dataset, text_val_loader, model, loss_func, optimizer, lr_scheduler, num_epochs,
                     device, log_interval, output_path, name=args.task, wandb = wandb)
@@ -217,6 +219,8 @@ def train(args):
 # Same as task_a but using --network_text BERT
 
 
+
+
 ######################### ATENCIÓ!!! TASK_B use batch 32 ######################################
 
 if __name__ == '__main__':
@@ -224,7 +228,7 @@ if __name__ == '__main__':
     # ------------------------------- ARGS ---------------------------------
     parser = argparse.ArgumentParser(description='Week 5 main script')
     parser.add_argument('--task', type=str, default='task_a', help='task_a --> img2txt // task_b --> txt2img') 
-    parser.add_argument('--train', type=bool, default=False, help='Train or test')
+    parser.add_argument('--train', type=bool, default=True, help='Train or test')
     parser.add_argument('--sweep', type=bool, default=False, help='Sweep in wandb or not')
     
     # Device
@@ -254,10 +258,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
+    data_time = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
     if args.sweep:
         assert args.train == True, "Sweep only works for training"
         sweep_config = {
-            'name': f'Sweep_{time.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")}',
+            'name': f'Sweep_{data_time}',
             'method': 'grid',
             'parameters':{
                 'margin': {
@@ -269,7 +274,8 @@ if __name__ == '__main__':
                     'value': 2048
                 },
                 'network_text': {
-                    'values': ['FastText', 'BERT']
+                    # 'values': ['BERT', 'FastText']
+                    'value': 'FastText'
                 },
                 'network_image': {
                     'values': ['RESNET50', 'fasterRCNN']

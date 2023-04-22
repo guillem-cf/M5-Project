@@ -3,7 +3,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 import json
 import torch
-
+import ujson
 
 
 class ImageDatabase(Dataset):
@@ -83,8 +83,9 @@ class TextDatabase(Dataset):
         self.annotations_an = [self.annotations_an[i] for i in range(len(self.annotations_an)) if self.annotations_an[i]['image_id'] in self.images_list_id]
         
         if self.network_text == 'BERT':
+            print('Loading the embeddings dict:')
             with open(ann_file_bert, 'r') as f:
-                self.embeddings = json.load(f)
+                self.embeddings = ujson.load(f)
             self.embeddings = [self.embeddings[i] for i in range(len(self.embeddings)) if self.embeddings[i]['image_id'] in self.images_list_id]
         
         # Create a dictionary with the caption id as key and the images id that have this caption
