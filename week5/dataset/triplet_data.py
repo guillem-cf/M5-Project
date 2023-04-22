@@ -6,7 +6,7 @@ import json
 import random
 import torch
 import ujson
-
+import numpy as np
 
 
 class TripletIm2Text(Dataset):
@@ -15,11 +15,11 @@ class TripletIm2Text(Dataset):
         self.transform = transform
         self.network_text = network_text
         
-        if self.network_text == 'BERT':
-            print('Loading the embeddings BERT dict...')
-            with open(ann_file_bert, 'r') as f:
-                self.embeddings = ujson.load(f)
-            print('Done!')
+   
+        print('Loading the embeddings dict...')
+        with open(ann_file_bert, 'rb') as f:
+            self.embeddings = np.load(f)
+        print('Done!')
 
 
         with open(ann_file, 'r') as f:
@@ -66,36 +66,34 @@ class TripletIm2Text(Dataset):
             
         negative_caption = neg_ann['caption']
         
-        if self.network_text == 'BERT':
-            positive_embedding = torch.tensor(self.embeddings[idx_pos]['caption'])
-            assert self.embeddings[idx_pos]['id'] == positive_caption_id
-            negative_embedding = torch.tensor(self.embeddings[neg_ann_idx]['caption'])
-            assert self.embeddings[neg_ann_idx]['id'] == negative_caption_id
-            
-            return (image, positive_embedding, negative_embedding), []
-    
+        # positive_caption = torch.tensor(self.embeddings[idx_pos]['caption'])
+        # assert self.embeddings[idx_pos]['id'] == positive_caption_id
+        # negative_caption = torch.tensor(self.embeddings[neg_ann_idx]['caption'])
+        # assert self.embeddings[neg_ann_idx]['id'] == negative_caption_id
         
+        positive_caption = torch.tensor(self.embeddings[idx_pos], dtype=torch.float32)
+        negative_caption = torch.tensor(self.embeddings[neg_ann_idx], dtype=torch.float32)
+            
         return (image, positive_caption, negative_caption), []
     
     
     
 class TripletText2Im(Dataset):
-    def __init__(self, ann_file, img_dir, ann_file_bert, network_text, transform=None):
+    def __init__(self, ann_file, img_dir, ann_file_bert, network_text, num_images=20000, transform=None):
         self.img_dir = img_dir
         self.transform = transform
         self.network_text = network_text
         
-        if self.network_text == 'BERT':
-            print('Loading the embeddings BERT dict...')
-            with open(ann_file_bert, 'r') as f:
-                self.embeddings = ujson.load(f)
-            print('Done!')
 
+        print('Loading the embeddings dict...')
+        with open(ann_file_bert, 'rb') as f:
+            self.embeddings = np.load(f)
+   
         with open(ann_file, 'r') as f:
             self.annotations = json.load(f)
             
-        self.images = self.annotations['images']
-        self.annotations_an = self.annotations['annotations']
+        self.images = self.annotations['images']               # 80.000
+        self.annotations_an = self.annotations['annotations']  # 400.000
  
                 
         # Create a dictionary with the image id as key and the annotation index
@@ -148,11 +146,11 @@ class TripletText2Im(Dataset):
             positive_image = self.transform(positive_image)
             negative_image = self.transform(negative_image)
             
-        if self.network_text == 'BERT':
-            anchor_embedding = torch.tensor(self.embeddings[index]['caption'])
-            assert self.embeddings[index]['id'] == caption_id
+  
+        # anchor_embedding = torch.tensor(self.embeddings[index]['caption'])
+        # assert self.embeddings[index]['id'] == caption_id
+        caption = torch.tensor(self.embeddings[index], dtype=torch.float32)
             
-            return (anchor_embedding, positive_image, negative_image), []
         
         return (caption, positive_image, negative_image), []
     

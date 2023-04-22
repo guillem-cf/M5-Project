@@ -1,0 +1,10 @@
+Query Captions GT: A 
+A 
+A 
+G 
+A 
+neighbor_0 Caption: a close up of a motorcycle license plate
+neighbor_1 Caption: a giraffe walking through trees on a sunny day
+neighbor_2 Caption: Black and white photograph of two men on motorcycles.
+neighbor_3 Caption: A claw foot tub is in a large bathroom near a pedestal sink.
+neighbor_4 Caption: Two people riding on top of one motorcycle.

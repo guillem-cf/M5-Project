@@ -1,0 +1,10 @@
+Query Captions GT: A 
+a 
+H 
+A 
+a 
+neighbor_0 Caption: a close up of a motorcycle license plate
+neighbor_1 Caption: A plane ascends over a city, with mountains in the background.
+neighbor_2 Caption: a giraffe walking through trees on a sunny day
+neighbor_3 Caption: A kid is to blow out the single candle in a bowl of birthday goodness. 
+neighbor_4 Caption: A claw foot tub is in a large bathroom near a pedestal sink.

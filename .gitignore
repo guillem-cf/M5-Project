@@ -345,3 +345,4 @@ week5/results/task_a_old/task_aRESNET_dim_out_fc_as_text_margin_0.1_lr_0.0001/re
 week5/results/task_a_old/task_aRESNET_dim_out_fc_as_text_margin_10_lr_0.0001/results.txt
 week5/results/task_a_old/task_aRESNET_dim_out_fc_as_text_margin_1_lr_0.0001/results.txt
 week5/results/task_a_old_old/task_a_dim_out_fc_as_image_margin_100/results.txt
+week5/results/task_a/task_a_RESNET50_BERT_dim_out_fc_2048_margin_0.1_lr_0.0001/results.txt

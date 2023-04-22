@@ -3,7 +3,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 import json
 import torch
-import ujson
+import numpy as np
 
 
 class ImageDatabase(Dataset):
@@ -78,15 +78,16 @@ class TextDatabase(Dataset):
         # Create a list of 'id' of the self.images
         self.images_list_id = [self.images[i]['id'] for i in range(len(self.images))]
         
-        self.annotations_an = self.annotations['annotations']
-        # Delete the annotations that have 'image_id' not in the self.images_list_id
-        self.annotations_an = [self.annotations_an[i] for i in range(len(self.annotations_an)) if self.annotations_an[i]['image_id'] in self.images_list_id]
+        self.annotations = self.annotations['annotations']
+        # Delete the annotations that have 'image_id' not in the self.images_list_id. Also keep the index of the annotations that have 'image_id' in the self.images_list_id
+        self.annotations_an = [self.annotations[i] for i in range(len(self.annotations)) if self.annotations[i]['image_id'] in self.images_list_id]
+        self.annotations_an_idx = [i for i in range(len(self.annotations)) if self.annotations[i]['image_id'] in self.images_list_id]
         
-        if self.network_text == 'BERT':
-            print('Loading the embeddings dict:')
-            with open(ann_file_bert, 'r') as f:
-                self.embeddings = ujson.load(f)
-            self.embeddings = [self.embeddings[i] for i in range(len(self.embeddings)) if self.embeddings[i]['image_id'] in self.images_list_id]
+        print('Loading the embeddings dict:')
+        with open(ann_file_bert, 'rb') as f:
+            self.embeddings = np.load(f)
+        self.embeddings = self.embeddings[self.annotations_an_idx]
+        
         
         # Create a dictionary with the caption id as key and the images id that have this caption
         # Each image can have multiple annotations
@@ -121,10 +122,7 @@ class TextDatabase(Dataset):
         caption = self.annotations_an[index]['caption']
         caption_id = self.annotations_an[index]['id']
         
-        if self.network_text == 'BERT':
-            embedding = torch.tensor(self.embeddings[index]['caption'])
-            assert self.embeddings[index]['id'] == caption_id
-            
-            return embedding, caption_id
         
-        return caption, caption_id
+        embedding = torch.tensor(self.embeddings[index], dtype=torch.float32)
+
+        return embedding, caption_id

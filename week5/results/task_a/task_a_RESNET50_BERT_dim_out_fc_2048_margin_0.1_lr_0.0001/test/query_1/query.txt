@@ -1,0 +1,10 @@
+Query Captions GT: A 
+A 
+A 
+t 
+A 
+neighbor_0 Caption: The snow covered mountain looks over the small city.
+neighbor_1 Caption: Motorcycles driving down a wide city street nearing a white building.
+neighbor_2 Caption: A green bench in front of a window box
+neighbor_3 Caption: A man is in a kitchen making pizzas.
+neighbor_4 Caption: a bike sits parked next to a street 

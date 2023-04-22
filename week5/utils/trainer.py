@@ -34,14 +34,15 @@ def fit(args, train_loader, val_loader,
     #     if scheduler is not None:
     #        scheduler.step()
     
-    if args.network_text == 'BERT':
-        idx_to_device = [0, 1, 2]
-    elif args.task == 'task_a':
-        idx_to_device = [0]
-    elif args.task == 'task_b':
-        idx_to_device = [1, 2]
+    # if args.network_text == 'BERT':
+    #     idx_to_device = [0, 1, 2]
+    # elif args.task == 'task_a':
+    #     idx_to_device = [0]
+    # elif args.task == 'task_b':
+    #     idx_to_device = [1, 2]
+    
+    idx_to_device = [0, 1, 2]
         
-
     best_val_map = 0
 
     train_loss_list = []
@@ -49,11 +50,12 @@ def fit(args, train_loader, val_loader,
     
     for epoch in range(start_epoch, n_epochs):
         # Train stage
-        train_loss, metrics = train_epoch(train_loader, model, loss_fn, optimizer, device, idx_to_device, log_interval, metrics, name, wandb, epoch)
+        train_loss, metrics = train_epoch(args, train_loader, model, loss_fn, optimizer, device, idx_to_device, log_interval, metrics, name, wandb, epoch, scheduler)
         train_loss_list.append(train_loss)
 
         if scheduler is not None:
-            scheduler.step()
+            if args.task == 'task_a':
+                scheduler.step()
 
         message = 'Epoch: {}/{}.           Train set:       Average loss: {:.4f}'.format(epoch + 1, n_epochs,
                                                                                          train_loss)
@@ -109,7 +111,7 @@ def fit(args, train_loader, val_loader,
     plot_loss(train_loss_list, val_loss_list, path)
 
 
-def train_epoch(train_loader, model, loss_fn, optimizer, device, idx_to_device, log_interval, metrics, name, wandb, epoch):
+def train_epoch(args, train_loader, model, loss_fn, optimizer, device, idx_to_device, log_interval, metrics, name, wandb, epoch, scheduler):
     for metric in metrics:
         metric.reset()
 
@@ -173,6 +175,12 @@ def train_epoch(train_loader, model, loss_fn, optimizer, device, idx_to_device, 
 
             print(message)
             losses = []
+            
+            if args.task == 'task_b':
+                scheduler.step()
+                if wandb is not None:
+                    wandb.log({'lr': scheduler.get_lr()})
+        
             
             
 

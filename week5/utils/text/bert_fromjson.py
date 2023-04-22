@@ -33,7 +33,7 @@ with open(train_path, "r") as file:
 # Extract the captions
 output_numpy = []
 
-for annotation in tqdm(data["annotations"]):
+for annotation in tqdm(data):
     embeddings = annotation['caption']
     
     output_numpy.append(np.array(embeddings))
@@ -53,7 +53,7 @@ with open(val_path, "r") as file:
 # Extract the captions
 output_numpy = []
 
-for annotation in tqdm(data["annotations"]):
+for annotation in tqdm(data):
     
     embedding = annotation['caption']
     

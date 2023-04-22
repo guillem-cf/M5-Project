@@ -24,19 +24,19 @@ from utils.early_stopper import EarlyStopper
 def train(args):   
     print('Task: ', args.task)
     
-    # # if args.sweep:
-    # print('Wandb sweep...')
-    # wandb.init()
+    # if args.sweep:
+    print('Wandb sweep...')
+    wandb.init()
     
-    # # IMPORTANT PUT HERE THE NAME OF VARIABLES THAT YOU WANT TO SWEEP
-    # args.margin = wandb.config.margin
-    # args.dim_out_fc = wandb.config.dim_out_fc
-    # args.learning_rate = wandb.config.lr
-    # args.network_image = wandb.config.network_image
-    # args.network_text = wandb.config.network_text
+    # IMPORTANT PUT HERE THE NAME OF VARIABLES THAT YOU WANT TO SWEEP
+    args.margin = wandb.config.margin
+    args.dim_out_fc = wandb.config.dim_out_fc
+    args.learning_rate = wandb.config.lr
+    args.network_image = wandb.config.network_image
+    args.network_text = wandb.config.network_text
     # else:
     #     print('No wandb sweep...')
-    wandb=None
+    # wandb=None
         
     # -------------------------------- GPU --------------------------------
     # os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
@@ -62,8 +62,15 @@ def train(args):
     train_annot_path = os.path.join(dataset_path, 'captions_train2014.json')
     val_annot_path = os.path.join(dataset_path, 'captions_val2014.json')
     
-    train_annot_bert_path = os.path.join(dataset_path, 'encoded_captions_train2014_bert.json')
-    val_annot_bert_path = os.path.join(dataset_path, 'encoded_captions_val2014_bert.json')
+    if args.network_text == 'FastText':
+        train_annot_embed_path = os.path.join(dataset_path, 'encoded_captions_train2014_fasttext.npy')
+        val_annot_embed_path = os.path.join(dataset_path, 'encoded_captions_val2014_fasttext.npy')
+    elif args.network_text == 'BERT':
+        train_annot_embed_path = os.path.join(dataset_path, 'encoded_captions_train2014_bert.npy')
+        val_annot_embed_path = os.path.join(dataset_path, 'encoded_captions_val2014_bert.npy')
+    else:
+        raise ValueError('Network text not valid')
+    
     
     env_path = os.path.dirname(os.path.abspath(__file__))
     # dataset_path = '../../datasets/COCO'
@@ -92,15 +99,15 @@ def train(args):
                 )
 
         if args.task == 'task_a':
-            triplet_train_dataset = TripletIm2Text(train_annot_path, train_path, train_annot_bert_path, args.network_text, transform=transform)
+            triplet_train_dataset = TripletIm2Text(train_annot_path, train_path, train_annot_embed_path, args.network_text, transform=transform)
         elif args.task == 'task_b':
-            triplet_train_dataset = TripletText2Im(train_annot_path, train_path, train_annot_bert_path, args.network_text, transform=transform)
+            triplet_train_dataset = TripletText2Im(train_annot_path, train_path, train_annot_embed_path, args.network_text, transform=transform)
         else:
             raise ValueError('Task not valid')
             
             
         image_val_dataset = ImageDatabase(val_annot_path, val_path, num_samples=100, transform=transform)
-        text_val_dataset = TextDatabase(val_annot_path, val_path, val_annot_bert_path, args.network_text, num_samples= 100, transform=transform)
+        text_val_dataset = TextDatabase(val_annot_path, val_path, val_annot_embed_path, args.network_text, num_samples= 100, transform=transform)
     
 
         # ------------------------------- DATALOADER --------------------------------
@@ -149,12 +156,16 @@ def train(args):
         optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
         # Early stoppper
-        early_stopper = EarlyStopper(patience=50, min_delta=10)
+        # early_stopper = EarlyStopper(patience=50, min_delta=10)
 
         # Learning rate scheduler
         # lr_scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=20, verbose=True)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1, last_epoch=-1)
-        # lr_scheduler = None
+        if args.task == 'task_a':
+            lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.1, last_epoch=-1, verbose=True)    # 3 steps (step=epoch)
+        elif args.task == 'task_b':
+            lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int((len(triplet_train_loader.dataset)/(20*args.batch_size))*0.35), gamma=0.1, last_epoch=-1, verbose=True) # 400.000 steps (step=iteration)
+        else:
+            raise ValueError('Task not valid')
 
         log_interval = 20
 
@@ -188,7 +199,7 @@ def train(args):
         os.makedirs(output_path_test)
     
     image_test_dataset = ImageDatabase(val_annot_path, val_path, num_samples=1000, transform=transform)
-    text_test_dataset = TextDatabase(val_annot_path, val_path, val_annot_bert_path, args.network_text, num_samples= 1000, transform=transform)
+    text_test_dataset = TextDatabase(val_annot_path, val_path, val_annot_embed_path, args.network_text, num_samples= 1000, transform=transform)
     
     image_test_loader = DataLoader(image_val_dataset, batch_size=args.batch_size, shuffle=False,
                                     pin_memory=True, num_workers=10)
@@ -221,13 +232,13 @@ def train(args):
 
 
 
-######################### ATENCIÓ!!! TASK_B use batch 32 ######################################
+######################### ATENCIÓ!!! TASK_B use batch 32 i 2 epochs!!!!!!! ######################################
 
 if __name__ == '__main__':
     
     # ------------------------------- ARGS ---------------------------------
     parser = argparse.ArgumentParser(description='Week 5 main script')
-    parser.add_argument('--task', type=str, default='task_a', help='task_a --> img2txt // task_b --> txt2img') 
+    parser.add_argument('--task', type=str, default='task_b', help='task_a --> img2txt // task_b --> txt2img') 
     parser.add_argument('--train', type=bool, default=True, help='Train or test')
     parser.add_argument('--sweep', type=bool, default=False, help='Sweep in wandb or not')
     
@@ -235,7 +246,7 @@ if __name__ == '__main__':
     # parser.add_argument('--gpu', type=int, default=5, help='GPU device id')
     
     # Image
-    parser.add_argument('--network_image', type=str, default='RESNET50', help='fasterRCNN, RESNET50, RESNET101')
+    parser.add_argument('--network_image', type=str, default='fasterRCNN', help='fasterRCNN, RESNET50, RESNET101')
     parser.add_argument('--dim_out_fc', type=int, default=2048, help='Dimension of the output of the fully connected layer (2048 as image, 1000 as txt)')
     
     # Text
@@ -251,7 +262,7 @@ if __name__ == '__main__':
  
     # Training
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')       # TORNAR A POSAR 64
-    parser.add_argument('--num_epochs', type=int, default=10, help='Number of epochs')  # TORNAR A POSAR 10
+    parser.add_argument('--num_epochs', type=int, default=1, help='Number of epochs')  # TORNAR A POSAR 1
     parser.add_argument('--weight_decay', type=float, default=0.001, help='Weight decay')
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--margin', type=float, default=0.1, help='Margin for triplet loss')
@@ -266,7 +277,7 @@ if __name__ == '__main__':
             'method': 'grid',
             'parameters':{
                 'margin': {
-                    'values': [0.01, 0.1, 1, 10]
+                    'values': [0.1, 1, 10]
                     # 'value': 1
                 },
                 'dim_out_fc': {
@@ -274,8 +285,8 @@ if __name__ == '__main__':
                     'value': 2048
                 },
                 'network_text': {
-                    # 'values': ['BERT', 'FastText']
-                    'value': 'FastText'
+                    'values': ['BERT', 'FastText']
+                    # 'value': 'FastText'
                 },
                 'network_image': {
                     'values': ['RESNET50', 'fasterRCNN']

@@ -17,9 +17,9 @@ class EmbeddingNetImage(nn.Module):
             self.model = nn.Sequential(*list(self.faster_rcnn.backbone.children())[:-1])
             in_features = 3840
             
-            for name, param in self.model.named_parameters():
-                if 'fc' not in name:
-                    param.requires_grad = False
+            # for name, param in self.model.named_parameters():
+            #     if 'fc' not in name:
+            #         param.requires_grad = False
                 
         elif network_image == 'RESNET50':
             self.model = torchvision.models.resnet50(pretrained=True)
@@ -65,10 +65,10 @@ class EmbeddingNetText(nn.Module):
         self.network_text = network_text
         
         if network_text == 'FastText':
-            self.model = fasttext.load_model(weights)
-            # self.lstm = nn.LSTM(input_size=300, hidden_size=300, num_layers=1, batch_first=True)
-            self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
-          
+            # self.model = fasttext.load_model(weights)
+            # # self.lstm = nn.LSTM(input_size=300, hidden_size=300, num_layers=1, batch_first=True)
+            # self.global_avg_pool = nn.AdaptiveAvgPool1d(1)
+            
             if dim_out_fc < 1500:
                 self.fc = nn.Sequential(nn.Linear(300, 512), 
                                     nn.PReLU(), 
@@ -87,20 +87,21 @@ class EmbeddingNetText(nn.Module):
                                     nn.Linear(1024, dim_out_fc))
     
     def forward(self, x):
-        if self.network_text == 'FastText':
-            x = [caption.replace('.', '').replace(',','').lower().split() for caption in x]
+        # if self.network_text == 'FastText':
+        #     x = [caption.replace('.', '').replace(',','').lower().split() for caption in x]
             
-            output = []
-            for caption in x:
-                capt_output = [torch.tensor(self.model[word]).to(self.device) for word in caption]
-                # output.append(torch.stack(capt_output).mean(dim=0))
-                output.append(self.global_avg_pool(torch.stack(capt_output).permute(1, 0)).squeeze(-1))
+        #     output = []
+        #     for caption in x:
+        #         capt_output = [torch.tensor(self.model[word]).to(self.device) for word in caption]
+        #         # output.append(torch.stack(capt_output).mean(dim=0))
+        #         output.append(self.global_avg_pool(torch.stack(capt_output).permute(1, 0)).squeeze(-1))
 
-            output = torch.stack(output)
+        #     output = torch.stack(output)
 
-            output = self.fc(output) 
-        else:
-            output = self.fc(x)
+        #     output = self.fc(output) 
+        # else:
+        
+        output = self.fc(x)
 
         return output
     

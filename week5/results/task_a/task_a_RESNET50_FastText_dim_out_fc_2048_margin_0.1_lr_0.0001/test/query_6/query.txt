@@ -1,0 +1,10 @@
+Query Captions GT: A 
+A 
+a 
+A 
+A 
+neighbor_0 Caption: a close up of a motorcycle license plate
+neighbor_1 Caption: Black and white photograph of two men on motorcycles.
+neighbor_2 Caption: a giraffe walking through trees on a sunny day
+neighbor_3 Caption: A plane ascends over a city, with mountains in the background.
+neighbor_4 Caption: Two people riding on top of one motorcycle.

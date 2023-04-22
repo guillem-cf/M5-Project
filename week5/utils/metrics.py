@@ -29,8 +29,8 @@ def extract_embeddings_text(dataloader, model, device, network_text, dim_feature
         labels = np.zeros(len(dataloader.dataset))
         k = 0
         for captions, target in tqdm(dataloader):
-            if network_text == 'BERT':
-                captions = captions.to(device)
+            # if network_text == 'BERT':
+            captions = captions.to(device)
         
             embeddings[k:k + len(captions)] = model.get_embedding_text(captions).data.cpu().numpy()
             labels[k:k + len(captions)] = target.numpy()
