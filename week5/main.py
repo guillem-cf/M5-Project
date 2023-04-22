@@ -24,19 +24,19 @@ from utils.early_stopper import EarlyStopper
 def train(args):   
     print('Task: ', args.task)
     
-    # if args.sweep:
-    print('Wandb sweep...')
-    wandb.init()
+    # # if args.sweep:
+    # print('Wandb sweep...')
+    # wandb.init()
     
-    # IMPORTANT PUT HERE THE NAME OF VARIABLES THAT YOU WANT TO SWEEP
-    args.margin = wandb.config.margin
-    args.dim_out_fc = wandb.config.dim_out_fc
-    args.learning_rate = wandb.config.lr
-    args.network_image = wandb.config.network_image
-    args.network_text = wandb.config.network_text
+    # # IMPORTANT PUT HERE THE NAME OF VARIABLES THAT YOU WANT TO SWEEP
+    # args.margin = wandb.config.margin
+    # args.dim_out_fc = wandb.config.dim_out_fc
+    # args.learning_rate = wandb.config.lr
+    # args.network_image = wandb.config.network_image
+    # args.network_text = wandb.config.network_text
     # else:
     #     print('No wandb sweep...')
-    # wandb=None
+    wandb=None
         
     # -------------------------------- GPU --------------------------------
     # os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
@@ -239,7 +239,7 @@ if __name__ == '__main__':
     parser.add_argument('--dim_out_fc', type=int, default=2048, help='Dimension of the output of the fully connected layer (2048 as image, 1000 as txt)')
     
     # Text
-    parser.add_argument('--network_text', type=str, default='FastText', help='FastText or BERT')
+    parser.add_argument('--network_text', type=str, default='BERT', help='FastText or BERT')
     parser.add_argument('--weights_text', type=str,
                         default='/ghome/group03/M5-Project/week5/utils/text/fasttext_wiki.en.bin',
                         help='Path to weights of text model')

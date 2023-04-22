@@ -16,8 +16,11 @@ class TripletIm2Text(Dataset):
         self.network_text = network_text
         
         if self.network_text == 'BERT':
+            print('Loading the embeddings BERT dict...')
             with open(ann_file_bert, 'r') as f:
                 self.embeddings = ujson.load(f)
+            print('Done!')
+
 
         with open(ann_file, 'r') as f:
             self.annotations = json.load(f)
@@ -83,7 +86,7 @@ class TripletText2Im(Dataset):
         self.network_text = network_text
         
         if self.network_text == 'BERT':
-            print('Loading the embeddings dict...')
+            print('Loading the embeddings BERT dict...')
             with open(ann_file_bert, 'r') as f:
                 self.embeddings = ujson.load(f)
             print('Done!')
