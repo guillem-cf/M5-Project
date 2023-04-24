@@ -47,4 +47,4 @@ python main.py --task task_b --train False --sweep False --weights_model path/to
 ```
 
 ## BERT as a text feature extractor (task c)
-Same as task_a but using --network_text BERT
+Same as the other tasks but using --network_text BERT
