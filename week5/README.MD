@@ -1,4 +1,12 @@
 # Week 5
+First, we have to generate the dictionaries that will contain the embeddings of the captions. To do so we have to run the following commands:
+```
+python utils/text/fastText.py
+```
+```
+python utils/text/bert.py
+```
+
 
 The *main.py* file contains the pipeline for all tasks. You can choose the task to run in the parameter:
 
