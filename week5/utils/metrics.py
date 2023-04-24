@@ -91,16 +91,20 @@ def positives_TextToImage(neighbors_index, neighbors_id, databaseDataset, queryD
 def plot_embeddings_ImageText(image_embeddings, text_embeddinfs, title, output_path, xlim=None, ylim=None):
 
     plt.figure(figsize=(10, 10))
+    #define the size of the points
+
     
-    plt.scatter(image_embeddings[:, 0], image_embeddings[:, 1], alpha=0.5, color='blue')
-    plt.scatter(text_embeddinfs[:, 0], text_embeddinfs[:, 1], alpha=0.5, color='pink')
+    plt.scatter(image_embeddings[:, 0], image_embeddings[:, 1], alpha=0.5, color='green', label = "Image", s=2)
+    plt.scatter(text_embeddinfs[:, 0], text_embeddinfs[:, 1], alpha=0.5, color='orange', label = "Text", s=2)
     if xlim:
         plt.xlim(xlim[0], xlim[1])
     if ylim:
         plt.ylim(ylim[0], ylim[1])
     plt.title(title)
     
-    path = os.path.join(output_path, title)
+    path = os.path.join(output_path, "UMAP")
+    #add the legend
+    plt.legend(loc='upper right')
     plt.savefig(path)
     plt.close()
     
@@ -127,6 +131,27 @@ def plot_PR_binary(results, path):
 
     
     
+# def calculate_APs_coco (results, path, wandb=None):
+#     results_txt = []
+#     for k in [1, 3, 5]:
+#         prec_at_k = mPrecisionK(results, k)
+#         if wandb is not None:
+#             wandb.log({"Prec@" + str(k): prec_at_k})
+#         print("Prec@" + str(k) + ":", prec_at_k)
+#         results_txt.append("Prec@" + str(k) + ": " + str(prec_at_k))
+
+#     map_value = MAP(results)
+#     print("mAP:", map_value)
+#     results_txt.append("mAP: " + str(map_value))
+#     if wandb is not None:
+#         wandb.log({"mAP": map_value})
+    
+#     # Save results in .txt file
+#     with open(path + "/results.txt", "w") as output:
+#         output.write(str(results_txt))
+        
+#     return map_value
+    
 def calculate_APs_coco (results, path, wandb=None):
     results_txt = []
     for k in [1, 3, 5]:
@@ -142,13 +167,23 @@ def calculate_APs_coco (results, path, wandb=None):
     if wandb is not None:
         wandb.log({"mAP": map_value})
     
+    top1_acc = top_k_accuracy(results, 1)
+    top3_acc = top_k_accuracy(results, 3)
+    top5_acc = top_k_accuracy(results, 5)
+    
+    results_txt.append("Top1_acc: " + str(top1_acc))
+    results_txt.append("Top3_acc: " + str(top3_acc))
+    results_txt.append("Top5_acc: " + str(top5_acc))
+    
+    print("Top1_acc" + str(top1_acc))
+    print("Top3_acc" + str(top3_acc))
+    print("Top5_acc" + str(top5_acc))
+    
     # Save results in .txt file
     with open(path + "/results.txt", "w") as output:
         output.write(str(results_txt))
         
     return map_value
-    
-    
     
     
 
@@ -222,6 +257,10 @@ def mPrecisionK(listResults, k):
         valSum += precisionK(listResults[i,:], k)
     
     return valSum / listResults.shape[0]
+
+
+def top_k_accuracy(results, k):
+    return np.sum(results[:, :k]) / results.shape[0]
 
 def recallK(results, k):
     """

@@ -31,8 +31,13 @@ class EmbeddingNetImage(nn.Module):
             in_features = self.model.fc.in_features
             self.model.fc = nn.Identity()
         
+        self.activation = nn.ReLU()
         self.fc = nn.Linear(in_features, dim_out_fc)
-            
+    
+    def init_weights(self):
+        # Linear
+        nn.init.kaiming_uniform_(self.fc.weight, mode='fan_in', nonlinearity='relu')
+                
     def forward_resnet(self, x):
         output = self.model(x)
         return output
@@ -51,8 +56,10 @@ class EmbeddingNetImage(nn.Module):
             output = self.forward_faster(x)
         else:
             output = self.forward_resnet(x)
-            
+        
+        output = self.activation(output)
         output = self.fc(output)
+        output = output / output.pow(2).sum(dim=-1, keepdim=True).sqrt()
         
         return output 
     
@@ -85,7 +92,15 @@ class EmbeddingNetText(nn.Module):
                 self.fc = nn.Sequential(nn.Linear(768, 1024), 
                                     nn.PReLU(), 
                                     nn.Linear(1024, dim_out_fc))
+        self.activation = nn.ReLU()
     
+    def init_weights(self):
+        # Linear
+        for layer in self.fc:
+            if isinstance(layer, nn.Linear):
+                nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='relu')
+        
+
     def forward(self, x):
         # if self.network_text == 'FastText':
         #     x = [caption.replace('.', '').replace(',','').lower().split() for caption in x]
@@ -101,7 +116,10 @@ class EmbeddingNetText(nn.Module):
         #     output = self.fc(output) 
         # else:
         
-        output = self.fc(x)
+        output = self.activation(x)
+        output = self.fc(output)
+        output = output / output.pow(2).sum(dim=-1, keepdim=True).sqrt()
+        
 
         return output
     

@@ -179,7 +179,7 @@ def train(args):
                     device, log_interval, output_path, name=args.task, wandb = wandb)
         
         
-        output_path_test = os.path.join(output_path, f'test_{args.num_samples_test}_{args.epoch_test}')
+        
         
     else:
         #-------------------------------------- LOAD MODEL --------------------------------------
@@ -231,21 +231,26 @@ def train(args):
         
     # --------------------------------- TESTING --------------------------------
     
+    num_samples = [100, 500, 1000]
     
-    # Create output path if it does not exist
-    if not os.path.exists(output_path_test):
-        os.makedirs(output_path_test)
+    for num in num_samples:
+        args.num_samples_test = num
+        output_path_test = os.path.join(output_path, f'test_{args.num_samples_test}_{args.epoch_test}')
         
-    
-    image_test_dataset = ImageDatabase(val_annot_path, val_path, num_samples=args.num_samples_test, transform=transform)
-    text_test_dataset = TextDatabase(val_annot_path, val_path, val_annot_embed_path, args.network_text, num_samples= args.num_samples_test, transform=transform)
-    
-    image_test_loader = DataLoader(image_test_dataset, batch_size=args.batch_size, shuffle=False,
-                                    pin_memory=True, num_workers=10)
-    text_test_loader = DataLoader(text_test_dataset, batch_size=args.batch_size, shuffle=False,
-                                    pin_memory=True, num_workers=10)
+        # Create output path if it does not exist
+        if not os.path.exists(output_path_test):
+            os.makedirs(output_path_test)
+            
+        
+        image_test_dataset = ImageDatabase(val_annot_path, val_path, num_samples=args.num_samples_test, transform=transform)
+        text_test_dataset = TextDatabase(val_annot_path, val_path, val_annot_embed_path, args.network_text, num_samples= args.num_samples_test, transform=transform)
+        
+        image_test_loader = DataLoader(image_test_dataset, batch_size=args.batch_size, shuffle=False,
+                                        pin_memory=True, num_workers=10)
+        text_test_loader = DataLoader(text_test_dataset, batch_size=args.batch_size, shuffle=False,
+                                        pin_memory=True, num_workers=10)
 
-    map_value = test.test(args, model, image_test_dataset, image_test_loader, text_test_dataset, text_test_loader, output_path_test, device=device, wandb=wandb, retrieval=True)
+        map_value = test.test(args, model, image_test_dataset, image_test_loader, text_test_dataset, text_test_loader, output_path_test, device=device, wandb=wandb, retrieval=True)
     
     
     
@@ -310,38 +315,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     
-    data_time = datetime.datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-    if args.sweep:
-        assert args.train == True, "Sweep only works for training"
-        sweep_config = {
-            'name': f'Sweep_{data_time}',
-            'method': 'grid',
-            'parameters':{
-                'margin': {
-                    'values': [0.1, 1]
-                    # 'value': 1
-                },
-                'dim_out_fc': {
-                    # 'values': [2048, 1000]
-                    'value': 2048
-                },
-                'network_text': {
-                    'values': ['BERT', 'FastText']
-                    # 'value': 'FastText'
-                },
-                'network_image': {
-                    'values': ['RESNET50', 'fasterRCNN']
-                },
-                'lr': {
-                    'value': 1e-4
-                }
-            }
-        }
-        
-        
-        sweep_id = wandb.sweep(sweep=sweep_config, project="m5-w5", entity="grup7")
-        
-        wandb.agent(sweep_id, function=functools.partial(train, args))
-    
-    else:
-        train(args)
+    train(args)

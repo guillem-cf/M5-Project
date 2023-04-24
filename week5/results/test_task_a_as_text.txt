@@ -1,6 +1,0 @@
-/ghome/group03/M5-Project/week5/results/task_a/task_a_dim_out_fc_as_text_margin_1_lr_0.001
-/ghome/group03/M5-Project/week5/results/task_a/task_a_dim_out_fc_as_text_margin_1_lr_0.0001
-/ghome/group03/M5-Project/week5/results/task_a/task_a_dim_out_fc_as_text_margin_10_lr_0.001
-/ghome/group03/M5-Project/week5/results/task_a/task_a_dim_out_fc_as_text_margin_10_lr_0.0001
-/ghome/group03/M5-Project/week5/results/task_a/task_a_dim_out_fc_as_text_margin_50_lr_0.001
-/ghome/group03/M5-Project/week5/results/task_a/task_a_dim_out_fc_as_text_margin_50_lr_0.0001

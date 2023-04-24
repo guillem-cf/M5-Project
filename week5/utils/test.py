@@ -1,6 +1,6 @@
 import os
 import time
-# import umap
+import umap
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -94,13 +94,13 @@ def test(args, model,
         # metrics.plot_PR_binary(evaluation, output_path, wandb)
     
         # # ----------------- UMAP -----------------
-        # reducer = umap.UMAP(random_state=42)
-        # reducer.fit(val_embeddings_image)
-        # umap_image_embeddings = reducer.transform(val_embeddings_image)
-        # umap_text_embeddings = reducer.transform(val_embeddings_text)
+        reducer = umap.UMAP(random_state=42)
+        reducer.fit(val_embeddings_image)
+        umap_image_embeddings = reducer.transform(val_embeddings_image)
+        umap_text_embeddings = reducer.transform(val_embeddings_text)
 
         
-        # metrics.plot_embeddings_ImageText(umap_image_embeddings, umap_text_embeddings, "UMAP.png", output_path)
+        metrics.plot_embeddings_ImageText(umap_image_embeddings, umap_text_embeddings, "UMAP embeddings representation", output_path)
 
     
     return map_value
