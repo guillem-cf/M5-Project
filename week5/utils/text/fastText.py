@@ -3,7 +3,6 @@ import os
 
 import numpy as np
 import torch
-from transformers import BertTokenizer, BertModel
 from tqdm import tqdm
 
 import fasttext
@@ -26,8 +25,7 @@ model = fasttext.load_model('/ghome/group03/M5-Project/week5/utils/text/fasttext
 
 
 env_path = os.path.dirname(os.path.abspath(__file__))
-# get path of current file
-# dataset_path = '../../../../datasets/COCO'
+
 dataset_path = '/ghome/group03/mcv/datasets/COCO'
 
 train_path = os.path.join(dataset_path, 'captions_train2014.json')
@@ -36,8 +34,7 @@ val_path = os.path.join(dataset_path, 'captions_val2014.json')
 
 with open(train_path, "r") as file:
     data = json.load(file)
-# Extract the captions
-# Extract the captions
+
 output_annotations = []
 output_numpy = []
 
@@ -54,17 +51,10 @@ for annotation in tqdm(data["annotations"]):
     
     output_numpy.append(output)
 
-    # output_annotations.append({
-    #     'caption': output.tolist(),
-    #     'id': id,
-    #     'image_id': image_id,
-    # })
     
 output_numpy = np.array(output_numpy)
 
-# json.dumps({'annotations': output_annotations})
-# with open(os.path.join(dataset_path,"encoded_captions_train2014_fasttext.json"), "w") as file:
-#     json.dump(output_annotations, file)
+
     
 # Save the numpy array 
 with open(os.path.join(dataset_path,"encoded_captions_train2014_fasttext.npy"), "wb") as file:
@@ -93,18 +83,10 @@ for annotation in tqdm(data["annotations"]):
     
     output_numpy.append(output)
 
-    # output_annotations.append({
-    #     'caption': output.tolist(),
-    #     'id': id,
-    #     'image_id': image_id,
-    # })
     
 output_numpy = np.array(output_numpy)
 
-# # json.dumps({'annotations': output_annotations})
-# with open(os.path.join(dataset_path,"encoded_captions_val2014_fasttext.json"), "w") as file:
-#     json.dump(output_annotations, file)
-    
+
 # Save the numpy array 
 with open(os.path.join(dataset_path, "encoded_captions_val2014_fasttext.npy"), "wb") as file:
     np.save(file, output_numpy)
