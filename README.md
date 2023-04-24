@@ -33,7 +33,7 @@ autonomous driving technology.
 ### [Week 4: Image Retrieval](https://github.com/guillem-cf/M5-Project/tree/main/week4)
 [Slides](https://docs.google.com/presentation/d/1DZklzLOfCrwQC4cYEvULWXTvU-eQXaao/edit?usp=sharing&ouid=112170236769613642804&rtpof=true&sd=true)
 
-### [Week 5: Image-to-Text and Text-to-Image Retrieval](https://github.com/guillem-cf/M5-Project/tree/main/week5)
+### [Week 5: Cross-Modal Retrieval](https://github.com/guillem-cf/M5-Project/tree/main/week5)
 [Slides](https://docs.google.com/presentation/d/13Q56NzWRmHSWLGLWpakfkGRw0N6i-4eZ/edit?usp=sharing&ouid=113215793601171523843&rtpof=true&sd=true)
 
 # Presentation
