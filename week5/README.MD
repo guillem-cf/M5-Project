@@ -2,45 +2,49 @@
 
 The *main.py* file contains the pipeline for all tasks. You can choose the task to run in the parameter:
 
-## Run a sweep in wandb: adapt the sweep_config dictionary below and run:
+## Image-to-Text Retrieval (task a)
+
+### Run a sweep in wandb after adapting the sweep_config dictionary:
 
 ```
 python main.py --task_a --train True --sweep True --network_image RESNET50 --network_text FastText --batch_size 64
 ```
 
-## Run task_a train:
+### Run train:
+Using Resnet50 as a feature extractor of the anchor image:
 
 ```
 python main.py --task task_a --train True --sweep False --network_image RESNET50 --network_text FastText --batch_size 64 --lr 1e-4 --margin 0.1
 ```
-
-```
-python main.py --task task_a --train True --sweep False --network_image RESNET101 --network_text FastText --batch_size 64 --lr 1e-4 --margin 0.1
-```
-
+Using the backbone of Faster R-CNN as a feature extractor of the anchor image:
 ```
 python main.py --task task_a --train True --sweep False --network_image fasterRCNN --network_text FastText --batch_size 64 --lr 1e-4 --margin 0.1
 ```
 
-# Run task_a test:
+### Run test:
 
 ```
-python main.py --task task_a --train False --sweep False --network_image RESNET50 --network_text FastText --weights_model /ghome/group03/M5-Project/week5/results/task_a/task_aRESNET_dim_out_fc_as_image_margin_0.1_lr_0.0001/task_a_triplet_10.pth
+python main.py --task task_a --train False --sweep False --weights_model path/to/model.pth
 ```
 
-## Run task_b:
+
+## Text-to-Image Retrieval (task b)
+
+### Run training examples:
+Using Resnet50 as a feature extractor of the anchor image:
 
 ```
-python main.py --task task_b --train True --sweep False --network_image RESNET50 --network_text FastText --batch_size 32 --lr 1e-4 --margin 0.1
+python main.py --task task_b --train True --sweep False --network_image RESNET50 --network_text FastText --batch_size 64 --lr 1e-4 --margin 0.1
 ```
+Using the backbone of Faster R-CNN as a feature extractor of the anchor image:
+```
+python main.py --task task_b --train True --sweep False --network_image fasterRCNN --network_text FastText --batch_size 64 --lr 1e-4 --margin 0.1
+```
+### Run test:
 
 ```
-python main.py --task task_b --train True --sweep False --network_image RESNET101 --network_text FastText --batch_size 32 --lr 1e-4 --margin 0.1
+python main.py --task task_b --train False --sweep False --weights_model path/to/model.pth
 ```
 
-```
-python main.py --task task_b --train True --sweep False --network_image fasterRCNN --network_text FastText --batch_size 32 --lr 1e-4 --margin 0.1
-```
-
-## Run task_c_a:
-Same as task_a but using --network_text BERT
+## BERT as a text feature extractor (task c)
+Same as the other tasks but using --network_text BERT
